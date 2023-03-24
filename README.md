@@ -10,7 +10,7 @@ python3 glados.py
 ```
 
 The wake-word is 'Glados', but this can be changed in the class variables.
-Note: 'Glados' seems a hard word to accurately detect!
+Note: 'Glados' seems a hard word to accurately detect!  What's nice is that the wake word does not have to be at the beginning; she will respond if you mention her name at any time!
 
 
 ## Installation Instruction
