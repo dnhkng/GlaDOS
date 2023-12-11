@@ -2,7 +2,7 @@
 
 This is a project dedicated to building a real-life version of GLaDOS.
 
-*That being a hardware and software project that will create an aware, interactive, and embodied GLaDOS.*
+*This is a hardware and software project that will create an aware, interactive, and embodied GLaDOS.*
 
 This will entail:
 - [x] Train GLaDOS voice generator
@@ -23,6 +23,8 @@ To do this, the system contantly record data to a circular buffer, waiting for [
  - The another aim of the project is to minimise dependencies, so this can run on contrained hardware. That means no PyTorch or other large packages.  
  - As I want to fully understand the system, I have removed large amount of redirection: that means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 dependencies: numpy, onnxruntime, and sounddevice. 
 
+## Hardware System
+This will be based or servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn towards people and things of interest.
 
 ## Installation Instruction
 If you want to install the TTS Engine on your machine, please follow the steps
