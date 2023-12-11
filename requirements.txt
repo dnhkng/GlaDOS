@@ -1,4 +1,5 @@
-torch
-phonemizer
-inflect
-unidecode
+onnxruntime
+numpy
+sounddevice
+levenshtein
+loguru
