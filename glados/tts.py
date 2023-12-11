@@ -425,68 +425,10 @@ class Synthesizer:
         return audio
 
 
-# def audio_float_to_int16(
-#     audio: np.ndarray, max_wav_value: float = 32767.0
-# ) -> np.ndarray:
-#     """Normalize audio and convert to int16 range"""
-#     audio_norm = audio * (max_wav_value / max(0.01, np.max(np.abs(audio))))
-#     audio_norm = np.clip(audio_norm, -max_wav_value, max_wav_value)
-#     audio_norm = audio_norm.astype("int16")
-#     return audio_norm
-
-
 class TTSEngine:
     def __init__(self, model_path: str = MODEL_PATH, use_cuda: bool = USE_CUDA):
         self.phonemizer = Phonemizer()
         self.synthesizer = Synthesizer(model_path, use_cuda)
-
-    # def _create_output_stream(self):
-    #     self.output_stream = sd.OutputStream(
-    #         samplerate=self.sample_rate,
-    #         channels=1,
-    #         callback=self.play_callback,
-    #     )
-
-    # def _play_callback(self, outdata, frames, time, status):
-    #     if self.playback_finished:
-    #         return
-
-    #     try:
-    #         if self.audio_chunk_position >= len(self.audio_chunk):
-    #             audio_data_bytes = next(self.audio_generator)
-    #             audio_chunk = np.frombuffer(audio_data_bytes, dtype=np.int16)
-    #             audio_chunk = audio_chunk.astype(np.float32, order="C") / 32768.0
-    #             audio_chunk = np.expand_dims(audio_chunk, 1)
-    #             self.audio_chunk = audio_chunk
-    #             self.audio_chunk_position = 0
-
-    #         frames_to_copy = min(
-    #             frames, len(self.audio_chunk) - self.audio_chunk_position
-    #         )
-
-    #         if frames_to_copy > 0:
-    #             outdata[:frames_to_copy] = self.audio_chunk[
-    #                 self.audio_chunk_position : self.audio_chunk_position
-    #                 + frames_to_copy
-    #             ]
-    #             self.audio_chunk_position += frames_to_copy
-
-    #     except StopIteration:
-    #         # No more audio data to play, stop the playback
-    #         self.playback_finished = True
-    #         self.close_output_stream()  # Close the stream when playback finishes
-
-    # def _start_output_stream(self):
-    #     if self.output_stream:
-    #         self.output_stream.start()
-
-    # def _stop_output_stream(self):
-    #     if self.output_stream:
-    #         self.output_stream.stop()
-
-    # def _close_output_stream(self):
-    #     if self.output_stream:
-    #         self.output_stream.close()
 
     def generate_speech_audio(self, text: str) -> bytes:
         phonemes = self.phonemizer.synthesize_phonemes(text)
