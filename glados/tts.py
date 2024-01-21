@@ -436,12 +436,13 @@ class TTSEngine:
         for sentence in phonemes:
             audio_chunk = self.synthesizer.say_phonemes(sentence)
             audio.append(audio_chunk)
-        audio = np.concatenate(audio, axis=1).T
+        if audio:
+            audio = np.concatenate(audio, axis=1).T
         return audio
 
 
 if __name__ == "__main__":
     tts = TTSEngine(MODEL_PATH, USE_CUDA)
-    audio = tts._generate_audio("Hello world. How are you?")
-    sd.play(audio.T, RATE)
-    sd.sleep(int(1000 * audio.shape[1] / RATE))
+    audio = tts.generate_speech_audio("Hello world. How are you?")
+    sd.play(audio, RATE)
+    sd.wait()
