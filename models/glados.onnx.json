@@ -1,5 +1,5 @@
 {
-    "dataset": "Projects",
+    "dataset": "glados",
     "audio": {
         "sample_rate": 22050,
         "quality": "stacked_llama"
