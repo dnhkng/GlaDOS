@@ -161,3 +161,4 @@ cython_debug/
 
 # The large model files
 *.bin
+*.gguf
