@@ -252,7 +252,7 @@ class Phonemizer:
         """Opens a memory stream for phoneme output."""
         buffer = ctypes.c_char_p()
         size = ctypes.c_size_t()  # Initialize size
-        sample_rate = self.lib_espeak.espeak_Initialize(
+        self.lib_espeak.espeak_Initialize(
             self.espeakAUDIO_OUTPUT_SYNCHRONOUS, 0, None, 0
         )
 
@@ -318,8 +318,8 @@ class Phonemizer:
             phonemes = re.sub(r"_ ", " ", phonemes)
 
             return phonemes.splitlines()
-        except:
-            print("Error in phonemization")
+        except Exception as e:
+            print("Error in phonemization:", str(e))
         finally:
             self._close_memstream(phonemes_file)
 
