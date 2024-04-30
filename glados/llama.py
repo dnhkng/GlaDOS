@@ -13,7 +13,7 @@ class LlamaServer:
         self.process = None
 
         # Define the fixed command and arguments
-        self.command = ["./server", "-m"]
+        self.command = ["./server", "-m", "chat-template", "llama3"]
 
         # Specify the directory where the server executable is located if it's not the current directory
         self.llama_server_path = llama_server_path
@@ -23,7 +23,7 @@ class LlamaServer:
             self.model = model
         command = [os.path.join(self.llama_server_path, "server"), "-m"] + [self.model]
         if use_gpu:
-            command += ["-ts", "1,0", "-ngl", "1000"]
+            command += ["-ngl", "1000"]
         print(command)
         self.process = subprocess.Popen(
             command,
