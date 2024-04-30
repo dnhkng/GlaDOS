@@ -23,8 +23,8 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
-# LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
+# LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
+LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
 LLAMA_SERVER_URL = "http://localhost:8080/v1/chat/completions"
@@ -498,6 +498,7 @@ class Glados:
         sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
         sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
+        sentence = sentence + " "  # Add a space to the end of the sentence, for better TTS
         if sentence:
             self.tts_queue.put(sentence)
 
