@@ -36,7 +36,13 @@ below.  This has only been tested on Linux, but I think it will work on Windows 
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
    requirements.txt`
-3. For voice recognition, install [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), and after compiling, mode the "libwhisper.so" file to the "glados" folder or add it to your path.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524).  Then download the [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true), and put it in the "models" directory.
+3. For voice recognition, install [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), and after compiling, mode the "libwhisper.so" file to the "glados" folder or add it to your path.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524).
+4.  Download the models:
+    1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
+    2.  
+    3.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
+    4.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
+    and put them in the "models" directory.
 
 ## Testing
 You can test the systems by exploring the 'demo.ipynb'.
