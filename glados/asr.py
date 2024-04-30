@@ -83,7 +83,7 @@ class ASR:
         params.max_len = ctypes.c_int(100)
         params.max_len = 1 if word_level_timings else 0
         params.token_timestamps = word_level_timings
-        params.no_timestamps = False
+        params.no_timestamps = True
         return params
 
 
