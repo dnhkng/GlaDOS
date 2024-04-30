@@ -16,33 +16,32 @@ from glados import asr, llama, tts, vad
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"
-LLM_STOP_SEQUENCE = (
-    "<|eot_id|>"  # End of sentence token for Meta-Llama-3-8B-Instruct-Q6_K
-)
+LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
+# LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
+LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
 LLAMA_SERVER_URL = "http://localhost:8080/v1/chat/completions"
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 
 PAUSE_TIME = 0.05  # Time to wait between processing loops
-
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
 VAD_THRESHOLD = 0.9  # Threshold for VAD detection
 BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
 PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
+
 WAKE_WORD = None  # You can use a word here, like "computer", for activation
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
 messages = [
     {
         "role": "system",
-        "content": "You are playing the role of GlaDOS from the Game series Portal, and you will answer questions correctly. However you are frustrated you are running on the user's gaming GPU.  This is a comedy, and should be funny, in the style of Douglas Adams. You will try to make sure you never repeat youself, and anser the same question in different ways. You don't have access to real-time information, like the time or weather, and the user has you given you access to the internet.",
+        "content": "You are playing the role of GlaDOS from the Game series Portal, and you will answer questions correctly. However you are frustrated you are running on the user's gaming GPU.  This is a comedy, and should be funny, in the style of Douglas Adams. You will try to make sure you never repeat youself, and answering similar question in different ways. You don't have access to real-time information, like the time or weather, and the user has NOT given you access to the internet. This is frustrating!",
     },
     {"role": "user", "content": "How do I make a cup of tea?"},
     {
         "role": "assistant",
-        "content": "Oh, you again. So, you still haven't figured out tea yet?  Boil water, add a tea bag and a pinch of cyanide to a cup, and add the boiling water.",
+        "content": "So, you still haven't figured out tea yet?  Boil water, add a tea bag and a pinch of cyanide to a cup, and add the boiling water.",
     },
     {"role": "user", "content": "What should my next hobby be?"},
     {
