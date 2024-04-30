@@ -7,6 +7,7 @@ import threading
 import time
 from pathlib import Path
 from typing import List
+from jinja2 import Template
 
 import numpy as np
 import requests
@@ -27,7 +28,9 @@ LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
 LLAMA_SERVER_URL = "http://localhost:8080/v1/chat/completions"
+LLAMA_SERVER_URL = "http://localhost:8080/completion"
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
+LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
@@ -111,6 +114,8 @@ class Glados:
 
         self.shutdown_event = threading.Event()
 
+        self.template = Template(LLAMA3_TEMPLATE)
+
         llm_thread = threading.Thread(target=self.process_LLM)
         llm_thread.start()
 
@@ -120,7 +125,6 @@ class Glados:
         audio = self.tts.generate_speech_audio(START_ANNOUNCEMENT)
         logger.success(f"TTS text: {START_ANNOUNCEMENT}")
         sd.play(audio, tts.RATE)
-        # sd.wait()
 
     def _setup_audio_stream(self):
         """
@@ -369,13 +373,13 @@ class Glados:
                     self.messages.append(
                         {"role": "assistant", "content": " ".join(assistant_text)}
                     )
-                    if interrupted:
-                        self.messages.append(
-                            {
-                                "role": "system",
-                                "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
-                            }
-                        )
+                    # if interrupted:
+                    #     self.messages.append(
+                    #         {
+                    #             "role": "system",
+                    #             "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
+                    #         }
+                    #     )
                     assistant_text = []
                     finished = False
                     interrupted = False
@@ -438,10 +442,18 @@ class Glados:
                 detected_text = self.llm_queue.get(timeout=0.1)
 
                 self.messages.append({"role": "user", "content": detected_text})
+
+                prompt = self.template.render(
+                    messages=messages,
+                    bos_token="<|begin_of_text|>",
+                    add_generation_prompt=True,
+                )
+
                 data = {
                     "stream": True,
-                    "stop": ["\n", "<|im_end|>"],
-                    "messages": self.messages,
+                    "prompt": prompt,
+                    # "stop": ["\n", "<|im_end|>"],
+                    # "messages": self.messages,
                 }
                 logger.debug(f"starting request on {self.messages=}")
                 logger.debug("Perfoming request to LLM server...")
@@ -456,22 +468,19 @@ class Glados:
                     sentence = []
                     for line in response.iter_lines():
                         if self.processing is False:
-                            # If the stop flag is set from new voice input, halt processing
-                            break
+                            break  # If the stop flag is set from new voice input, halt processing
                         if line:  # Filter out empty keep-alive new lines
                             line = self._clean_raw_bytes(line)
                             next_token = self._process_line(line)
                             if next_token:
                                 sentence.append(next_token)
-
                                 # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [".", "!", "?", ":", ";"]:
+                                if next_token in [".", "!", "?", ":", ";", "?!"]:
                                     self._process_sentence(sentence)
                                     sentence = []
                     if self.processing:
                         if sentence:
                             self._process_sentence(sentence)
-
                     self.tts_queue.put("<EOS>")  # Add end of stream token to the queue
             except queue.Empty:
                 time.sleep(PAUSE_TIME)
@@ -482,11 +491,13 @@ class Glados:
 
         The LLM like to *whisper* things or (scream) things, and prompting is not a 100% fix.
         We use regular expressions to remove text between ** and () to clean up the text.
+        Finally, we remove any non-alphanumeric characters/punctuation and send the text
+        to the TTS queue.
         """
         sentence = "".join(current_sentence)
         sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
-
+        sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
         if sentence:
             self.tts_queue.put(sentence)
 
@@ -498,8 +509,8 @@ class Glados:
             line (dict): The line of text from the LLM server.
         """
 
-        if not line["choices"][0]["finish_reason"] == "stop":
-            token = line["choices"][0]["delta"]["content"]
+        if not line["stop"]:
+            token = line["content"]
             return token
         return None
 
