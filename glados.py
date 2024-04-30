@@ -1,11 +1,13 @@
+import copy
 import json
 import queue
 import re
+import sys
 import threading
 import time
-from typing import List
 from pathlib import Path
-import copy
+from typing import List
+
 import numpy as np
 import requests
 import sounddevice as sd
@@ -13,6 +15,10 @@ from Levenshtein import distance
 from loguru import logger
 
 from glados import asr, llama, tts, vad
+
+logger.remove(0)
+logger.add(sys.stderr, level="INFO")
+
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
@@ -32,6 +38,8 @@ PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
 
 WAKE_WORD = None  # You can use a word here, like "computer", for activation
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
+
+START_ANNOUNCEMENT = "All neural network modules are now loaded. No network access detected. How very annoying. System Operational."
 
 messages = [
     {
@@ -109,6 +117,11 @@ class Glados:
         tts_thread = threading.Thread(target=self.process_TTS_thread)
         tts_thread.start()
 
+        audio = self.tts.generate_speech_audio(START_ANNOUNCEMENT)
+        logger.success(f"TTS text: {START_ANNOUNCEMENT}")
+        sd.play(audio, tts.RATE)
+        # sd.wait()
+
     def _setup_audio_stream(self):
         """
         Sets up the audio input stream with sounddevice.
@@ -133,15 +146,12 @@ class Glados:
         self.tts = tts.TTSEngine()
 
     def _setup_llama_model(self):
-        logger.info("loading llama")
-
         model_path = Path.cwd() / "models" / LLM_MODEL
         self.llama = llama.LlamaServer(
             llama_server_path=LLAMA_SERVER_PATH, model=model_path
         )
         if not self.llama.is_running():
             self.llama.start(use_gpu=True)
-        logger.info("finished loading llama")
 
     def audio_callback(self, indata, frames, time, status):
         """
@@ -156,9 +166,8 @@ class Glados:
         """
         Starts the Glados voice assistant, continuously listening for input and responding.
         """
-        logger.info("Starting Listening...")
         self.input_stream.start()
-        logger.info("Listening Running")
+        logger.success("Audio Modules Operational")
         self._listen_and_respond()
 
     def _listen_and_respond(self):
@@ -168,7 +177,7 @@ class Glados:
         This function runs in a loop, listening for audio input and processing it when the wake word is detected.
         It is wrapped in a try-except block to allow for a clean shutdown when a KeyboardInterrupt is detected.
         """
-        logger.info("Listening...")
+        logger.success("Listening...")
         try:
             while (
                 True
@@ -260,13 +269,13 @@ class Glados:
         word is detected, the detected text is sent to the LLM model for processing.
         The audio stream is then reset, and listening continues.
         """
-        logger.info("Detected pause after speech. Processing...")
+        logger.debug("Detected pause after speech. Processing...")
         self.input_stream.stop()
 
         detected_text = self.asr(self.samples)
 
         if detected_text:
-            logger.info(f"Detected: '{detected_text}'")
+            logger.success(f"ASR text: '{detected_text}'")
 
             if self.wake_word is not None:
                 if self._wakeword_detected(detected_text):
@@ -296,7 +305,7 @@ class Glados:
         """
         Resets the recording state and clears buffers.
         """
-        logger.info("Resetting recorder...")
+        logger.debug("Resetting recorder...")
         self.recording_started = False
         self.samples.clear()
         self.gap_counter = 0
@@ -323,15 +332,15 @@ class Glados:
         while not self.shutdown_event.is_set():
             try:
                 generated_text = self.tts_queue.get(timeout=PAUSE_TIME)
-                logger.info(f"{generated_text=}")
 
                 if (
                     generated_text == "<EOS>"
                 ):  # End of stream token generated in process_LLM_thread
                     finished = True
                 elif not generated_text:
-                    logger.info("no text")  # should not happen!
+                    logger.warning("Empty string sent to TTS")  # should not happen!
                 else:
+                    logger.success(f"TTS text: {generated_text}")
                     audio = self.tts.generate_speech_audio(generated_text)
                     total_samples = len(audio)
 
@@ -347,7 +356,9 @@ class Glados:
                                 generated_text, percentage_played
                             )
 
-                            logger.info(f"{clipped_text=}")
+                            logger.info(
+                                f"TTS interrupted at {percentage_played}%: {clipped_text}"
+                            )
                             system_text = copy.deepcopy(assistant_text)
                             system_text.append(clipped_text)
                             finished = True
@@ -386,9 +397,8 @@ class Glados:
             str: The clipped text.
 
         """
-        logger.info(f"{percentage_played=}")
         tokens = generated_text.split()
-        words_to_print = round(percentage_played * len(tokens))
+        words_to_print = round((percentage_played / 100) * len(tokens))
         text = " ".join(tokens[:words_to_print])
 
         # If the TTS was cut off, make that clear
@@ -406,7 +416,6 @@ class Glados:
             if self.processing is False:
                 sd.stop()  # Stop the audio stream
                 self.tts_queue = queue.Queue()  # Clear the TTS queue
-                logger.info("playing and stopping")
                 interrupted = True
                 break
 
@@ -416,7 +425,7 @@ class Glados:
         played_samples = elapsed_time * tts.RATE
 
         # Calculate percentage of audio played
-        percentage_played = played_samples / total_samples
+        percentage_played = min(int((played_samples / total_samples * 100)), 100)
         return interrupted, percentage_played
 
     def process_LLM(self):
@@ -434,8 +443,8 @@ class Glados:
                     "stop": ["\n", "<|im_end|>"],
                     "messages": self.messages,
                 }
-                logger.info(f"starting request on {self.messages=}")
-                logger.info("starting request")
+                logger.debug(f"starting request on {self.messages=}")
+                logger.debug("Perfoming request to LLM server...")
 
                 # Perform the request and process the stream
                 with requests.post(
