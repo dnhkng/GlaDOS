@@ -470,29 +470,46 @@ class Glados:
                 logger.debug("Perfoming request to LLM server...")
 
                 # Perform the request and process the stream
-                with requests.post(
-                    LLAMA_SERVER_URL,
-                    headers=LLAMA_SERVER_HEADERS,
-                    json=data,
-                    stream=True,
-                ) as response:
-                    sentence = []
-                    for line in response.iter_lines():
-                        if self.processing is False:
-                            break  # If the stop flag is set from new voice input, halt processing
-                        if line:  # Filter out empty keep-alive new lines
-                            line = self._clean_raw_bytes(line)
-                            next_token = self._process_line(line)
-                            if next_token:
-                                sentence.append(next_token)
-                                # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [".", "!", "?", ":", ";", "?!"]:
-                                    self._process_sentence(sentence)
-                                    sentence = []
-                    if self.processing:
-                        if sentence:
-                            self._process_sentence(sentence)
-                    self.tts_queue.put("<EOS>")  # Add end of stream token to the queue
+                try:
+                    with requests.post(
+                        LLAMA_SERVER_URL,
+                        headers=LLAMA_SERVER_HEADERS,
+                        json=data,
+                        stream=True,
+                    ) as response:
+                        if not response.ok:
+                            if response.status_code == 404:
+                                logger.error(f"LLAMA_SERVER_URL {LLAMA_SERVER_URL!r} seems to be invalid")
+                            else:
+                                logger.error(f"Response was unusable, unsure why. status_code: {response.status_code}, reason: {response.reason!r}")
+
+                            continue
+
+                        else:
+                            logger.info(f"Got successful response from AI: {response.text!r}")
+
+                        sentence = []
+                        for line in response.iter_lines():
+                            if self.processing is False:
+                                break  # If the stop flag is set from new voice input, halt processing
+                            if line:  # Filter out empty keep-alive new lines
+                                line = self._clean_raw_bytes(line)
+                                next_token = self._process_line(line)
+                                if next_token:
+                                    sentence.append(next_token)
+                                    # If there is a pause token, send the sentence to the TTS queue
+                                    if next_token in [".", "!", "?", ":", ";", "?!"]:
+                                        self._process_sentence(sentence)
+                                        sentence = []
+
+                        if self.processing and sentence:
+                            self.tts_queue.put(sentence)
+
+                        self.tts_queue.put("<EOS>")  # Add end of stream token to the queue
+
+                except requests.exceptions.ConnectionError as e:
+                    logger.error("Couldn't connect to AI endpoint at this time. Is it still loading?")
+
             except queue.Empty:
                 time.sleep(PAUSE_TIME)
 
