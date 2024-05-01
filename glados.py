@@ -350,9 +350,7 @@ class Glados:
             try:
                 generated_text = self.tts_queue.get(timeout=PAUSE_TIME)
 
-                if (
-                    generated_text == "<EOS>"
-                ):  # End of stream token generated in process_LLM_thread
+                if generated_text == "<EOS>":  # End of stream token generated in process_LLM_thread
                     finished = True
                 elif not generated_text:
                     logger.warning("Empty string sent to TTS")  # should not happen!
