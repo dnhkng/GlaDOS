@@ -41,7 +41,7 @@ LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_mess
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.9  # Threshold for VAD detection
+VAD_THRESHOLD = 0.15  # Threshold for VAD detection
 BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
 PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
 
