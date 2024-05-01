@@ -5,6 +5,8 @@ import re
 import sys
 import threading
 import time
+from urllib.parse import urljoin
+
 from pathlib import Path
 from typing import List
 from jinja2 import Template
@@ -27,7 +29,12 @@ VAD_MODEL = "silero_vad.onnx"
 LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
-LLAMA_SERVER_URL = "http://localhost:8080/completion"
+
+LLAMA_SERVER_EXTERNAL = True
+LLAMA_SERVER_BASE_URL = "http://localhost:8080"
+
+LLAMA_SERVER_URL = urljoin(LLAMA_SERVER_BASE_URL, "./completion")
+
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 
@@ -153,8 +160,9 @@ class Glados:
         self.llama = llama.LlamaServer(
             llama_server_path=LLAMA_SERVER_PATH, model=model_path
         )
-        if not self.llama.is_running():
-            self.llama.start(use_gpu=True)
+        if not LLAMA_SERVER_EXTERNAL:
+            if not self.llama.is_running():
+                self.llama.start(use_gpu=True)
 
     def audio_callback(self, indata, frames, time, status):
         """
