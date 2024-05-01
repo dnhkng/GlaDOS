@@ -37,6 +37,10 @@ LLAMA_SERVER_URL = urljoin(LLAMA_SERVER_BASE_URL, "./completion")
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 
+AI_OUTPUT_TO_IGNORE = set((
+    "imend",
+))
+
 LLM_STOPWORDS = set((
     "<EOS>",
     "eotid",
@@ -535,8 +539,13 @@ class Glados:
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
         sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
         sentence = sentence + " "  # Add a space to the end of the sentence, for better TTS
+
         if sentence:
-            self.tts_queue.put(sentence)
+            if sentence in AI_OUTPUT_TO_IGNORE:
+                logger.warn(f"Ignoring weird AI output: {sentence!r}")
+
+            else:
+                self.tts_queue.put(sentence)
 
     def _process_line(self, line):
         """
