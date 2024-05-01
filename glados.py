@@ -136,12 +136,16 @@ class Glados:
         """
         Sets up the audio input stream with sounddevice.
         """
-        self.input_stream = sd.InputStream(
-            samplerate=SAMPLE_RATE,
-            channels=1,
-            callback=self.audio_callback,
-            blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000),
-        )
+        try:
+            self.input_stream = sd.InputStream(
+                samplerate=SAMPLE_RATE,
+                channels=1,
+                callback=self.audio_callback,
+                blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000),
+            )
+        except sd.PortAudioError as e:
+            logger.error(f"Couldn't open PortAudio device. Your audio may not be properly configured. On Linux, you may need to create an appropriate ~/.asoundrc file. The full error was {e!r}")
+            sys.exit(1)
 
     def _setup_vad_model(self):
         """
