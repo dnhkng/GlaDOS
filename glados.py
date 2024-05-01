@@ -27,7 +27,6 @@ ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
 # LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
 LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
-LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 
 LLAMA_SERVER_EXTERNAL = True
 LLAMA_SERVER_BASE_URL = "http://localhost:8080"
@@ -37,6 +36,12 @@ LLAMA_SERVER_URL = urljoin(LLAMA_SERVER_BASE_URL, "./completion")
 
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
+
+LLM_STOPWORDS = set((
+    "<EOS>",
+    "eotid",
+    "eot_id",
+))
 
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
@@ -523,7 +528,10 @@ class Glados:
         to the TTS queue.
         """
         sentence = "".join(current_sentence)
-        sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
+
+        for stopword in LLM_STOPWORDS:
+            sentence = sentence.removesuffix(stopword)
+
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
         sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
         sentence = sentence + " "  # Add a space to the end of the sentence, for better TTS
