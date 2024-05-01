@@ -1,10 +1,15 @@
 import ctypes
+import logging
 import re
 from typing import List, Optional
 
 import numpy as np
 import onnxruntime
 import sounddevice as sd
+
+
+logger = logging.getLogger(__name__)
+
 
 # Constants
 MAX_WAV_VALUE = 32767.0
@@ -19,6 +24,7 @@ PAD = "_"  # padding (0)
 BOS = "^"  # beginning of sentence
 EOS = "$"  # end of sentence
 PHONEME_ID_MAP = {
+    "": [3],
     " ": [3],
     "!": [4],
     '"': [150],
@@ -243,7 +249,7 @@ class Phonemizer:
             return ctypes.cdll.LoadLibrary(lib_name)
         except OSError:
             if fallback_name:
-                print(f"Loading {fallback_name}")
+                logger.info("Loading %s", fallback_name)
                 return ctypes.cdll.LoadLibrary(fallback_name)
             else:
                 raise
@@ -289,6 +295,11 @@ class Phonemizer:
             synth_flags = self.espeakCHARS_AUTO | self.espeakPHONEMES
 
             self.lib_espeak.espeak_SetPhonemeTrace(phoneme_flags, phonemes_file)
+
+            if isinstance(text, list):
+                logger.error("text is a list, somehow! Seems to relate to EOS tokens. Working around it.")
+                text = text[0]
+
             text_bytes = text.encode("utf-8")
 
             self.lib_espeak.espeak_Synth(
@@ -318,8 +329,11 @@ class Phonemizer:
             phonemes = re.sub(r"_ ", " ", phonemes)
 
             return phonemes.splitlines()
+
         except Exception as e:
-            print("Error in phonemization:", str(e))
+            logger.error("Error in phonemization: %r", str(e))
+            raise
+
         finally:
             self._close_memstream(phonemes_file)
 
