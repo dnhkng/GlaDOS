@@ -36,6 +36,11 @@ LLAMA_SERVER_URL = urljoin(LLAMA_SERVER_BASE_URL, "./completion")
 
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
+STT_HALLUCINATIONS = set((
+    "You",
+    "you're",
+    "Thank you.",
+))
 
 AI_OUTPUT_TO_IGNORE = set((
     "imend",
@@ -299,8 +304,9 @@ class Glados:
         self.input_stream.stop()
 
         detected_text = self.asr(self.samples)
+        hallucination = detected_text and any(hallucination.lower() == detected_text.lower() for hallucination in STT_HALLUCINATIONS)
 
-        if detected_text:
+        if detected_text and not hallucination:
             logger.success(f"ASR text: '{detected_text}'")
 
             if self.wake_word is not None:
@@ -314,6 +320,13 @@ class Glados:
             else:
                 self.llm_queue.put(detected_text)
                 self.processing = True
+
+        elif hallucination:
+            logger.success(f"ASR text: '{detected_text}' (NOTE: ignored, as a probable hallucination from the TTS model)")
+            self.processing = True
+        else:
+            logger.info("Heard audio, but didn't detect any speech within it.")
+            self.processing = True
 
         self.reset()
         self.input_stream.start()
