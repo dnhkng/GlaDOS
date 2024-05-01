@@ -23,10 +23,11 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-# LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
-LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
+LLM_MODEL = "./models/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
+# LLM_MODEL = "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
-LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
+# LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
+LLAMA_SERVER_PATH = "./llama.cpp"
 LLAMA_SERVER_URL = "http://localhost:8080/completion"
 LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
@@ -123,7 +124,7 @@ class Glados:
 
         audio = self.tts.generate_speech_audio(START_ANNOUNCEMENT)
         logger.success(f"TTS text: {START_ANNOUNCEMENT}")
-        sd.play(audio, tts.RATE)
+        # sd.play(audio, tts.RATE)
 
     def _setup_audio_stream(self):
         """
@@ -154,7 +155,7 @@ class Glados:
             llama_server_path=LLAMA_SERVER_PATH, model=model_path
         )
         if not self.llama.is_running():
-            self.llama.start(use_gpu=True)
+            self.llama.start(use_gpu=False)
 
     def audio_callback(self, indata, frames, time, status):
         """
@@ -345,10 +346,10 @@ class Glados:
                 else:
                     logger.success(f"TTS text: {generated_text}")
                     audio = self.tts.generate_speech_audio(generated_text)
-                    total_samples = len(audio)
+                    total_samples = 10  # len(audio)
 
                     if total_samples:
-                        sd.play(audio, tts.RATE)
+                        # sd.play(audio, tts.RATE)
 
                         interrupted, percentage_played = self.percentage_played(
                             total_samples
@@ -414,13 +415,13 @@ class Glados:
         start_time = time.time()
         played_samples = 0
 
-        while sd.get_stream().active:
-            time.sleep(PAUSE_TIME)  # Should the TTS stream should still be active?
-            if self.processing is False:
-                sd.stop()  # Stop the audio stream
-                self.tts_queue = queue.Queue()  # Clear the TTS queue
-                interrupted = True
-                break
+        # while sd.get_stream().active:
+        #     time.sleep(PAUSE_TIME)  # Should the TTS stream should still be active?
+        #     if self.processing is False:
+        #         sd.stop()  # Stop the audio stream
+        #         self.tts_queue = queue.Queue()  # Clear the TTS queue
+        #         interrupted = True
+        #         break
 
         elapsed_time = (
             time.time() - start_time + 0.12

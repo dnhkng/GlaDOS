@@ -21,15 +21,16 @@ class LlamaServer:
     def start(self, model=None, use_gpu=False):
         if model is not None:
             self.model = model
-        command = [os.path.join(self.llama_server_path, "server"), "-m"] + [self.model]
+        command = [os.path.join(self.llama_server_path, "server"), "-m"] + [str(self.model)]
         if use_gpu:
             command += ["-ngl", "1000"]
         print(command)
         self.process = subprocess.Popen(
             command,
-            cwd=self.llama_server_path,
+            # cwd=self.llama_server_path,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env={"GGML_METAL_PATH_RESOURCES": "./llama.cpp"}
         )
 
         return self.is_running()

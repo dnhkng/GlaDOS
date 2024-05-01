@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+onnxruntime = "*"
+numpy = "*"
+sounddevice = "*"
+levenshtein = "*"
+loguru = "*"
+jinja2 = "*"
+requests = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

@@ -1,3 +1,39 @@
+# This is a fork of GLaDOS porting it to MacOS
+
+espeak seems to crash on MacOS in this code:
+```python
+    self.lib_espeak.espeak_Synth(
+        text_bytes,
+        0,  # buflength (unused in AUDIO_OUTPUT_SYNCHRONOUS mode)
+        0,  # position
+        0,  # position_type
+        0,  # end_position (no end position)
+        synth_flags,
+        None,  # unique_speaker,
+        None,  # user_data,
+    )
+```
+I have just replace with say for now
+```python
+    subprocess.run(['say', text])
+```
+
+
+## Mac Installation
+- Download and build llama.cpp in local directory
+- Download and build whisper.cpp in local directory
+
+## Install espeak
+`brew install espeak`
+### Link dynamic libraries
+```shell
+cd /usr/local/lib/
+sudo ln -s /opt/homebrew/lib/libespeak.dylib
+sudo ln -s /opt/homebrew/lib/libespeak.1.dylib
+```
+
+# Below is the Original README.md
+
 # GLaDOS Personality Core
 
 This is a project dedicated to building a real-life version of GLaDOS.

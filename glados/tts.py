@@ -1,5 +1,7 @@
 import ctypes
+import os
 import re
+import subprocess
 from typing import List, Optional
 
 import numpy as np
@@ -12,7 +14,7 @@ RATE = 22050
 
 # Settings
 MODEL_PATH = "./models/glados.onnx"
-USE_CUDA = True
+USE_CUDA = False
 
 # Conversions
 PAD = "_"  # padding (0)
@@ -216,9 +218,11 @@ class Phonemizer:
     espeakVOICE = "en-us"
 
     def __init__(self):
-        self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+        # self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+        self.libc = ctypes.cdll.LoadLibrary("libc.dylib")
         self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
-        self.lib_espeak = self._load_library("libespeak-ng.so", "libespeak-ng.so.1")
+        #self.lib_espeak = self._load_library("libespeak-ng.so", "libespeak-ng.so.1")
+        self.lib_espeak = self._load_library("libespeak.dylib", "libespeak.1.dylib")
         self.set_voice_by_name(self.espeakVOICE.encode("utf-8"))
 
     def set_voice_by_name(self, name) -> int:
@@ -431,14 +435,15 @@ class TTSEngine:
         self.synthesizer = Synthesizer(model_path, use_cuda)
 
     def generate_speech_audio(self, text: str) -> bytes:
-        phonemes = self.phonemizer.synthesize_phonemes(text)
-        audio = []
-        for sentence in phonemes:
-            audio_chunk = self.synthesizer.say_phonemes(sentence)
-            audio.append(audio_chunk)
-        if audio:
-            audio = np.concatenate(audio, axis=1).T
-        return audio
+        subprocess.run(['say', text])
+        # phonemes = self.phonemizer.synthesize_phonemes(text)
+        # audio = []
+        # for sentence in phonemes:
+        #     audio_chunk = self.synthesizer.say_phonemes(sentence)
+        #     audio.append(audio_chunk)
+        # if audio:
+        #     audio = np.concatenate(audio, axis=1).T
+        # return audio
 
 
 if __name__ == "__main__":
