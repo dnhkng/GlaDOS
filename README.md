@@ -26,6 +26,8 @@ I have just replaced with say for now
 `brew install espeak`
 ### Link dynamic libraries
 ```shell
+cd whisper.cpp
+sudo cp libwhisper.dylib /usr/local/lib/
 cd /usr/local/lib/
 sudo ln -s /opt/homebrew/lib/libespeak.dylib
 sudo ln -s /opt/homebrew/lib/libespeak.1.dylib
