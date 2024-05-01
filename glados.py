@@ -161,6 +161,8 @@ class Glados:
 
     def _setup_llama_model(self):
         model_path = Path.cwd() / "models" / LLM_MODEL
+        assert model_path.exists(), f"No LLM_MODEL found at {LLM_MODEL!r}"
+
         self.llama = llama.LlamaServer(
             llama_server_path=LLAMA_SERVER_PATH, model=model_path
         )
