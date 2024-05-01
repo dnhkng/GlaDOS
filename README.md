@@ -13,11 +13,10 @@ espeak seems to crash on MacOS in this code:
         None,  # user_data,
     )
 ```
-I have just replace with say for now
+I have just replaced with say for now
 ```python
     subprocess.run(['say', text])
 ```
-
 
 ## Mac Installation
 - Download and build llama.cpp in local directory
