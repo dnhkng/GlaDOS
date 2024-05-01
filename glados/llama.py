@@ -61,6 +61,7 @@ class LlamaServer:
         return False
 
     def stop(self):
-        self.process.terminate()
-        self.process.wait()
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
         self.process = None
