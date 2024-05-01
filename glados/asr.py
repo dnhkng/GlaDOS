@@ -58,7 +58,8 @@ class ASR:
         """
         Free the C++ object when this Python object is garbage collected.
         """
-        whisper_cpp_wrapper.whisper_free(self.ctx)
+        if self.ctx:
+            whisper_cpp_wrapper.whisper_free(self.ctx)
 
     def _whisper_cpp_params(
         self,
