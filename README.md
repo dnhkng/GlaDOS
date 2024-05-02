@@ -17,7 +17,7 @@ This will entail:
   
 
 
-## Sofware Architecture
+## Software Architecture
 The initial goals are to develop a low-latency platform, where GLaDOS can respond to voice interactions within 600ms.
 
 To do this, the system constantly records data to a circular buffer, waiting for [voice to be detected](https://github.com/snakers4/silero-vad). When it's determined that the voice has stopped (including detection of normal pauses), it will be [transcribed quickly](https://github.com/huggingface/distil-whisper). This is then passed to streaming [local Large Language Model](https://github.com/ggerganov/llama.cpp), where the streamed text is broken by sentence, and passed to a [text-to-speech system](https://github.com/rhasspy/piper). This means further sentences can be generated while the current is playing, reducing latency substantially.
