@@ -50,3 +50,8 @@ below.  This has only been tested on Linux, but I think it will work on Windows 
 
 ## Testing
 You can test the systems by exploring the 'demo.ipynb'.
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=dnhkng/GlaDOS&type=Date)](https://star-history.com/#dnhkng/GlaDOS&Date)
