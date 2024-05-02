@@ -41,6 +41,8 @@ PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
 WAKE_WORD = None  # You can use a word here, like "computer", for activation
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
+NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
+
 START_ANNOUNCEMENT = "All neural network modules are now loaded. No network access detected. How very annoying. System Operational."
 
 messages = [
