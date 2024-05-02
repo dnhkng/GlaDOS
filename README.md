@@ -2,6 +2,10 @@
 
 This is a project dedicated to building a real-life version of GLaDOS.
 
+[<img src="https://i.ytimg.com/vi/KbUfWpykBGg/maxresdefault.jpg" width="50%">](https://www.youtube.com/watch?v=KbUfWpykBGg "localGLaDOS")
+
+
+
 *This is a hardware and software project that will create an aware, interactive, and embodied GLaDOS.*
 
 This will entail:
