@@ -5,3 +5,4 @@ levenshtein
 loguru
 jinja2
 requests
+pyyaml
