@@ -5,17 +5,21 @@ SAMPLE_RATE = 16000
 
 
 class VAD:
-    def __init__(self, model_path, window_size_samples=SAMPLE_RATE / 10):
+    _initial_h = np.zeros((2, 1, 64)).astype("float32")
+    _initial_c = np.zeros((2, 1, 64)).astype("float32")
+
+    def __init__(self, model_path, window_size_samples: int = int(SAMPLE_RATE / 10)):
         self.ort_sess = ort.InferenceSession(model_path)
         self.window_size_samples = window_size_samples
         self.sr = SAMPLE_RATE
-        self.reset()
+        self._h = self._initial_h
+        self._c = self._initial_c
 
     def reset(self):
-        self._h = np.zeros((2, 1, 64)).astype("float32")
-        self._c = np.zeros((2, 1, 64)).astype("float32")
+        self._h = self._initial_h
+        self._c = self._initial_c
 
-    def process_chunk(self, chunk):
+    def process_chunk(self, chunk: np.ndarray) -> np.ndarray:
         ort_inputs = {
             "input": np.expand_dims(chunk, 0),
             "h": self._h,
@@ -25,7 +29,7 @@ class VAD:
         out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
         return np.squeeze(out)
 
-    def process_file(self, audio):
+    def process_file(self, audio: np.ndarray):
         self.reset()
         results = []
         for i in range(0, len(audio), self.window_size_samples):
