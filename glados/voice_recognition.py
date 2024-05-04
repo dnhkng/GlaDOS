@@ -8,6 +8,7 @@ from loguru import logger
 
 from . import asr, vad
 
+# TODO: os-independent paths
 ASR_MODEL_PATH = "./models/ggml-medium-32-2.en.bin"
 VAD_MODEL_PATH = "./models/silero_vad.onnx"
 SAMPLE_RATE = 16000  # Sample rate for input stream

@@ -88,6 +88,7 @@ class ASR:
 
 
 if __name__ == "__main__":
+    # TODO: turn into test, add scipy to test requirements
     from scipy.io import wavfile
 
     samplerate, audio = wavfile.read("../samples/rec.wav")
