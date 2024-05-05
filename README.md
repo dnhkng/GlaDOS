@@ -32,7 +32,7 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 ## Installation Instruction
 If you want to install the TTS Engine on your machine, please follow the steps
 below. MacOS instructions are further down. This has only been tested on Linux, but I think it will work on Windows with small tweaks.
-If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
+If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
 
 1. Install the [`espeak`](https://github.com/espeak-ng/espeak-ng) synthesizer
    according to the [installation
