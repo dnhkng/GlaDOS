@@ -104,7 +104,6 @@ class Glados:
 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
-        )
 
         # Initialize sample queues and state flags
         self._samples: List[np.ndarray] = []
