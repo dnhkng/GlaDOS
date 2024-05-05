@@ -32,6 +32,7 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 ## Installation Instruction
 If you want to install the TTS Engine on your machine, please follow the steps
 below.  This has only been tested on Linux, but I think it will work on Windows with small tweaks.
+If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
 
 1. Install the [`espeak`](https://github.com/espeak-ng/espeak-ng) synthesizer
    according to the [installation
@@ -39,14 +40,32 @@ below.  This has only been tested on Linux, but I think it will work on Windows 
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
    requirements.txt`
-3. For the LLM, install [Llama.cpp](https://github.com/ggerganov/llama.cpp), and compile it for your CPU or GPU. Edit the LLAMA_SERVER_PATH parameter in glados.py to match your installation path.
-4. For voice recognition, install [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), and after compiling, run ```make libwhisper.so``` and then move the "libwhisper.so" file to the "glados" folder or add it to your path.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524).
+3. For the LLM, you have two option:
+   1. compile llama.cpp:
+      1. use: `git submodule update --init --recursive` to pull the llama.cpp repo
+      2. move the the right subdirectory: `cd submodules/llama.cpp`
+      3. compile llama.cpp: `make server LLAMA_CUDA=1`
+   2. install an inference backend yourself, such as Ollama or Llamafile:
+      1. Find and install a backend with an OpenAI compatible API (most of them)
+      2. then edit the glados_config.yaml
+      3. update `completion_url` to the URL of your local server
+      4. remove the LlamaServer configurations (make them null)
+
+4. For voice recognition, install I have precompiled [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), using ```make libwhisper.so``` and supplied the "libwhisper.so" file in the "glados" folder.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524). This is a temporarily solution until we have build scripts for each platform.
 5.  Download the models:
     1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
     2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
     3.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
    
     and put them in the "models" directory.
+
+## Running GLaDOS
+
+To start GLaDOS, use:
+`python glados.py`
+
+You can stop with "Ctrl-c".
+
 
 ## Testing
 You can test the systems by exploring the 'demo.ipynb'.
