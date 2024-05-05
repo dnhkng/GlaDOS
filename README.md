@@ -70,7 +70,6 @@ Generally you can follow the steps above, with minor differences:
    xcrun -sdk macosx metal    -O3 -c ggml-metal.metal -o ggml-metal.air
    xcrun -sdk macosx metallib        ggml-metal.air   -o default.metallib
    ```
-- in `glados/tts.py` set `USE_CUDA` to `False`
 
 ## Running GLaDOS
 

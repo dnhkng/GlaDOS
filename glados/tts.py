@@ -13,7 +13,7 @@ RATE = 22050
 
 # Settings
 MODEL_PATH = "./models/glados.onnx"
-USE_CUDA = False
+USE_CUDA = False if platform.system() == "Darwin" else True
 
 # Conversions
 PAD = "_"  # padding (0)
