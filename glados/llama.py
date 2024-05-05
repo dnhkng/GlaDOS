@@ -77,8 +77,8 @@ class LlamaServer:
         return f"http://localhost:{self.port}"
 
     @property
-    def completions_url(self):
-        return f"{self.base_url}/completions"
+    def completion_url(self):
+        return f"{self.base_url}/completion"
 
     @property
     def health_check_url(self):

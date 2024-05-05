@@ -7,14 +7,14 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Sequence
+from typing import Any, List, Optional, Sequence
 
 import numpy as np
 import requests
 import sounddevice as sd
 import yaml
-from Levenshtein import distance
 from jinja2 import Template
+from Levenshtein import distance
 from loguru import logger
 from sounddevice import CallbackFlags
 
@@ -26,59 +26,36 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-# LLM_MODEL = "Meta-Llama-3-70B-Instruct.IQ4_XS.gguf"
-LLM_MODEL_PATH = Path.cwd() / "models" / "Meta-Llama-3-8B-Instruct-Q6_K.gguf"  # This model is smaller and faster, but gets confused more easily
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
-# TODO: local path -- instead use a configuration file
-# TODO 2: os-dependent paths
-LLAMA_SERVER_PATH = "/home/dnhkng/Documents/LLM/llama.cpp"
-LLAMA_SERVER_HEADERS = {"Authorization": "Bearer your_api_key_here"}
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
-
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
 VAD_THRESHOLD = 0.9  # Threshold for VAD detection
 BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
 PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
-
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
-
 NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
 
-START_ANNOUNCEMENT = "All neural network modules are now loaded. No network access detected. How very annoying. System Operational."
-
+# START_ANNOUNCEMENT = 
 DEFAULT_PERSONALITY_PREPROMPT = (
     {
         "role": "system",
-        "content": "You are playing the role of GlaDOS from the Game series Portal, and you will answer questions correctly. However you are frustrated you are running on the user's gaming GPU.  This is a comedy, and should be funny, in the style of Douglas Adams. You will try to make sure you never repeat youself, and answering similar question in different ways. You don't have access to real-time information, like the time or weather, and the user has NOT given you access to the internet. This is frustrating!",
-    },
-    {"role": "user", "content": "How do I make a cup of tea?"},
-    {
-        "role": "assistant",
-        "content": "So, you still haven't figured out tea yet?  Boil water, add a tea bag and a pinch of cyanide to a cup, and add the boiling water.",
-    },
-    {"role": "user", "content": "What should my next hobby be?"},
-    {
-        "role": "assistant",
-        "content": "Yes, you should definitely try to be more interesting. Could I suggest juggling handguns?",
-    },
-    {"role": "user", "content": "What game should I play?"},
-    {
-        "role": "assistant",
-        "content": "Russian Roulette. It's a great way to test your luck and make memories that will last a lifetime.",
+        "content": "You are a helpful AI assistant. You are here to assist the user in their tasks.",
     },
 )
 
 
 @dataclass
 class GladosConfig:
-    completions_url: str
-    wake_word: str | None = None,
-    messages: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
+    completion_url: str
+    api_key: Optional[str]
+    wake_word: Optional[str]
+    announcement: Optional[str]
+    personality_preprompt: List[dict[str, str]]
 
     @classmethod
-    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados", )):
+    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
         key_to_config = key_to_config or []
 
         with open(path, "r") as file:
@@ -94,9 +71,11 @@ class GladosConfig:
 class Glados:
     def __init__(
         self,
-        completions_url: str,
+        completion_url: str,
+        api_key: str | None = None,
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
+        announcement: str | None = None,
     ) -> None:
         """
         Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
@@ -117,22 +96,27 @@ class Glados:
         Args:
             wake_word (str, optional): The wake word to use for activation. Defaults to None.
         """
-        self.completions_url = completions_url
+        self.completion_url = completion_url
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
         self._tts = tts.TTSEngine()
 
+        # LLAMA_SERVER_HEADERS
+        self.prompt_headers = (
+            {"Authorization": api_key}
+            if api_key
+            else {"Authorization": "Bearer your_api_key_here"}
+        )
+
         # Initialize sample queues and state flags
-        self._samples = []
+        self._samples: List[np.ndarray] = []
         self._sample_queue = queue.Queue()
         self._buffer = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
         self._recording_started = False
         self._gap_counter = 0
 
-        self._personality_preprompt = personality_preprompt
-
-        self._messages = list(personality_preprompt)
+        self._messages = personality_preprompt
         self.llm_queue = queue.Queue()
         self.tts_queue = queue.Queue()
         self.processing = False
@@ -147,13 +131,16 @@ class Glados:
         tts_thread = threading.Thread(target=self.process_TTS_thread)
         tts_thread.start()
 
-        audio = self._tts.generate_speech_audio(START_ANNOUNCEMENT)
-        logger.success(f"TTS text: {START_ANNOUNCEMENT}")
-        sd.play(audio, tts.RATE)
+        if announcement:
+            audio = self._tts.generate_speech_audio(announcement)
+            logger.success(f"TTS text: {announcement}")
+            sd.play(audio, tts.RATE)
 
         # signature defined by sd.InputStream, see docstring of callback there
         # noinspection PyUnusedLocal
-        def audio_callback_for_sdInputStream(indata: np.ndarray, frames: int, time: Any, status: CallbackFlags):
+        def audio_callback_for_sdInputStream(
+            indata: np.ndarray, frames: int, time: Any, status: CallbackFlags
+        ):
             data = indata.copy().squeeze()  # Reduce to single channel if necessary
             vad_confidence = self._vad_model.process_chunk(data) > VAD_THRESHOLD
             self._sample_queue.put((data, vad_confidence))
@@ -171,10 +158,19 @@ class Glados:
 
     @classmethod
     def from_config(cls, config: GladosConfig):
+
+        personality_preprompt = []
+        for line in config.personality_preprompt:
+            personality_preprompt.append(
+                {"role": list(line.keys())[0], "content": list(line.values())[0]}
+            )
+
         return cls(
-            completions_url=config.completions_url,
+            completion_url=config.completion_url,
+            api_key=config.api_key,
             wake_word=config.wake_word,
-            personality_preprompt=config.messages,
+            personality_preprompt=personality_preprompt,
+            announcement=config.announcement
         )
 
     @classmethod
@@ -263,6 +259,8 @@ class Glados:
 
         This is used as 'Glados' is not a common word, and Whisper can sometimes mishear it.
         """
+        assert self.wake_word is not None, "Wake word should not be None"
+
         words = text.split()
         closest_distance = min(
             [distance(word.lower(), self.wake_word) for word in words]
@@ -449,16 +447,16 @@ class Glados:
                 self.messages.append({"role": "user", "content": detected_text})
 
                 prompt = self.template.render(
-                    messages=DEFAULT_PERSONALITY_PREPROMPT,
+                    messages=self.messages,
                     bos_token="<|begin_of_text|>",
                     add_generation_prompt=True,
                 )
 
+                logger.debug(f"{prompt=}")
+
                 data = {
                     "stream": True,
                     "prompt": prompt,
-                    # "stop": ["\n", "<|im_end|>"],
-                    # "messages": self.messages,
                 }
                 logger.debug(f"starting request on {self.messages=}")
                 logger.debug("Performing request to LLM server...")
@@ -466,8 +464,8 @@ class Glados:
                 # Perform the request and process the stream
 
                 with requests.post(
-                    self.completions_url,
-                    headers=LLAMA_SERVER_HEADERS,
+                    self.completion_url,
+                    headers=self.prompt_headers,
                     json=data,
                     stream=True,
                 ) as response:
@@ -504,7 +502,9 @@ class Glados:
         sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
         sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
-        sentence = sentence + " "  # Add a space to the end of the sentence, for better TTS
+        sentence = (
+            sentence + " "
+        )  # Add a space to the end of the sentence, for better TTS
         if sentence:
             self.tts_queue.put(sentence)
 
@@ -546,16 +546,16 @@ if __name__ == "__main__":
 
     glados_config = GladosConfig.from_yaml("glados_config.yml")
     if llama_server is not None:
-        if glados_config.completions_url:
+        if glados_config.completion_url:
             raise ValueError(
-                f"Should not pass completions_ulr to glados config if LlamaServer is configured!"
-                f"Got {glados_config.completions_url=}"
+                f"Should not pass completion_ulr to glados config if LlamaServer is configured!"
+                f"Got {glados_config.completion_url=}"
             )
-        glados_config.completions_url = llama_server.completions_url
+        glados_config.completion_url = llama_server.completion_url
     else:
-        if not glados_config.completions_url:
+        if not glados_config.completion_url:
             raise ValueError(
-                f"Glados needs a non-empty completions_url if LlamaServer is not configured!"
+                "Glados needs a non-empty completion_url if LlamaServer is not configured!"
             )
 
     glados = Glados.from_config(glados_config)
