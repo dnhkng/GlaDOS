@@ -7,7 +7,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence, Tuple
 
 import numpy as np
 import requests
@@ -35,9 +35,8 @@ VAD_THRESHOLD = 0.9  # Threshold for VAD detection
 BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
 PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
-NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
 
-# START_ANNOUNCEMENT = 
+NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
 DEFAULT_PERSONALITY_PREPROMPT = (
     {
         "role": "system",
@@ -69,6 +68,7 @@ class GladosConfig:
 
 
 class Glados:
+
     def __init__(
         self,
         completion_url: str,
@@ -111,14 +111,16 @@ class Glados:
 
         # Initialize sample queues and state flags
         self._samples: List[np.ndarray] = []
-        self._sample_queue = queue.Queue()
-        self._buffer = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
+        self._sample_queue: queue.Queue[Tuple[np.ndarray, np.ndarray]] = queue.Queue()
+        self._buffer: queue.Queue[np.ndarray] = queue.Queue(
+            maxsize=BUFFER_SIZE // VAD_SIZE
+        )
         self._recording_started = False
         self._gap_counter = 0
 
         self._messages = personality_preprompt
-        self.llm_queue = queue.Queue()
-        self.tts_queue = queue.Queue()
+        self.llm_queue: queue.Queue[str] = queue.Queue()
+        self.tts_queue: queue.Queue[str] = queue.Queue()
         self.processing = False
 
         self.shutdown_event = threading.Event()
@@ -153,7 +155,7 @@ class Glados:
         )
 
     @property
-    def messages(self) -> list[dict[str, str]]:
+    def messages(self) -> Sequence[dict[str, str]]:
         return self._messages
 
     @classmethod
@@ -170,7 +172,7 @@ class Glados:
             api_key=config.api_key,
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
-            announcement=config.announcement
+            announcement=config.announcement,
         )
 
     @classmethod
@@ -193,7 +195,7 @@ class Glados:
             self.shutdown_event.set()
             self.input_stream.stop()
 
-    def _handle_audio_sample(self, sample, vad_confidence):
+    def _handle_audio_sample(self, sample: np.ndarray, vad_confidence: bool):
         """
         Handles the processing of each audio sample.
 
@@ -211,7 +213,7 @@ class Glados:
         else:
             self._process_activated_audio(sample, vad_confidence)
 
-    def _manage_pre_activation_buffer(self, sample, vad_confidence):
+    def _manage_pre_activation_buffer(self, sample: np.ndarray, vad_confidence: bool):
         """
         Manages the circular buffer of audio samples before activation (i.e., before the voice is detected).
 
@@ -376,13 +378,13 @@ class Glados:
                     self.messages.append(
                         {"role": "assistant", "content": " ".join(assistant_text)}
                     )
-                    # if interrupted:
-                    #     self.messages.append(
-                    #         {
-                    #             "role": "system",
-                    #             "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
-                    #         }
-                    #     )
+                    if interrupted:
+                        self.messages.append(
+                            {
+                                "role": "system",
+                                "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
+                            }
+                        )
                     assistant_text = []
                     finished = False
                     interrupted = False
@@ -390,7 +392,9 @@ class Glados:
             except queue.Empty:
                 pass
 
-    def clip_interrupted_sentence(self, generated_text, percentage_played):
+    def clip_interrupted_sentence(
+        self, generated_text: str, percentage_played: float
+    ) -> str:
         """
         Clips the generated text if the TTS was interrupted.
 
@@ -413,10 +417,10 @@ class Glados:
             text = text + "<INTERRUPTED>"
         return text
 
-    def percentage_played(self, total_samples):
+    def percentage_played(self, total_samples: int) -> Tuple[bool, int]:
         interrupted = False
         start_time = time.time()
-        played_samples = 0
+        played_samples = 0.0
 
         while sd.get_stream().active:
             time.sleep(PAUSE_TIME)  # Should the TTS stream should still be active?
@@ -489,7 +493,7 @@ class Glados:
             except queue.Empty:
                 time.sleep(PAUSE_TIME)
 
-    def _process_sentence(self, current_sentence):
+    def _process_sentence(self, current_sentence: List[str]):
         """
         Join text, remove inflections and actions, and send to the TTS queue.
 
