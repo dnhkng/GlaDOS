@@ -40,10 +40,10 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
    requirements.txt`
-3. For the LLM, you have two option:
+3. For the LLM, you have two options:
    1. compile llama.cpp:
       1. use: `git submodule update --init --recursive` to pull the llama.cpp repo
-      2. move the the right subdirectory: `cd submodules/llama.cpp`
+      2. move to the right subdirectory: `cd submodules/llama.cpp`
       3. compile llama.cpp: `make server LLAMA_CUDA=1`
    2. install an inference backend yourself, such as Ollama or Llamafile:
       1. Find and install a backend with an OpenAI compatible API (most of them)
@@ -51,7 +51,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       3. update `completion_url` to the URL of your local server
       4. remove the LlamaServer configurations (make them null)
 
-4. For voice recognition, install I have precompiled [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), using ```make libwhisper.so``` and supplied the "libwhisper.so" file in the "glados" folder.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524). This is a temporarily solution until we have build scripts for each platform.
+4. For voice recognition, install I have precompiled [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), using ```make libwhisper.so``` and supplied the "libwhisper.so" file in the "glados" folder.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524). This is a temporary solution until we have build scripts for each platform.
 5.  Download the models:
     1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
     2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
