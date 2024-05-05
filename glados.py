@@ -283,7 +283,7 @@ class Glados:
             logger.success(f"ASR text: '{detected_text}'")
 
             if self.wake_word and not self._wakeword_detected(detected_text):
-                logger.info("Required wake word not detected.")
+                logger.info(f"Required wake word {self.wake_word=} not detected.")
             else:
                 self.llm_queue.put(detected_text)
                 self.processing = True
