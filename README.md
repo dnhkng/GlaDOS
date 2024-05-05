@@ -63,7 +63,7 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 Generally you can follow the steps above, with minor differences:
 
-- Step 3.1.3: Compile llama.cpp with `make server LLAMA_METAL_EMBED_LIBRARY=ON`
+- Step 3.1.3: Compile llama.cpp with `make server LLAMA_METAL_EMBED_LIBRARY=ON
 - Step 4: Compile whisper.cpp with
    ```
    make libwhisper.so WHISPER_METAL_EMBED_LIBRARY=ON`
