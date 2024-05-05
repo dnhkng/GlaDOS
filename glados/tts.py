@@ -1,4 +1,5 @@
 import ctypes
+import platform
 import re
 from typing import List, Optional
 
@@ -12,7 +13,7 @@ RATE = 22050
 
 # Settings
 MODEL_PATH = "./models/glados.onnx"
-USE_CUDA = True
+USE_CUDA = False
 
 # Conversions
 PAD = "_"  # padding (0)
@@ -216,9 +217,14 @@ class Phonemizer:
     espeakVOICE = "en-us"
 
     def __init__(self):
-        self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
+        self.libc = ctypes.cdll.LoadLibrary("libc.{}".format("dylib" if platform.system() == "Darwin" else "so.6"))
+
+        if platform.system() == "Darwin":
+            self.lib_espeak = ctypes.cdll.LoadLibrary("libespeak-ng.dylib")
+        else:
+            self.lib_espeak = self._load_library("libespeak-ng.so", "libespeak-ng.so.1")
+
         self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
-        self.lib_espeak = self._load_library("libespeak-ng.so", "libespeak-ng.so.1")
         self.set_voice_by_name(self.espeakVOICE.encode("utf-8"))
 
     def set_voice_by_name(self, name) -> int:

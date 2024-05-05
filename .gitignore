@@ -162,3 +162,6 @@ cython_debug/
 # The large model files
 *.bin
 *.gguf
+
+# The user generated config file
+glados_config.yml

@@ -31,7 +31,7 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 
 ## Installation Instruction
 If you want to install the TTS Engine on your machine, please follow the steps
-below.  This has only been tested on Linux, but I think it will work on Windows with small tweaks.
+below. MacOS instructions are further down. This has only been tested on Linux, but I think it will work on Windows with small tweaks.
 If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
 
 1. Install the [`espeak`](https://github.com/espeak-ng/espeak-ng) synthesizer
@@ -47,7 +47,7 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       3. compile llama.cpp: `make server LLAMA_CUDA=1`
    2. install an inference backend yourself, such as Ollama or Llamafile:
       1. Find and install a backend with an OpenAI compatible API (most of them)
-      2. then edit the glados_config.yaml
+      2. then duplicate the `glados_config.yaml.example`, rename it to `glados_config.yaml` and edit it.
       3. update `completion_url` to the URL of your local server
       4. remove the LlamaServer configurations (make them null)
 
@@ -58,6 +58,19 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
     3.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
    
     and put them in the "models" directory.
+
+### MacOS Installation Instruction
+
+Generally you can follow the steps above, with minor differences:
+
+- Step 3.1.3: Compile llama.cpp with `make server LLAMA_METAL_EMBED_LIBRARY=ON`
+- Step 4: Compile whisper.cpp with
+   ```
+   make libwhisper.so WHISPER_METAL_EMBED_LIBRARY=ON`
+   xcrun -sdk macosx metal    -O3 -c ggml-metal.metal -o ggml-metal.air
+   xcrun -sdk macosx metallib        ggml-metal.air   -o default.metallib
+   ```
+- in `glados/tts.py` set `USE_CUDA` to `False`
 
 ## Running GLaDOS
 
