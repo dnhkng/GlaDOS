@@ -61,11 +61,11 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 ### MacOS Installation Instruction
 
-Generally you can follow the steps above, with minor differences:
+Generally, you can follow the steps above, with minor differences:
 
 - Step 3.1.3: Compile llama.cpp with `make server LLAMA_METAL_EMBED_LIBRARY=ON
 - Step 4: Compile whisper.cpp with
-   ```
+   ```bash
    make libwhisper.so WHISPER_METAL_EMBED_LIBRARY=ON`
    xcrun -sdk macosx metal    -O3 -c ggml-metal.metal -o ggml-metal.air
    xcrun -sdk macosx metallib        ggml-metal.air   -o default.metallib
