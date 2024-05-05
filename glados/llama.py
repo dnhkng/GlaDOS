@@ -1,13 +1,12 @@
 import logging
-import os
 import subprocess
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Self, Sequence
 
-import yaml
-
 import requests
+import yaml
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +23,9 @@ class LlamaServerConfig:
     use_gpu: bool = True
 
     @classmethod
-    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("LlamaServer",)) -> Self | None:
+    def from_yaml(
+        cls, path: str, key_to_config: Sequence[str] | None = ("LlamaServer",)
+    ) -> Self | None:
         key_to_config = key_to_config or []
 
         with open(path, "r") as file:
@@ -37,28 +38,36 @@ class LlamaServerConfig:
             return None
         return cls(**config)
 
+
 # TODO: extract abstract LLMServer class
 class LlamaServer:
-    def __init__(self, llama_cpp_repo_path: str, model_path: str, port=8080, use_gpu: bool = True):
+    def __init__(
+        self,
+        llama_cpp_repo_path: Path,
+        model_path: Path,
+        port=8080,
+        use_gpu: bool = True,
+    ):
         self.llama_cpp_repo_path = llama_cpp_repo_path
         self.model_path = model_path
+
         self.port = port
         self.process: subprocess.Popen | None = None
         self.use_gpu = use_gpu
 
-        # Define the fixed command and arguments
-        self.command = ["./server", "-m", "chat-template", "llama3"] + [
-            os.path.join(self.llama_cpp_repo_path, "server"), "-m"] + [self.model_path]
+        self.command = [self.llama_cpp_repo_path, "-m"] + [self.model_path]
         if self.use_gpu:
             self.command += ["-ngl", "1000"]
 
-        # Specify the directory where the server executable is located if it's not the current directory
-
     @classmethod
     def from_config(cls, config: LlamaServerConfig):
+        llama_cpp_repo_path = Path(config.llama_cpp_repo_path) / "server"
+        llama_cpp_repo_path = llama_cpp_repo_path.resolve()
+        model_path = Path(config.model_path).resolve()
+
         return cls(
-            llama_cpp_repo_path=config.llama_cpp_repo_path,
-            model_path=config.model_path,
+            llama_cpp_repo_path=llama_cpp_repo_path,
+            model_path=model_path,
             port=config.port,
             use_gpu=config.use_gpu,
         )
@@ -76,21 +85,22 @@ class LlamaServer:
         return f"{self.base_url}/health"
 
     def start(self):
-        log.info(f"Starting the server by executing command {' '.join(self.command)}")
+        log.info(f"Starting the server by executing command {self.command=}")
         self.process = subprocess.Popen(
             self.command,
-            cwd=self.llama_cpp_repo_path,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
 
         if not self.is_running():
             self.stop()
-            raise ServerStartupError(f"Failed to startup! Check the error log messages")
+            raise ServerStartupError("Failed to startup! Check the error log messages")
 
     def is_running(
-        self, max_connection_attempts: int = 10, sleep_time_between_attempts: float = 0.01,
-        max_wait_time_for_model_loading: float = 60.
+        self,
+        max_connection_attempts: int = 10,
+        sleep_time_between_attempts: float = 0.01,
+        max_wait_time_for_model_loading: float = 60.0,
     ) -> bool:
         if self.process is None:
             return False
@@ -121,7 +131,9 @@ class LlamaServer:
                 if response.status_code == 200:
                     log.debug(f"Server started successfully, {response=}")
                     return True
-                log.error(f"Server is not responding properly, maybe model failed to load: {response=}")
+                log.error(
+                    f"Server is not responding properly, maybe model failed to load: {response=}"
+                )
                 return False
 
             except requests.exceptions.ConnectionError:
@@ -130,7 +142,9 @@ class LlamaServer:
                 )
                 cur_attempt += 1
                 if cur_attempt > max_connection_attempts:
-                    log.error(f"Couldn't establish connection after {max_connection_attempts=}")
+                    log.error(
+                        f"Couldn't establish connection after {max_connection_attempts=}"
+                    )
                     return False
             time.sleep(sleep_time_between_attempts)
 
