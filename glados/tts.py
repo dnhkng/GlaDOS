@@ -389,7 +389,6 @@ class Synthesizer:
     def _synthesize_ids_to_raw(
         self,
         phoneme_ids: List[int],
-        speaker_id: Optional[int] = None,
         length_scale: Optional[float] = 1.0,
         noise_scale: Optional[float] = 0.667,
         noise_w: Optional[float] = 0.8,  # 0.8
