@@ -26,6 +26,7 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
+VOICE_MODEL = "glados.onnx"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 PAUSE_TIME = 0.05  # Time to wait between processing loops
@@ -100,7 +101,7 @@ class Glados:
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
-        self._tts = tts.TTSEngine()
+        self._tts = tts.Synthesizer(model_path=str(Path.cwd() / "models" / VOICE_MODEL), use_cuda=False)
 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
@@ -368,13 +369,13 @@ class Glados:
                     self.messages.append(
                         {"role": "assistant", "content": " ".join(assistant_text)}
                     )
-                    if interrupted:
-                        self.messages.append(
-                            {
-                                "role": "system",
-                                "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
-                            }
-                        )
+                    # if interrupted:
+                    #     self.messages.append(
+                    #         {
+                    #             "role": "system",
+                    #             "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
+                    #         }
+                    #     )
                     assistant_text = []
                     finished = False
                     interrupted = False
@@ -473,7 +474,7 @@ class Glados:
                             if next_token:
                                 sentence.append(next_token)
                                 # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [".", "!", "?", ":", ";", "?!"]:
+                                if next_token in [".", "!", "?", ":", ";", "?!", '\n', '\n\n']:
                                     self._process_sentence(sentence)
                                     sentence = []
                     if self.processing:
@@ -493,12 +494,8 @@ class Glados:
         to the TTS queue.
         """
         sentence = "".join(current_sentence)
-        sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
-        sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
-        sentence = (
-            sentence + " "
-        )  # Add a space to the end of the sentence, for better TTS
+        sentence = sentence.replace("\n\n", ". ").replace("\n", ". ").replace("  ", " ").replace(":", " ")
         if sentence:
             self.tts_queue.put(sentence)
 
