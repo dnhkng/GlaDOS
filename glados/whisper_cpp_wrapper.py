@@ -855,7 +855,7 @@ del loaderclass
 
 # End loader
 
-add_library_search_dirs([])
+add_library_search_dirs(['./submodules/whisper.cpp/'])  # add the path to the whisper.cpp submodule
 
 # Begin libraries
 _libs["whisper"] = load_library("whisper")
