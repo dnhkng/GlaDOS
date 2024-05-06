@@ -40,24 +40,36 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
    requirements.txt`
-3. For the LLM, you have two option:
-   1. compile llama.cpp:
-      1. use: `git submodule update --init --recursive` to pull the llama.cpp repo
-      2. move the the right subdirectory: `cd submodules/llama.cpp`
-      3. compile llama.cpp: `make server LLAMA_CUDA=1`
-   2. install an inference backend yourself, such as Ollama or Llamafile:
-      1. Find and install a backend with an OpenAI compatible API (most of them)
-      2. then edit the glados_config.yaml
-      3. update `completion_url` to the URL of your local server
-      4. remove the LlamaServer configurations (make them null)
-
-4. For voice recognition, install I have precompiled [Whisper.cpp](https://github.com/ggerganov/whisper.cpp), using ```make libwhisper.so``` and supplied the "libwhisper.so" file in the "glados" folder.  For Windows, check out the discussion in my [whisper pull request](https://github.com/ggerganov/whisper.cpp/pull/1524). This is a temporarily solution until we have build scripts for each platform.
-5.  Download the models:
+3.  Download the models:
     1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
     2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
     3.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
-   
-    and put them in the "models" directory.
+    and put them in the ".models" directory.
+
+5. For voice recognition, we use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+   1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for windows), and copy the dll to the ./submodules/whisper.cpp directory
+   2. Or compile them yourself. 
+      1. To pull the code, from the GLaDOS directory use: `git submodule update --init --recursive`
+      2. Move the the right subdirectory: `cd submodules/llama.cpp`
+      3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
+         1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
+         2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make -j`
+6. For the LLM, you have two option:
+   1. Compile llama.cpp:
+      1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
+      2. Move the the right subdirectory: `cd submodules/llama.cpp`
+      3. Compile llama.cpp, [(see the Documentation)](https://github.com/ggerganov/whisper.cpp)
+         1. Linux with [CUDA](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#cuda) `make server LLAMA_CUDA=1`
+         2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make`
+   2. Use a commercial API or install an inference backend yourself, such as Ollama or Llamafile:
+      1. Find and install a backend with an OpenAI compatible API (most of them)
+      2. Edit the glados_config.yaml
+         1. update `completion_url` to the URL of your local server
+         2. for commercial APIs, add the `api_key`
+         3. remove the LlamaServer configurations (make them null)
+
+
+
 
 ## Running GLaDOS
 
