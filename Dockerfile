@@ -1,7 +1,7 @@
 FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04 as base-w
 RUN mkdir /app
 COPY submodules/whisper.cpp /app/
-RUN cd /app && make libwhisper.so LLAMA_CUBLAS=1 CUDA_DOCKER_ARCH=all
+RUN cd /app && make libwhisper.so WHISPER_CUBLAS=1 CUDA_DOCKER_ARCH=all
 
 FROM nvidia/cuda:11.7.1-cudnn8-devel-ubuntu22.04 as base-l
 RUN mkdir /app
