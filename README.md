@@ -59,6 +59,15 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    
     and put them in the "models" directory.
 
+# Windows Run
+1. `git submodule update --init --recursive`
+2. put models in models dir or mount that dir into docker container
+3. `docker build -t glados .`
+4. `docker run -e "PULSE_SERVER=/mnt/wslg/PulseServer" -v "/mnt/wslg/:/mnt/wslg/" --gpus=all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 glados`
+
+It works in ubuntu terminal started with WSL2
+
+
 ## Running GLaDOS
 
 To start GLaDOS, use:

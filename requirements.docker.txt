@@ -1,0 +1,8 @@
+onnxruntime-gpu
+numpy
+sounddevice
+levenshtein
+loguru
+jinja2
+requests
+pyyaml
