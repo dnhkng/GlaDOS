@@ -149,9 +149,10 @@ class LlamaServer:
             time.sleep(sleep_time_between_attempts)
 
     def stop(self):
-        self.process.terminate()
-        self.process.wait()
-        self.process = None
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+            self.process = None
 
     def __del__(self):
         self.stop()
