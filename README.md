@@ -30,6 +30,24 @@ To do this, the system constantly records data to a circular buffer, waiting for
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
 
 ## Installation Instruction
+
+### *New Simplified  Windows Installation Process*
+Don't want to compile anything?  Try this process, but be aware its experimental!
+
+1. Download and install eSpeak-ng: https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi
+2. Download and unzip this repository somewhere
+3. Open a command prompt in Windows (type `cmd` in the search bar)
+4. in CMD, type `python`. If you dont see a python prompt, you will be redirected to install Python. Make sure you install version 3.12
+5. In the command prompt navigate to where you unzipped this project, and run the command `install_windows.bat`  This *should*:
+   1. Create a virtual environment and install the python requirements
+   2. download the whisper and llama binaries, and unzip them to the correct locations
+   3. download the whisper and llama-3 models
+6. Once this is all done, you can start GLaDOS with `python glados.py`
+
+If you have done all this before, just be sure to activate the virtual environment with `.\venv\Scripts\activate` before starting GLaDOS.
+
+## Regular installation
+
 If you want to install the TTS Engine on your machine, please follow the steps
 below.  This has only been tested on Linux, but I think it will work on Windows with small tweaks.
 If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
