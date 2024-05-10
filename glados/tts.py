@@ -1,5 +1,5 @@
-import ctypes
 import re
+import subprocess
 from typing import List, Optional
 
 import numpy as np
@@ -179,151 +179,6 @@ PHONEME_ID_MAP = {
 }
 
 
-class Phonemizer:
-    """
-    A class to handle phoneme conversion using the espeak-ng library.
-
-    Attributes:
-    -----------
-    lib_espeak: ctypes.CDLL
-        The loaded espeak-ng library.
-    libc: ctypes.CDLL
-        The C standard library, used for memory stream operations.
-
-    Methods:
-    --------
-    __init__(self):
-        Initializes the Phonemizer class, loading necessary libraries.
-
-    synthesize_phonemes(self, text):
-        Converts the given text to phonemes.
-
-    _load_library(lib_name, fallback_name=None):
-        Loads a shared library with an optional fallback.
-
-    _open_memstream(self):
-        Opens a memory stream for phoneme output.
-
-    _close_memstream(self, file):
-        Closes the opened memory stream.
-    """
-
-    # espeak-ng constants
-    espeakPHONEMES_IPA = 0x02
-    espeakCHARS_AUTO = 0
-    espeakPHONEMES = 0x100
-    espeakAUDIO_OUTPUT_SYNCHRONOUS = 0x02
-    espeakVOICE = "en-us"
-
-    def __init__(self):
-        self.libc = ctypes.cdll.LoadLibrary("libc.so.6")
-        self.libc.open_memstream.restype = ctypes.POINTER(ctypes.c_char)
-        self.lib_espeak = self._load_library("libespeak-ng.so", "libespeak-ng.so.1")
-        self.set_voice_by_name(self.espeakVOICE.encode("utf-8"))
-
-    def set_voice_by_name(self, name) -> int:
-        """Bindings to espeak_SetVoiceByName
-
-        Parameters
-        ----------
-        name (str) : the voice name to setup
-
-        Returns
-        -------
-        0 on success, non-zero integer on failure
-
-        """
-        f_set_voice_by_name = self.lib_espeak.espeak_SetVoiceByName
-        f_set_voice_by_name.argtypes = [ctypes.c_char_p]
-        return f_set_voice_by_name(name)
-
-    def _load_library(self, lib_name, fallback_name=None):
-        """Loads a shared library with an optional fallback."""
-        try:
-            return ctypes.cdll.LoadLibrary(lib_name)
-        except OSError:
-            if fallback_name:
-                print(f"Loading {fallback_name}")
-                return ctypes.cdll.LoadLibrary(fallback_name)
-            else:
-                raise
-
-    def _open_memstream(self):
-        """Opens a memory stream for phoneme output."""
-        buffer = ctypes.c_char_p()
-        size = ctypes.c_size_t()  # Initialize size
-        self.lib_espeak.espeak_Initialize(
-            self.espeakAUDIO_OUTPUT_SYNCHRONOUS, 0, None, 0
-        )
-
-        file = self.libc.open_memstream(ctypes.byref(buffer), ctypes.byref(size))
-        return file, buffer, size
-
-    def _close_memstream(self, file):
-        """Closes the opened memory stream."""
-        self.libc.fclose(file)
-
-    def synthesize_phonemes(self, text):
-        """
-        Converts the given text to phonemes.
-
-        Parameters:
-        -----------
-        text : str
-            The text to be converted into phonemes.
-
-        Returns:
-        --------
-        list of str
-            The phonemes generated from the text.
-        """
-        # phonemes_file, phonemes_buffer = self._open_memstream()
-        (
-            phonemes_file,
-            phonemes_buffer,
-            size,
-        ) = self._open_memstream()  # Capture the size
-
-        try:
-            phoneme_flags = self.espeakPHONEMES_IPA
-            synth_flags = self.espeakCHARS_AUTO | self.espeakPHONEMES
-
-            self.lib_espeak.espeak_SetPhonemeTrace(phoneme_flags, phonemes_file)
-            text_bytes = text.encode("utf-8")
-
-            self.lib_espeak.espeak_Synth(
-                text_bytes,
-                0,  # buflength (unused in AUDIO_OUTPUT_SYNCHRONOUS mode)
-                0,  # position
-                0,  # position_type
-                0,  # end_position (no end position)
-                synth_flags,
-                None,  # unique_speaker,
-                None,  # user_data,
-            )
-            self.libc.fflush(phonemes_file)
-            # phonemes = ctypes.string_at(phonemes_buffer)
-            phonemes_data_length = size.value  # Get the actual size of the phoneme data
-            phonemes = ctypes.string_at(
-                phonemes_buffer, phonemes_data_length
-            )  # Use size to read buffer
-            phonemes = phonemes.decode("utf-8")
-
-            # There was a weird bug described here:
-            # https://github.com/espeak-ng/espeak-ng/issues/694
-            # There was a workaround on the phonemizer github, but the sentences
-            # were merged and it sounded weird. This is a better workaround.
-            phonemes = phonemes.strip().replace("\n", ".").replace("  ", " ")
-            phonemes = re.sub(r"_+", "_", phonemes)
-            phonemes = re.sub(r"_ ", " ", phonemes)
-
-            return phonemes.splitlines()
-        except Exception as e:
-            print("Error in phonemization:", str(e))
-        finally:
-            self._close_memstream(phonemes_file)
-
-
 class Synthesizer:
     """Synthesizer, based on the VITS model.
 
@@ -343,6 +198,12 @@ class Synthesizer:
 
     _initialize_session(self, model_path, use_cuda):
         Initializes the VITS model.
+
+    generate_speech_audio(self, text):
+        Generates speech audio from the given text.
+
+    _phonemizer(self, input_text):
+        Converts text to phonemes using espeak-ng.
 
     _phonemes_to_ids(self, phonemes):
         Converts the given phonemes to ids.
@@ -370,6 +231,43 @@ class Synthesizer:
             sess_options=onnxruntime.SessionOptions(),
             providers=providers,
         )
+
+    def generate_speech_audio(self, text: str) -> np.ndarray:
+        phonemes = self._phonemizer(text)
+        audio = []
+        for sentence in phonemes:
+            audio_chunk = self._say_phonemes(sentence)
+            audio.append(audio_chunk)
+        if audio:
+            return np.concatenate(audio, axis=1).T
+        return np.array([])
+
+    def _phonemizer(self, input_text: str) -> List[str]:
+        """Converts text to phonemes using espeak-ng."""
+
+        try:
+            # Prepare the command to call espeak with the desired flags
+            command = [
+                "espeak-ng",  # 'C:\Program Files\eSpeak NG\espeak-ng.exe',
+                "--ipa=2",  # Output phonemes in IPA format
+                "-q",  # Quiet, no output except the phonemes
+                "--stdout",  # Output the phonemes to stdout
+                input_text,
+            ]
+
+            # Execute the command and capture the output
+            result = subprocess.run(
+                command, capture_output=True, text=True, check=True, encoding="utf-8"
+            )
+
+            phonemes = result.stdout.strip().replace("\n", ".").replace("  ", " ")
+            phonemes = re.sub(r"_+", "_", phonemes)
+            phonemes = re.sub(r"_ ", " ", phonemes)
+            return phonemes.splitlines()
+
+        except subprocess.CalledProcessError as e:
+            print("Error in phonemization:", str(e))
+            return []
 
     def _phonemes_to_ids(self, phonemes: str) -> List[int]:
         """Phonemes to ids."""
@@ -415,33 +313,10 @@ class Synthesizer:
 
         return audio
 
-    def say_phonemes(self, phonemes: str) -> bytes:
+    def _say_phonemes(self, phonemes: str) -> bytes:
         """Say phonemes."""
 
         phoneme_ids = self._phonemes_to_ids(phonemes)
         audio = self._synthesize_ids_to_raw(phoneme_ids)
 
         return audio
-
-
-class TTSEngine:
-    def __init__(self, model_path: str = MODEL_PATH, use_cuda: bool = USE_CUDA):
-        self.phonemizer = Phonemizer()
-        self.synthesizer = Synthesizer(model_path, use_cuda)
-
-    def generate_speech_audio(self, text: str) -> bytes:
-        phonemes = self.phonemizer.synthesize_phonemes(text)
-        audio = []
-        for sentence in phonemes:
-            audio_chunk = self.synthesizer.say_phonemes(sentence)
-            audio.append(audio_chunk)
-        if audio:
-            audio = np.concatenate(audio, axis=1).T
-        return audio
-
-
-if __name__ == "__main__":
-    tts = TTSEngine(MODEL_PATH, USE_CUDA)
-    audio = tts.generate_speech_audio("Hello world. How are you?")
-    sd.play(audio, RATE)
-    sd.wait()
