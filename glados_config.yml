@@ -13,5 +13,5 @@ Glados:
   wake_word: null
 
 LlamaServer:
-  model_path: "./models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
+  model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"
   llama_cpp_repo_path: "./submodules/llama.cpp"
