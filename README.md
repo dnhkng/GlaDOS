@@ -59,7 +59,10 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    
     and put them in the "models" directory.
 
+
 # Windows Run
+
+Prerequisite WSL2 with fresh drivers here is guide https://docs.docker.com/desktop/gpu/
 1. `git submodule update --init --recursive`
 2. put models in models dir or mount that dir into docker container
 3. `docker build -t glados .`
