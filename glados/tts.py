@@ -248,7 +248,7 @@ class Synthesizer:
         try:
             # Prepare the command to call espeak with the desired flags
             command = [
-                "espeak",  # 'C:\Program Files\eSpeak NG\espeak-ng.exe',
+                "espeak-ng",  # 'C:\Program Files\eSpeak NG\espeak-ng.exe',
                 "--ipa=2",  # Output phonemes in IPA format
                 "-q",  # Quiet, no output except the phonemes
                 "--stdout",  # Output the phonemes to stdout

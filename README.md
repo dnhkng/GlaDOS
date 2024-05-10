@@ -45,16 +45,15 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
     2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
     3.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
     and put them in the ".models" directory.
-
-5. For voice recognition, we use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
+4. For voice recognition, we use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
    1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for windows), and copy the dll to the ./submodules/whisper.cpp directory
    2. Or compile them yourself. 
       1. To pull the code, from the GLaDOS directory use: `git submodule update --init --recursive`
-      2. Move the the right subdirectory: `cd submodules/llama.cpp`
+      2. Move the the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
          1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
          2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make -j`
-6. For the LLM, you have two option:
+5. For the LLM, you have two option:
    1. Compile llama.cpp:
       1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
       2. Move the the right subdirectory: `cd submodules/llama.cpp`
