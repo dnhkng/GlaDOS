@@ -137,7 +137,7 @@ class Glados:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
             sd.play(audio, tts.RATE)
-            if not self.interruptble:
+            if not self.interruptible:
                 sd.wait()
 
         # signature defined by sd.InputStream, see docstring of callback there
@@ -175,7 +175,7 @@ class Glados:
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
-            interruptble=config.interruptble,
+            interruptible=config.interruptible,
         )
 
     @classmethod
