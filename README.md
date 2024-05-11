@@ -83,13 +83,17 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
          3. remove the LlamaServer configurations (make them null)
 
 
-## Help
+## Help Section
 
-If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
+1. If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
 
-Secondly, make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
+2. Make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
 
-If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
+3. If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
+
+4. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
+   1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
+   2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To do this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
 
 ## Running GLaDOS
 
