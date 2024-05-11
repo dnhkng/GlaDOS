@@ -77,7 +77,7 @@ class Glados:
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
-        interruptable: bool = True,
+        interruptible: bool = True,
     ) -> None:
         """
         Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
@@ -121,7 +121,7 @@ class Glados:
         self.tts_queue: queue.Queue[str] = queue.Queue()
         self.processing = False
         self.currently_speaking = False
-        self.interruptable = interruptable
+        self.interruptible = interruptible
 
         self.shutdown_event = threading.Event()
 
@@ -137,7 +137,7 @@ class Glados:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
             sd.play(audio, tts.RATE)
-            if not self.interruptable:
+            if not self.interruptble:
                 sd.wait()
 
         # signature defined by sd.InputStream, see docstring of callback there
@@ -175,7 +175,7 @@ class Glados:
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
-            interruptable=config.interruptable,
+            interruptble=config.interruptble,
         )
 
     @classmethod
@@ -296,7 +296,7 @@ class Glados:
                 self.processing = True
                 self.currently_speaking = True
         
-        if not self.interruptable:
+        if not self.interruptible:
             while self.currently_speaking:
                 time.sleep(PAUSE_TIME)
 
