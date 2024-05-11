@@ -1,6 +1,6 @@
 REM Download and install the required dependencies for the project on Windows
 python -m venv venv
-.\venv\Scripts\activate
+call .\venv\Scripts\activate
 pip install -r requirements_cuda.txt
 
 echo Downloading Llama...
