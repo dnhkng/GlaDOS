@@ -29,6 +29,6 @@ del llama-b2839-bin-win-cuda-cu12.2.0-x64.zip
 REM Download ASR and LLM Models
 echo Downloading Models...
 curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models\ggml-medium-32-2.en.bin"
-curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models\Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"
+curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models\Meta-Llama-3-8B-Instruct-Q6_K.gguf"
 
 echo Done!
