@@ -15,3 +15,4 @@ Glados:
 LlamaServer:
   model_path: "./models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
   llama_cpp_repo_path: "./submodules/llama.cpp"
+  
