@@ -53,6 +53,7 @@ class GladosConfig:
     wake_word: Optional[str]
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
+    interruptible: bool
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
