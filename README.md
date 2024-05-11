@@ -30,26 +30,41 @@ To do this, the system constantly records data to a circular buffer, waiting for
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
 
 ## Installation Instruction
+
+
+### *New Simplified  Windows Installation Process*
+Don't want to compile anything?  Try this simplified process, but be aware it's still in the experimental stage!
+ 
+
+1. Open the Microsoft Store, search for `python` and install Python 3.12.
+2. Download and unzip this repository somewhere in your home folder.
+3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
+4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
+
+
+## Regular installation
+
 If you want to install the TTS Engine on your machine, please follow the steps
 below.  This has only been tested on Linux, but I think it will work on Windows with small tweaks.
-If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
+If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
 
 1. Install the [`espeak`](https://github.com/espeak-ng/espeak-ng) synthesizer
    according to the [installation
    instructions](https://github.com/espeak-ng/espeak-ng/blob/master/docs/guide.md)
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
-   requirements.txt`
+   requirements.txt` on Mac or Linux systems without an Nvidia GPU, and `pip install -r
+   requirements_cuda.txt` if you have a modern Nvidia GPU.
 3.  Download the models:
     1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
-    2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) or
-    3.  [Llama-3 70B](https://huggingface.co/MaziyarPanahi/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct.IQ4_XS.gguf?download=true)
+    2.  [Llama-3 8B](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true) or
+    3.  [Llama-3 70B](https://huggingface.co/bartowski/Meta-Llama-3-70B-Instruct-GGUF/resolve/main/Meta-Llama-3-70B-Instruct-IQ4_XS.gguf?download=true)
     and put them in the ".models" directory.
 4. For voice recognition, we use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
-   1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for windows), and copy the dll to the ./submodules/whisper.cpp directory
+   1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for Windows), and copy the dll to the ./submodules/whisper.cpp directory
    2. Or compile them yourself. 
       1. To pull the code, from the GLaDOS directory use: `git submodule update --init --recursive`
-      2. Move the the right subdirectory: `cd submodules/whisper.cpp`
+      2. Move to the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
          1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
          2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make -j`
@@ -68,7 +83,13 @@ If you are on windows, I would recommend WSL with an Ubuntu image.  Proper Windo
          3. remove the LlamaServer configurations (make them null)
 
 
+## Help
 
+If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
+
+Secondly, make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
+
+If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
 
 ## Running GLaDOS
 
@@ -83,7 +104,6 @@ You can test the systems by exploring the 'demo.ipynb'.
 
 
 ## Star History
+<a href="https://trendshift.io/repositories/9828" target="_blank"><img src="https://trendshift.io/api/badge/repositories/9828" alt="dnhkng%2FGlaDOS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 [![Star History Chart](https://api.star-history.com/svg?repos=dnhkng/GlaDOS&type=Date)](https://star-history.com/#dnhkng/GlaDOS&Date)
-
-<a href="https://trendshift.io/repositories/9828" target="_blank"><img src="https://trendshift.io/api/badge/repositories/9828" alt="dnhkng%2FGlaDOS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
