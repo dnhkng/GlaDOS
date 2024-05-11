@@ -33,12 +33,13 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 
 
 ### *New Simplified  Windows Installation Process*
-Don't want to compile anything?  Try this process, but be aware it's experimental! 
+Don't want to compile anything?  Try this simplified process, but be aware it's still in the experimental stage!
+ 
 
-1. Open the Microsoft Store, search for `python` and install Python 3.12 
-2. Download and unzip this repository somewhere in your home folder
-3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which you have to do for GLaDOS to be able to speak. This will also download the Whisper voice recognition model, and the Llama-3 8B model.
-4. Once this is all done, you can start GLaDOS with the `start_windows.bat` script.
+1. Open the Microsoft Store, search for `python` and install Python 3.12.
+2. Download and unzip this repository somewhere in your home folder.
+3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
+4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
 
 
 ## Regular installation
@@ -52,7 +53,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    instructions](https://github.com/espeak-ng/espeak-ng/blob/master/docs/guide.md)
    for your operating system.
 2. Install the required Python packages, e.g., by running `pip install -r
-   requirements.txt` on Mac or Linux systems without a Nvidia GPU, and `pip install -r
+   requirements.txt` on Mac or Linux systems without an Nvidia GPU, and `pip install -r
    requirements_cuda.txt` if you have a modern Nvidia GPU.
 3.  Download the models:
     1.  [voice recognition model](https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin?download=true)
@@ -63,7 +64,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for Windows), and copy the dll to the ./submodules/whisper.cpp directory
    2. Or compile them yourself. 
       1. To pull the code, from the GLaDOS directory use: `git submodule update --init --recursive`
-      2. Move the the right subdirectory: `cd submodules/whisper.cpp`
+      2. Move to the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
          1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
          2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make -j`
@@ -84,7 +85,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 ## Help
 
-If you have error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
+If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
 
 Secondly, make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
 
