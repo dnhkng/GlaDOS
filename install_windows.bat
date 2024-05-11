@@ -5,7 +5,7 @@ curl -L "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng
 espeak-ng-X64.msi
 del espeak-ng-X64.msi
 
-python -m venv venv
+python3.12 -m venv venv
 call .\venv\Scripts\activate
 pip install -r requirements_cuda.txt
 
