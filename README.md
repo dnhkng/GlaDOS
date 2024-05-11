@@ -86,7 +86,9 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 If you have error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
 
-Secondly, make sure you are using the right Llama-3 Model! 
+Secondly, make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
+
+If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
 
 ## Running GLaDOS
 
@@ -102,4 +104,5 @@ You can test the systems by exploring the 'demo.ipynb'.
 
 ## Star History
 <a href="https://trendshift.io/repositories/9828" target="_blank"><img src="https://trendshift.io/api/badge/repositories/9828" alt="dnhkng%2FGlaDOS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 [![Star History Chart](https://api.star-history.com/svg?repos=dnhkng/GlaDOS&type=Date)](https://star-history.com/#dnhkng/GlaDOS&Date)
