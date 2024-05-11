@@ -53,6 +53,7 @@ class GladosConfig:
     wake_word: Optional[str]
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
+    interruptible: bool
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
@@ -77,6 +78,7 @@ class Glados:
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
+        interruptible: bool = True,
     ) -> None:
         """
         Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
@@ -119,6 +121,8 @@ class Glados:
         self.llm_queue: queue.Queue[str] = queue.Queue()
         self.tts_queue: queue.Queue[str] = queue.Queue()
         self.processing = False
+        self.currently_speaking = False
+        self.interruptible = interruptible
 
         self.shutdown_event = threading.Event()
 
@@ -134,6 +138,8 @@ class Glados:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
             sd.play(audio, tts.RATE)
+            if not self.interruptible:
+                sd.wait()
 
         # signature defined by sd.InputStream, see docstring of callback there
         # noinspection PyUnusedLocal
@@ -170,6 +176,7 @@ class Glados:
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
+            interruptible=config.interruptible,
         )
 
     @classmethod
@@ -288,6 +295,11 @@ class Glados:
             else:
                 self.llm_queue.put(detected_text)
                 self.processing = True
+                self.currently_speaking = True
+        
+        if not self.interruptible:
+            while self.currently_speaking:
+                time.sleep(PAUSE_TIME)
 
         self.reset()
         self.input_stream.start()
@@ -379,6 +391,7 @@ class Glados:
                     assistant_text = []
                     finished = False
                     interrupted = False
+                    self.currently_speaking = False
 
             except queue.Empty:
                 pass
