@@ -4,7 +4,6 @@ from typing import List, Optional
 
 import numpy as np
 import onnxruntime
-import sounddevice as sd
 
 # Constants
 MAX_WAV_VALUE = 32767.0
