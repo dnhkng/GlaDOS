@@ -26,6 +26,7 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
+VOICE_MODEL = "glados.onnx"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 PAUSE_TIME = 0.05  # Time to wait between processing loops
@@ -52,6 +53,7 @@ class GladosConfig:
     wake_word: Optional[str]
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
+    interruptible: bool
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
@@ -76,6 +78,7 @@ class Glados:
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
+        interruptible: bool = True,
     ) -> None:
         """
         Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
@@ -100,7 +103,7 @@ class Glados:
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
-        self._tts = tts.TTSEngine()
+        self._tts = tts.Synthesizer(model_path=str(Path.cwd() / "models" / VOICE_MODEL), use_cuda=False)
 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
@@ -118,6 +121,8 @@ class Glados:
         self.llm_queue: queue.Queue[str] = queue.Queue()
         self.tts_queue: queue.Queue[str] = queue.Queue()
         self.processing = False
+        self.currently_speaking = False
+        self.interruptible = interruptible
 
         self.shutdown_event = threading.Event()
 
@@ -133,6 +138,8 @@ class Glados:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
             sd.play(audio, tts.RATE)
+            if not self.interruptible:
+                sd.wait()
 
         # signature defined by sd.InputStream, see docstring of callback there
         # noinspection PyUnusedLocal
@@ -169,6 +176,7 @@ class Glados:
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
+            interruptible=config.interruptible,
         )
 
     @classmethod
@@ -287,6 +295,11 @@ class Glados:
             else:
                 self.llm_queue.put(detected_text)
                 self.processing = True
+                self.currently_speaking = True
+        
+        if not self.interruptible:
+            while self.currently_speaking:
+                time.sleep(PAUSE_TIME)
 
         self.reset()
         self.input_stream.start()
@@ -368,16 +381,17 @@ class Glados:
                     self.messages.append(
                         {"role": "assistant", "content": " ".join(assistant_text)}
                     )
-                    if interrupted:
-                        self.messages.append(
-                            {
-                                "role": "system",
-                                "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
-                            }
-                        )
+                    # if interrupted:
+                    #     self.messages.append(
+                    #         {
+                    #             "role": "system",
+                    #             "content": f"USER INTERRUPTED GLADOS, TEXT DELIVERED: {' '.join(system_text)}",
+                    #         }
+                    #     )
                     assistant_text = []
                     finished = False
                     interrupted = False
+                    self.currently_speaking = False
 
             except queue.Empty:
                 pass
@@ -473,7 +487,7 @@ class Glados:
                             if next_token:
                                 sentence.append(next_token)
                                 # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [".", "!", "?", ":", ";", "?!"]:
+                                if next_token in [".", "!", "?", ":", ";", "?!", '\n', '\n\n']:
                                     self._process_sentence(sentence)
                                     sentence = []
                     if self.processing:
@@ -493,12 +507,8 @@ class Glados:
         to the TTS queue.
         """
         sentence = "".join(current_sentence)
-        sentence = sentence.removesuffix(LLM_STOP_SEQUENCE)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
-        sentence = re.sub(r"[^a-zA-Z0-9.,?!;:'\" -]", "", sentence)
-        sentence = (
-            sentence + " "
-        )  # Add a space to the end of the sentence, for better TTS
+        sentence = sentence.replace("\n\n", ". ").replace("\n", ". ").replace("  ", " ").replace(":", " ")
         if sentence:
             self.tts_queue.put(sentence)
 

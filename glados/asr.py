@@ -50,7 +50,7 @@ class ASR:
         ]
 
         if not text:
-            return None
+            return ""
         else:
             return text[0].decode("utf-8")[1:]
 
@@ -85,14 +85,3 @@ class ASR:
         params.token_timestamps = word_level_timings
         params.no_timestamps = True
         return params
-
-
-if __name__ == "__main__":
-    # TODO: turn into test, add scipy to test requirements
-    from scipy.io import wavfile
-
-    samplerate, audio = wavfile.read("../samples/rec.wav")
-    model = ASR(model="../models/ggml-medium-distil.en.bin")
-    transcription = model.transcribe(audio)
-
-    print(transcription)
