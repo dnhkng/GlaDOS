@@ -96,11 +96,11 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To accomplish this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
 
 
-# Windows Run
+## Windows Run
 
 Prerequisite WSL2 with fresh drivers, here is guide https://docs.docker.com/desktop/gpu/
 1. `git submodule update --init --recursive`
-2. put models in models dir or mount that dir into docker container
+2. put models in models dir or mount that dir into a docker container
 3. `docker build -t glados .`
 4. `docker run -e "PULSE_SERVER=/mnt/wslg/PulseServer" -v "/mnt/wslg/:/mnt/wslg/" --gpus=all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 glados`
 
