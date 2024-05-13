@@ -1,4 +1,3 @@
-import logging
 import subprocess
 import time
 from dataclasses import dataclass
@@ -7,8 +6,7 @@ from typing import Self, Sequence
 
 import requests
 import yaml
-
-log = logging.getLogger(__name__)
+from loguru import logger
 
 
 class ServerStartupError(RuntimeError):
@@ -19,6 +17,7 @@ class ServerStartupError(RuntimeError):
 class LlamaServerConfig:
     llama_cpp_repo_path: str
     model_path: str
+    context_length: int = 512  # Default value from the standard llama.cpp[server] repo
     port: int = 8080
     use_gpu: bool = True
 
@@ -45,19 +44,30 @@ class LlamaServer:
         self,
         llama_cpp_repo_path: Path,
         model_path: Path,
-        port=8080,
+        context_length: int = 512,
+        port: int = 8080,
         use_gpu: bool = True,
     ):
         self.llama_cpp_repo_path = llama_cpp_repo_path
         self.model_path = model_path
+        self.context_length = context_length
 
         self.port = port
         self.process: subprocess.Popen | None = None
         self.use_gpu = use_gpu
 
-        self.command = [self.llama_cpp_repo_path, "-m"] + [self.model_path]
+        self.command = (
+            [self.llama_cpp_repo_path, "--model"]
+            + [self.model_path]
+            + ["--ctx-size", str(context_length)]
+            + ["--port", str(port)]
+        )
         if self.use_gpu:
-            self.command += ["-ngl", "1000"]
+            self.command += [
+                "--n-gpu-layers",
+                "1000",
+            ]  # More than we would ever need, just to be sure.
+        logger.success(f"Command to start the server: {self.command}")
 
     @classmethod
     def from_config(cls, config: LlamaServerConfig):
@@ -68,6 +78,7 @@ class LlamaServer:
         return cls(
             llama_cpp_repo_path=llama_cpp_repo_path,
             model_path=model_path,
+            context_length=config.context_length,
             port=config.port,
             use_gpu=config.use_gpu,
         )
@@ -85,7 +96,7 @@ class LlamaServer:
         return f"{self.base_url}/health"
 
     def start(self):
-        log.info(f"Starting the server by executing command {self.command=}")
+        logger.info(f"Starting the server by executing command {self.command=}")
         self.process = subprocess.Popen(
             self.command,
             stdout=subprocess.DEVNULL,
@@ -114,13 +125,13 @@ class LlamaServer:
 
                 if response.status_code == 503:
                     if model_loading_time > max_wait_time_for_model_loading:
-                        log.error(
+                        logger.error(
                             f"Model failed to load in {max_wait_time_for_model_loading}. "
                             f"Consider increasing the waiting time for model loading."
                         )
                         return False
 
-                    log.info(
+                    logger.info(
                         f"model is still being loaded, or at full capacity. "
                         f"Will wait for {max_wait_time_for_model_loading - model_loading_time} "
                         f"more seconds: {response=}"
@@ -129,29 +140,30 @@ class LlamaServer:
                     model_loading_time += model_loading_log_time
                     continue
                 if response.status_code == 200:
-                    log.debug(f"Server started successfully, {response=}")
+                    logger.debug(f"Server started successfully, {response=}")
                     return True
-                log.error(
+                logger.error(
                     f"Server is not responding properly, maybe model failed to load: {response=}"
                 )
                 return False
 
             except requests.exceptions.ConnectionError:
-                log.debug(
+                logger.debug(
                     f"Couldn't establish connection, retrying with attempt: {cur_attempt}/{max_connection_attempts}"
                 )
                 cur_attempt += 1
                 if cur_attempt > max_connection_attempts:
-                    log.error(
+                    logger.error(
                         f"Couldn't establish connection after {max_connection_attempts=}"
                     )
                     return False
             time.sleep(sleep_time_between_attempts)
 
     def stop(self):
-        self.process.terminate()
-        self.process.wait()
-        self.process = None
+        if self.process:
+            self.process.terminate()
+            self.process.wait()
+            self.process = None
 
     def __del__(self):
         self.stop()
