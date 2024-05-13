@@ -92,8 +92,20 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 3. If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
 
 4. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
-   1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
-   2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To do this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
+   1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself speak, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
+   2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To accomplish this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
+
+
+## Windows Run
+
+Prerequisite WSL2 with fresh drivers, here is guide https://docs.docker.com/desktop/gpu/
+1. `git submodule update --init --recursive`
+2. put models in models dir or mount that dir into a docker container
+3. `docker build -t glados .`
+4. `docker run -e "PULSE_SERVER=/mnt/wslg/PulseServer" -v "/mnt/wslg/:/mnt/wslg/" --gpus=all --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 glados`
+
+It works in ubuntu terminal started with WSL2
+
 
 ## Running GLaDOS
 
