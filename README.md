@@ -93,7 +93,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 4. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
    1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
-   2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To do this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
+   2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To accomplish this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
 
 
 # Windows Run
