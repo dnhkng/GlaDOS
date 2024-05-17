@@ -1,11 +1,13 @@
+from dataclasses import dataclass
+from enum import Enum
 import re
 import subprocess
-from typing import List, Optional
-from .config import PiperConfig
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import numpy as np
 import json
 import onnxruntime
+from loguru import logger
 
 # Constants
 MAX_WAV_VALUE = 32767.0
@@ -177,6 +179,45 @@ PHONEME_ID_MAP = {
     "↓": [148],
     "ⱱ": [129],
 }
+
+
+@dataclass
+class PiperConfig:
+    """Piper configuration"""
+
+    num_symbols: int
+    """Number of phonemes"""
+
+    num_speakers: int
+    """Number of speakers"""
+
+    sample_rate: int
+    """Sample rate of output audio"""
+
+    espeak_voice: str
+    """Name of espeak-ng voice or alphabet"""
+
+    length_scale: float
+    noise_scale: float
+    noise_w: float
+
+    phoneme_id_map: Mapping[str, Sequence[int]]
+    """Phoneme -> [id,]"""
+
+    @staticmethod
+    def from_dict(config: Dict[str, Any]) -> "PiperConfig":
+        inference = config.get("inference", {})
+
+        return PiperConfig(
+            num_symbols=config["num_symbols"],
+            num_speakers=config["num_speakers"],
+            sample_rate=config["audio"]["sample_rate"],
+            noise_scale=inference.get("noise_scale", 0.667),
+            length_scale=inference.get("length_scale", 1.0),
+            noise_w=inference.get("noise_w", 0.8),
+            espeak_voice=config["espeak"]["voice"],
+            phoneme_id_map=config["phoneme_id_map"],
+        )
 
 
 class Synthesizer:
