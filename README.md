@@ -37,7 +37,7 @@ Don't want to compile anything?  Try this simplified process, but be aware it's 
  
 
 1. Open the Microsoft Store, search for `python` and install Python 3.12.
-   a. If you want to use python 3.10, install `typing_extensions` and replace `import typing` in `glados/llama.py` with `import typing_extensions`
+   a. To use Python 3.10, install `typing_extensions` and replace `import typing` in `glados/llama.py` with `import typing_extensions`.
 2. Download and unzip this repository somewhere in your home folder.
 3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
 4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
