@@ -223,7 +223,10 @@ class Synthesizer:
     ) -> onnxruntime.InferenceSession:
         providers = ["CPUExecutionProvider"]
         if use_cuda:
-            providers = ["CUDAExecutionProvider"]
+            providers = [
+                ("CUDAExecutionProvider", {"cudnn_conv_algo_search": "HEURISTIC"}),
+                "CPUExecutionProvider",
+            ]
 
         return onnxruntime.InferenceSession(
             str(model_path),
