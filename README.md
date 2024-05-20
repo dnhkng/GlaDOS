@@ -68,14 +68,14 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       2. Move to the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
          1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
-         2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make -j`
+         2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make libwhisper.so -j`
 5. For the LLM, you have two option:
    1. Compile llama.cpp:
       1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
-      2. Move the the right subdirectory: `cd submodules/llama.cpp`
+      2. Move to the right subdirectory: `cd submodules/llama.cpp`
       3. Compile llama.cpp, [(see the Documentation)](https://github.com/ggerganov/whisper.cpp)
          1. Linux with [CUDA](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#cuda) `make server LLAMA_CUDA=1`
-         2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make`
+         2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make server`
    2. Use a commercial API or install an inference backend yourself, such as Ollama or Llamafile:
       1. Find and install a backend with an OpenAI compatible API (most of them)
       2. Edit the glados_config.yaml
