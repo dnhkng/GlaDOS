@@ -72,7 +72,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 5. For the LLM, you have two option:
    1. Compile llama.cpp:
       1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
-      2. Move the the right subdirectory: `cd submodules/llama.cpp`
+      2. Move to the right subdirectory: `cd submodules/llama.cpp`
       3. Compile llama.cpp, [(see the Documentation)](https://github.com/ggerganov/whisper.cpp)
          1. Linux with [CUDA](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#cuda) `make server LLAMA_CUDA=1`
          2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make server`
