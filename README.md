@@ -10,7 +10,7 @@ This is a project dedicated to building a real-life version of GLaDOS.
 This will entail:
 - [x] Train GLaDOS voice generator
 - [x] Generate a prompt that leads to a realistic "Personality Core"
-- [ ] Generate a [MemGPT](https://memgpt.readthedocs.io/en/latest/) medium- and long-term memory for GLaDOS
+- [ ] Generate a [MemGPT](https://github.com/cpacker/MemGPT) medium- and long-term memory for GLaDOS
 - [ ] Give GLaDOS vision via [LLaVA](https://llava-vl.github.io/)
 - [ ] Create 3D-printable parts
 - [ ] Design the animatronics system
