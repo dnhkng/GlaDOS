@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import Enum
 import re
 import subprocess
 from typing import Any, Dict, List, Mapping, Optional, Sequence
