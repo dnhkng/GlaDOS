@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence
 import numpy as np
 import json
 import onnxruntime
-from loguru import logger
 
 # Constants
 MAX_WAV_VALUE = 32767.0
