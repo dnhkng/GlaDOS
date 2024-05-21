@@ -54,6 +54,7 @@ class GladosConfig:
     personality_preprompt: List[dict[str, str]]
     interruptible: bool
     voice_model: str = "glados.onnx"
+    speaker_id: int = None
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
@@ -73,8 +74,9 @@ class Glados:
 
     def __init__(
         self,
-        completion_url: str,
         voice_model: str,
+        speaker_id: int,
+        completion_url: str,
         api_key: str | None = None,
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
@@ -105,7 +107,9 @@ class Glados:
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
         self._tts = tts.Synthesizer(
-            model_path=str(Path.cwd() / "models" / voice_model), use_cuda=False
+            model_path=str(Path.cwd() / "models" / voice_model),
+            use_cuda=False,
+            speaker_id=speaker_id,
         )
 
         # LLAMA_SERVER_HEADERS
@@ -174,8 +178,9 @@ class Glados:
             )
 
         return cls(
-            completion_url=config.completion_url,
             voice_model=config.voice_model,
+            speaker_id=config.speaker_id,
+            completion_url=config.completion_url,
             api_key=config.api_key,
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,

@@ -204,6 +204,8 @@ class PiperConfig:
     phoneme_id_map: Mapping[str, Sequence[int]]
     """Phoneme -> [id,]"""
 
+    speaker_id_map: Optional[Dict[str, int]] = None
+
     @staticmethod
     def from_dict(config: Dict[str, Any]) -> "PiperConfig":
         inference = config.get("inference", {})
@@ -217,6 +219,7 @@ class PiperConfig:
             noise_w=inference.get("noise_w", 0.8),
             espeak_voice=config["espeak"]["voice"],
             phoneme_id_map=config["phoneme_id_map"],
+            speaker_id_map=config.get("speaker_id_map", {}),
         )
 
 
@@ -256,7 +259,9 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str, use_cuda: bool):
+    def __init__(
+        self, model_path: str, use_cuda: bool, speaker_id: Optional[int] = None
+    ):
         self.session = self._initialize_session(model_path, use_cuda)
         self.id_map = PHONEME_ID_MAP
         try:
@@ -278,6 +283,11 @@ class Synthesizer:
             )
         self.config = PiperConfig.from_dict(config_dict)
         self.rate = self.config.sample_rate
+        self.speaker_id = (
+            self.config.speaker_id_map.get(str(speaker_id), 0)
+            if self.config.num_speakers > 1
+            else None
+        )
 
     def _initialize_session(
         self, model_path: str, use_cuda: bool
@@ -347,7 +357,6 @@ class Synthesizer:
     def _synthesize_ids_to_raw(
         self,
         phoneme_ids: List[int],
-        speaker_id: Optional[int] = None,
         length_scale: Optional[float] = None,
         noise_scale: Optional[float] = None,
         noise_w: Optional[float] = None,
@@ -370,14 +379,10 @@ class Synthesizer:
             dtype=np.float32,
         )
 
-        if (self.config.num_speakers > 1) and (speaker_id is None):
-            # Default speaker
-            speaker_id = 0
-
         sid = None
 
-        if speaker_id is not None:
-            sid = np.array([speaker_id], dtype=np.int64)
+        if self.speaker_id is not None:
+            sid = np.array([self.speaker_id], dtype=np.int64)
 
         # Synthesize through Onnx
         audio = self.session.run(
