@@ -2,6 +2,8 @@
 
 This is a project dedicated to building a real-life version of GLaDOS.
 
+NEW: If you want to chat or join the community, [Join our discord!](https://discord.gg/9ZRrGj4s)
+
 [![localGLaDOS](https://img.youtube.com/vi/KbUfWpykBGg/0.jpg)](https://www.youtube.com/watch?v=KbUfWpykBGg)
 
 
