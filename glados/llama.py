@@ -20,6 +20,8 @@ class LlamaServerConfig:
     context_length: int = 512  # Default value from the standard llama.cpp[server] repo
     port: int = 8080
     use_gpu: bool = True
+    enable_split_mode: bool = True
+    enable_flash_attn: bool = True
 
     @classmethod
     def from_yaml(
@@ -47,6 +49,8 @@ class LlamaServer:
         context_length: int = 512,
         port: int = 8080,
         use_gpu: bool = True,
+        enable_split_mode: bool = True,
+        enable_flash_attn: bool = True,
     ):
         self.llama_cpp_repo_path = llama_cpp_repo_path
         self.model_path = model_path
@@ -55,6 +59,8 @@ class LlamaServer:
         self.port = port
         self.process: subprocess.Popen | None = None
         self.use_gpu = use_gpu
+        self.enable_split_mode = enable_split_mode
+        self.enable_flash_attn = enable_flash_attn
 
         self.command = (
             [self.llama_cpp_repo_path, "--model"]
@@ -67,6 +73,15 @@ class LlamaServer:
                 "--n-gpu-layers",
                 "1000",
             ]  # More than we would ever need, just to be sure.
+        if self.enable_split_mode:
+            self.command += [
+                "--split-mode",
+                "row",
+            ] # Split Mode Row significantly improves performance on multi-GPU setups
+        if self.enable_flash_attn:
+            self.command += [
+                "--flash-attn",
+            ]# Significantly improves performance on GPUs which support SM row
         logger.success(f"Command to start the server: {self.command}")
 
     @classmethod
@@ -81,6 +96,8 @@ class LlamaServer:
             context_length=config.context_length,
             port=config.port,
             use_gpu=config.use_gpu,
+            enable_split_mode=config.enable_split_mode,
+            enable_flash_attn=config.enable_flash_attn,
         )
 
     @property
