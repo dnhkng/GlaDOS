@@ -70,8 +70,9 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       2. Move to the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
          1. Linux with [CUDA](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#nvidia-gpu-support): `WHISPER_CUDA=1 make libwhisper.so -j`
-         2. Mac with [CoreML](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support): `WHISPER_COREML=1 make libwhisper.so -j`
-5. For the LLM, you have two option:
+         2. Mac: `make libwhisper.so -j`. For Apple silicon devices, it is also possible to compile using Core ML like this `WHISPER_COREML=1 make libwhisper.so -j`,
+            but it may be unnecessary--modern Macs are fast enough without it--and if you do, don't forget to follow the [instructions](https://github.com/ggerganov/whisper.cpp?tab=readme-ov-file#core-ml-support) to generate Core ML models.
+5. For the LLM, you have two options:
    1. Compile llama.cpp:
       1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
       2. Move to the right subdirectory: `cd submodules/llama.cpp`
@@ -88,11 +89,11 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
 
 ## Help Section
 
-1. If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empy by default, and you manually have to add the binaries as described above!
+1. If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empty by default, and you manually have to add the binaries as described above!
 
 2. Make sure you are using the right Llama-3 Model! I have made Llama-3 8B, with the quantization Q6_K the default. You might need to redownload the model if you don't have `Meta-Llama-3-8B-Instruct-Q6_K.gguf` in your models folder!
 
-3. If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modifiy the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
+3. If you have limited VRAM, you can save 3Gb by using downloading a [highly quantised IQ3_XS model](https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf?download=true) and moving it to the models folder. If you do this, modify the `glados_config.yaml` to modify the model used: `model_path: "./models/Meta-Llama-3-8B-Instruct-IQ3_XS.gguf"`
 
 4. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
    1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself speak, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
