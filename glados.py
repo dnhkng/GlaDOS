@@ -2,6 +2,7 @@ import copy
 import json
 import queue
 import re
+import shutil
 import sys
 import threading
 import time
@@ -103,8 +104,18 @@ class Glados:
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
-        self._tts = tts.Synthesizer(model_path=str(Path.cwd() / "models" / VOICE_MODEL), use_cuda=False)
-
+        if shutil.which("espeak-ng"):
+            espeak = "espeak-ng"
+        elif shutil.which("espeak"):
+            espeak = "espeak"
+        else:
+            logger.error("I cannot find `espeak` on your path. You probably "
+                                    "forgot to install it. How utterly embarrassing "
+                                    "for you.")
+            raise FileNotFoundError("Cannot find espeak")
+        self._tts = tts.Synthesizer(model_path=str(Path.cwd() / "models" / VOICE_MODEL),
+                                     use_cuda=False, espeak=espeak)
+ 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
 

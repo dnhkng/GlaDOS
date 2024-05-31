@@ -214,9 +214,10 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str, use_cuda: bool):
+    def __init__(self, model_path: str, use_cuda: bool, espeak: str):
         self.session = self._initialize_session(model_path, use_cuda)
         self.id_map = PHONEME_ID_MAP
+        self._espeak = espeak
 
     def _initialize_session(
         self, model_path: str, use_cuda: bool
@@ -250,7 +251,7 @@ class Synthesizer:
         try:
             # Prepare the command to call espeak with the desired flags
             command = [
-                "espeak-ng",  # 'C:\Program Files\eSpeak NG\espeak-ng.exe',
+                self._espeak, # path to espeak eg 'C:\Program Files\eSpeak NG\espeak-ng.exe',
                 "--ipa=2",  # Output phonemes in IPA format
                 "-q",  # Quiet, no output except the phonemes
                 "--stdout",  # Output the phonemes to stdout
