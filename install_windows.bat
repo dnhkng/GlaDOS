@@ -1,3 +1,4 @@
+@echo off
 REM Download and install the required dependencies for the project on Windows
 
 echo Install espeak-ng...
