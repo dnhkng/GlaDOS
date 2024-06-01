@@ -1,3 +1,4 @@
+@echo off
 REM Start GLaDOS
 
 call .\venv\Scripts\activate
