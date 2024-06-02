@@ -1,0 +1,3 @@
+https://scriptingosx.com/2021/07/scripting-macos-part-1-first-script/
+https://blog.kandji.io/guide-for-apple-it-introduction-to-mac-scripting
+https://support.apple.com/en-au/guide/terminal/apd53500956-7c5b-496b-a362-2845f2aab4bc/mac
