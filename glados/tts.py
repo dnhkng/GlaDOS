@@ -1,9 +1,11 @@
 import re
+import shutil
 import subprocess
 from typing import List, Optional
 
 import numpy as np
 import onnxruntime
+from loguru import logger
 
 # Constants
 MAX_WAV_VALUE = 32767.0
@@ -214,10 +216,20 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str, use_cuda: bool, espeak: str):
+    def __init__(self, model_path: str, use_cuda: bool):
         self.session = self._initialize_session(model_path, use_cuda)
         self.id_map = PHONEME_ID_MAP
-        self._espeak = espeak
+        # Depending on installation method, the espeak binary can be at `espeak` or 
+        # `espeak-ng`. Check the path to find out which, if any, is installed
+        if shutil.which("espeak-ng"):
+            self.espeak: str = "espeak-ng"
+        elif shutil.which("espeak"):
+            self.espeak: str = "espeak"
+        else:
+            logger.critical("I cannot find `espeak` on your path. You probably "
+                                    "forgot to install it. How utterly embarrassing "
+                                    "for you.")
+            raise FileNotFoundError("Cannot find espeak")
 
     def _initialize_session(
         self, model_path: str, use_cuda: bool
@@ -251,7 +263,7 @@ class Synthesizer:
         try:
             # Prepare the command to call espeak with the desired flags
             command = [
-                self._espeak, # path to espeak eg 'C:\Program Files\eSpeak NG\espeak-ng.exe',
+               self.espeak, # path to espeak eg 'C:\Program Files\eSpeak NG\espeak-ng.exe',
                 "--ipa=2",  # Output phonemes in IPA format
                 "-q",  # Quiet, no output except the phonemes
                 "--stdout",  # Output the phonemes to stdout
