@@ -3,6 +3,9 @@
 # Simple install script built for macOS to install the required components for the GLaDOS peoject
 # https://github.com/dnhkng/GlaDOS
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+echo "Script directory: $SCRIPT_DIR"
+
 # Installing espeak and Homebrew if neccessary
 echo "Installing espeak and Homebrew if necessary"
 if [[ $(command -v brew) == "" ]] ; then
@@ -16,11 +19,19 @@ fi
 
 brew install espeak
 
-# Making espeak-ng become espeak in the tts.py and disables CUDA
-echo "Swaping the tts.py out for the one that uses espeak"
+# Making espeak-ng become espeak in the tts.py and disables CUDA and also the ggml-metal.metal
+echo "Applying fixes for the macOS usage"
 git clone https://github.com/Ghostboo-124/espeak-fix.git
 rm glados/tts.py > /dev/null 2>&1
 cp espeak-fix/tts.py glados/tts.py > /dev/null 2>&1
+if [[ $SCRIPT_DIR =~ "Downloads" ]]
+then
+    rm submodules/whisper.cpp/ggml-metal.metal
+    cp epeak-fix/ggml-metal-zip_file.metal submodules/whisper.cpp/ggml-metal.metal
+else
+    rm submodules/whisper.cpp/ggml-metal.metal
+    cp epeak-fix/ggml-metal-git_clone.metal submodules/whisper.cpp/ggml-metal.metal
+fi
 
 python3.12 -m venv venv > /dev/null 2>&1
 source venv/bin/activate > /dev/null 2>&1
