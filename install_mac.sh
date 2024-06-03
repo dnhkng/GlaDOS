@@ -24,14 +24,6 @@ echo "Applying fixes for the macOS usage"
 git clone https://github.com/Ghostboo-124/espeak-fix.git
 rm glados/tts.py > /dev/null 2>&1
 cp espeak-fix/tts.py glados/tts.py > /dev/null 2>&1
-if [[ $SCRIPT_DIR =~ "Downloads" ]]
-then
-    rm submodules/whisper.cpp/ggml-metal.metal
-    cp epeak-fix/ggml-metal-zip_file.metal submodules/whisper.cpp/ggml-metal.metal
-else
-    rm submodules/whisper.cpp/ggml-metal.metal
-    cp epeak-fix/ggml-metal-git_clone.metal submodules/whisper.cpp/ggml-metal.metal
-fi
 
 python3.12 -m venv venv > /dev/null 2>&1
 source venv/bin/activate > /dev/null 2>&1
@@ -47,6 +39,17 @@ cd submodules/whisper.cpp
 make libwhisper.so -j > /dev/null 2>&1
 cd ..
 cd ..
+
+# Applying Whisper Fix
+echo "Fixing Whisper for macOS"
+if [[ $SCRIPT_DIR =~ "Downloads" ]]
+then
+    rm submodules/whisper.cpp/ggml-metal.metal
+    cp espeak-fix/ggml-metal-zip_file.metal submodules/whisper.cpp/ggml-metal.metal
+else
+    rm submodules/whisper.cpp/ggml-metal.metal
+    cp espeak-fix/ggml-metal-git_clone.metal submodules/whisper.cpp/ggml-metal.metal
+fi
 
 # Compiling llama
 echo "Compiling llama"
