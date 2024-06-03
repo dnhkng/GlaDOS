@@ -50,7 +50,7 @@ Don't want to compile anything?  Try this simplified process, but be aware it's 
 2. Install Homebrew, if not installed it will be installed.
 3. Download or `git clone` this repository to the `~` or `~/Downloads` directory.
 4. To install in the GlaDOS directory type in terminal `sh install_mac.sh`
-5. To start, run the `start_mac.sh`
+5. To start, run the command in terminal `sh start_mac.sh`
 
 ## Regular installation
 
