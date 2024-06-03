@@ -44,7 +44,13 @@ Don't want to compile anything?  Try this simplified process, but be aware it's 
 3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
 4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
 
+### Mac Installation process
 
+1. Install python3.12
+2. Install Homebrew
+3. Download or `git clone` this repository to the `~` or `~/Downloads` directory.
+4. To install in the GlaDOS directory type in terminal `sh install_mac.sh`
+5. To start, run the `start_mac.sh`
 ## Regular installation
 
 If you want to install the TTS Engine on your machine, please follow the steps
