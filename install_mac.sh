@@ -17,26 +17,20 @@ else
     brew update
 fi
 
-brew install espeak
-
-# Making espeak-ng become espeak in the tts.py and disables CUDA and also the ggml-metal.metal
-echo "Applying fixes for the macOS usage"
-git clone https://github.com/Ghostboo-124/espeak-fix.git
-rm glados/tts.py > /dev/null 2>&1
-cp espeak-fix/tts.py glados/tts.py > /dev/null 2>&1
+brew install espeak-ng
 
 python3.12 -m venv venv > /dev/null 2>&1
 source venv/bin/activate > /dev/null 2>&1
-python3.12 -m pip install -r requirements.txt > /dev/null 2>&1
+python3.12 -m pip install -r requirements.txt > /dev/null
 
 # Installing Whisper and llama
 echo "Installing Whisper and llama"
-git submodule update --init --recursive > /dev/null 2>&1
+git submodule update --init --recursive > /dev/null
 
 # Compiling Whisper
 echo "Compiling Whisper"
 cd submodules/whisper.cpp
-make libwhisper.so -j > /dev/null 2>&1
+make libwhisper.so -j > /dev/null
 cd ..
 cd ..
 
@@ -62,6 +56,10 @@ cd ..
 echo "Downloading Models"
 curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models/ggml-medium-32-2.en.bin"
 curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
+
+# Fixes ggml-metal.metal
+echo Fixing ggml-metal.metal
+sed -i "1,6s|ggml-common.h|$PWD/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml-metal.metal
 
 # Removing leftover files
 echo Cleaning up
