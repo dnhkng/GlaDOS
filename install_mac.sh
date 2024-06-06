@@ -47,7 +47,7 @@ curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggm
 curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
 
 # Fixes ggml-metal.metal
-echo Fixing ggml-metal.metal
+echo Fixing Whisper.cpp
 sed -i "1,6s|ggml-common.h|$SCRIPT_DIR/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml-metal.metal
 
 # Removing leftover files
