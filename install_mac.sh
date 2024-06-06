@@ -34,17 +34,6 @@ make libwhisper.so -j > /dev/null
 cd ..
 cd ..
 
-# Applying Whisper Fix
-echo "Fixing Whisper for macOS"
-if [[ $SCRIPT_DIR =~ "Downloads" ]]
-then
-    rm submodules/whisper.cpp/ggml-metal.metal
-    cp espeak-fix/ggml-metal-zip_file.metal submodules/whisper.cpp/ggml-metal.metal
-else
-    rm submodules/whisper.cpp/ggml-metal.metal
-    cp espeak-fix/ggml-metal-git_clone.metal submodules/whisper.cpp/ggml-metal.metal
-fi
-
 # Compiling llama
 echo "Compiling llama"
 cd submodules/llama.cpp
@@ -59,7 +48,7 @@ curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/
 
 # Fixes ggml-metal.metal
 echo Fixing ggml-metal.metal
-sed -i "1,6s|ggml-common.h|$PWD/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml-metal.metal
+sed -i "1,6s|ggml-common.h|$SCRIPT_DIR/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml-metal.metal
 
 # Removing leftover files
 echo Cleaning up
