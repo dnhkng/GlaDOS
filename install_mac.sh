@@ -18,8 +18,8 @@ fi
 
 brew install espeak-ng
 
-python3.12 -m venv venv > /dev/null 2>&1
-source venv/bin/activate > /dev/null 2>&1
+python3.12 -m venv venv > /dev/null
+source venv/bin/activate > /dev/null
 python3.12 -m pip install -r requirements.txt > /dev/null
 
 # Installing Whisper and llama
@@ -36,7 +36,7 @@ cd ..
 # Compiling llama
 echo "Compiling llama"
 cd submodules/llama.cpp
-make server > /dev/null 2>&1
+make server > /dev/null
 cd ..
 cd ..
 
@@ -48,7 +48,3 @@ curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/
 # Fixes ggml-metal.metal
 echo Fixing Whisper.cpp
 sed -i "1,6s|ggml-common.h|$SCRIPT_DIR/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml-metal.metal
-
-# Removing leftover files
-echo Cleaning up
-rm -rf espeak-fix
