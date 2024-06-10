@@ -4,7 +4,6 @@
 # https://github.com/dnhkng/GlaDOS
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-echo "Script directory: $SCRIPT_DIR"
 
 # Installing espeak and Homebrew if neccessary
 echo "Installing espeak and Homebrew if necessary"
