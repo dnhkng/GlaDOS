@@ -1,12 +1,30 @@
 import ctypes
 
 import numpy as np
+from loguru import logger
 
 from . import whisper_cpp_wrapper
 
 LANG = "en"
 WORD_LEVEL_TIMINGS = False
 BEAM_SEARCH = True
+
+# Translate ggml log levels to loguru levels
+# From ggml.h:
+# enum ggml_log_level {
+#   GGML_LOG_LEVEL_ERROR = 2,
+#   GGML_LOG_LEVEL_WARN  = 3,
+#   GGML_LOG_LEVEL_INFO  = 4,
+#   GGML_LOG_LEVEL_DEBUG = 5
+#};
+_log_at_level = {2: logger.error, 3: logger.warning, 4: logger.info, 5: logger.debug}
+
+def _unlog(level: ctypes.c_int, text: ctypes.c_char_p, user_data: ctypes.c_void_p) -> None:
+        """Callback function to log output from whisper.cpp to the loguru log.
+        """
+        _log_at_level[level](text.rstrip())
+
+_unlog_func = whisper_cpp_wrapper.ggml_log_callback(_unlog)
 
 
 class ASR:
@@ -20,6 +38,9 @@ class ASR:
     """
 
     def __init__(self, model: str) -> None:
+        # set whisper's logging to use the _unlog callback function, so that messages
+        # are logged to the loguru logger instead of stdout/stderr
+        whisper_cpp_wrapper.whisper_log_set(_unlog_func, ctypes.c_void_p(0))
         self.ctx = whisper_cpp_wrapper.whisper_init_from_file(model.encode("utf-8"))
         self.params = self._whisper_cpp_params(
             language=LANG,
