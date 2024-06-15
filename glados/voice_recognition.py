@@ -20,17 +20,6 @@ PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
 WAKE_WORD = "computer"  # Wake word for activation
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
-# Rest of the class remains unchanged
-ASR_MODEL_PATH = "./models/ggml-medium-32-2.en.bin"
-VAD_MODEL_PATH = "./models/silero_vad.onnx"
-SAMPLE_RATE = 16000  # Sample rate for input stream
-VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.9  # Threshold for VAD detection
-BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
-PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
-WAKE_WORD = "computer"  # Wake word for activation
-SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
-
 
 class VoiceRecognition:
     def __init__(
