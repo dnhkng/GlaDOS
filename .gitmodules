@@ -1,6 +1,6 @@
-[submodule "submodules/llama.cpp"]
-	path = submodules/llama.cpp
-	url = https://github.com/ggerganov/llama.cpp.git
 [submodule "submodules/whisper.cpp"]
 	path = submodules/whisper.cpp
 	url = https://github.com/ggerganov/whisper.cpp.git
+[submodule "submodules/llama.cpp"]
+	path = submodules/llama.cpp
+	url = https://github.com/ggerganov/llama.cpp.git
