@@ -20,8 +20,8 @@ class LlamaServerConfig:
     context_length: int = 512  # Default value from the standard llama.cpp[server] repo
     port: int = 8080
     use_gpu: bool = True
-    enable_split_mode: bool = True
-    enable_flash_attn: bool = True
+    enable_split_mode: bool = False
+    enable_flash_attn: bool = False
 
     @classmethod
     def from_yaml(
