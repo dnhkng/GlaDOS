@@ -296,7 +296,7 @@ class Glados:
                 self.llm_queue.put(detected_text)
                 self.processing = True
                 self.currently_speaking = True
-        
+
         if not self.interruptible:
             while self.currently_speaking:
                 time.sleep(PAUSE_TIME)
@@ -540,7 +540,8 @@ class Glados:
         return line
 
 
-if __name__ == "__main__":
+def start() -> None:
+    """Set up the LLM server and start GlaDOS."""
     llama_server_config = LlamaServerConfig.from_yaml("glados_config.yml")
 
     llama_server = None
@@ -565,3 +566,6 @@ if __name__ == "__main__":
     glados = Glados.from_config(glados_config)
 
     glados.start_listen_event_loop()
+
+if __name__ == "__main__":
+    start()
