@@ -86,7 +86,7 @@ class LlamaServer:
 
     @classmethod
     def from_config(cls, config: LlamaServerConfig):
-        llama_cpp_repo_path = Path(config.llama_cpp_repo_path) / "server"
+        llama_cpp_repo_path = Path(config.llama_cpp_repo_path) / "llama-server"
         llama_cpp_repo_path = llama_cpp_repo_path.resolve()
         model_path = Path(config.model_path).resolve()
 

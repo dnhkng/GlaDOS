@@ -16,7 +16,7 @@ This will entail:
 - [ ] Give GLaDOS vision via [LLaVA](https://llava-vl.github.io/)
 - [ ] Create 3D-printable parts
 - [ ] Design the animatronics system
-  
+
 
 
 ## Software Architecture
@@ -25,8 +25,8 @@ The initial goals are to develop a low-latency platform, where GLaDOS can respon
 To do this, the system constantly records data to a circular buffer, waiting for [voice to be detected](https://github.com/snakers4/silero-vad). When it's determined that the voice has stopped (including detection of normal pauses), it will be [transcribed quickly](https://github.com/huggingface/distil-whisper). This is then passed to streaming [local Large Language Model](https://github.com/ggerganov/llama.cpp), where the streamed text is broken by sentence, and passed to a [text-to-speech system](https://github.com/rhasspy/piper). This means further sentences can be generated while the current is playing, reducing latency substantially.
 
 ### Subgoals
- - The other aim of the project is to minimize dependencies, so this can run on constrained hardware. That means no PyTorch or other large packages.  
- - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 dependencies: numpy, onnxruntime, and sounddevice. 
+ - The other aim of the project is to minimize dependencies, so this can run on constrained hardware. That means no PyTorch or other large packages.
+ - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 dependencies: numpy, onnxruntime, and sounddevice.
 
 ## Hardware System
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
@@ -36,7 +36,7 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 
 ### *New Simplified  Windows Installation Process*
 Don't want to compile anything?  Try this simplified process, but be aware it's still in the experimental stage!
- 
+
 
 1. Open the Microsoft Store, search for `python` and install Python 3.12.
    a. To use Python 3.10, install `typing_extensions` and replace `import typing` in `glados/llama.py` with `import typing_extensions`.
@@ -65,7 +65,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
     and put them in the ".models" directory.
 4. For voice recognition, we use [Whisper.cpp](https://github.com/ggerganov/whisper.cpp)
    1. You can either download the compiled [whisper.cpp DLLs](https://github.com/ggerganov/whisper.cpp/releases) (recommended for Windows), and copy the dll to the ./submodules/whisper.cpp directory
-   2. Or compile them yourself. 
+   2. Or compile them yourself.
       1. To pull the code, from the GLaDOS directory use: `git submodule update --init --recursive`
       2. Move to the right subdirectory: `cd submodules/whisper.cpp`
       3. Compile for your system [(see the Documentation)](https://github.com/ggerganov/whisper.cpp), e.g.
@@ -77,8 +77,8 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       1. Use: `git submodule update --init --recursive` to pull the llama.cpp repo
       2. Move to the right subdirectory: `cd submodules/llama.cpp`
       3. Compile llama.cpp, [(see the Documentation)](https://github.com/ggerganov/whisper.cpp)
-         1. Linux with [CUDA](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#cuda) `make server LLAMA_CUDA=1`
-         2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make server`
+         1. Linux with [CUDA](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#cuda) `make llama-server LLAMA_CUDA=1`
+         2. MacOS with [Metal](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#metal-build) `make llama-server`
    2. Use a commercial API or install an inference backend yourself, such as Ollama or Llamafile:
       1. Find and install a backend with an OpenAI compatible API (most of them)
       2. Edit the glados_config.yaml
