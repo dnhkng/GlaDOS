@@ -60,13 +60,12 @@ class ScrollingBlocks(Log):
     }"""
 
     def _animate_blocks(self) -> None:
-        if not glados.IS_SPEAKING.is_set():
-            # Create a string of blocks of the right length, allowing
-            # for border and padding
-            random_blocks = " ".join(
-                random.choice(self.BLOCKS) for _ in range(self.size.width - 8)
-            )
-            self.write_line(f"{random_blocks}")
+        # Create a string of blocks of the right length, allowing
+        # for border and padding
+        random_blocks = " ".join(
+            random.choice(self.BLOCKS) for _ in range(self.size.width - 8)
+        )
+        self.write_line(f"{random_blocks}")
 
     def on_show(self) -> None:
         self.set_interval(0.18, self._animate_blocks)
@@ -105,12 +104,9 @@ class Typewriter(Static):
     def _display_next_char(self) -> None:
         """Get and display the next character."""
         try:
-            # This animation interferes with sound output, so we disable it when
-            # GlaDOS is speaking
-            if not glados.IS_SPEAKING.is_set():
-                if not self._vertical_scroll.is_vertical_scroll_end:
-                    self._vertical_scroll.scroll_down()
-                self._static.update(next(self._iter_text))
+            if not self._vertical_scroll.is_vertical_scroll_end:
+                self._vertical_scroll.scroll_down()
+            self._static.update(next(self._iter_text))
         except StopIteration:
             if self._repeat:
                 self._iter_text = self._get_iterator()
