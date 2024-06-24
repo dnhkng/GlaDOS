@@ -364,7 +364,6 @@ class Glados:
 
                     if total_samples:
                         self.play_sound(audio, tts.RATE)
-                        # sd.play(audio, tts.RATE)
 
                         interrupted, percentage_played = self.percentage_played(
                             total_samples
@@ -403,7 +402,7 @@ class Glados:
             except queue.Empty:
                 pass
 
-    def play_sound(self, audio, rate):
+    def play_sound(self, audio, rate) -> None:
         sd.play(audio, rate, blocksize=2048)
 
 
