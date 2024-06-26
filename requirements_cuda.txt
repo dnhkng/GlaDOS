@@ -5,4 +5,5 @@ levenshtein
 loguru
 jinja2
 requests
+textual
 pyyaml
