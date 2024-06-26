@@ -27,7 +27,6 @@ logger.add(sys.stderr, level="INFO")
 
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-VOICE_MODEL = "glados.onnx"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 PAUSE_TIME = 0.05  # Time to wait between processing loops
@@ -55,6 +54,8 @@ class GladosConfig:
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
     interruptible: bool
+    voice_model: str = "glados.onnx"
+    speaker_id: int = None
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
@@ -78,6 +79,8 @@ class Glados:
 
     def __init__(
         self,
+        voice_model: str,
+        speaker_id: int,
         completion_url: str,
         api_key: str | None = None,
         wake_word: str | None = None,
@@ -108,7 +111,11 @@ class Glados:
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
         self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
-        self._tts = tts.Synthesizer(model_path=str(Path.cwd() / "models" / VOICE_MODEL), use_cuda=False)
+        self._tts = tts.Synthesizer(
+            model_path=str(Path.cwd() / "models" / voice_model),
+            use_cuda=False,
+            speaker_id=speaker_id,
+        )
 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
@@ -177,6 +184,8 @@ class Glados:
             )
 
         return cls(
+            voice_model=config.voice_model,
+            speaker_id=config.speaker_id,
             completion_url=config.completion_url,
             api_key=config.api_key,
             wake_word=config.wake_word,
@@ -447,7 +456,7 @@ class Glados:
         elapsed_time = (
             time.time() - start_time + 0.12
         )  # slight delay to ensure all audio timing is correct
-        played_samples = elapsed_time * tts.RATE
+        played_samples = elapsed_time * self._tts.rate
 
         # Calculate percentage of audio played
         percentage_played = min(int((played_samples / total_samples * 100)), 100)
@@ -497,7 +506,16 @@ class Glados:
                             if next_token:
                                 sentence.append(next_token)
                                 # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [".", "!", "?", ":", ";", "?!", '\n', '\n\n']:
+                                if next_token in [
+                                    ".",
+                                    "!",
+                                    "?",
+                                    ":",
+                                    ";",
+                                    "?!",
+                                    "\n",
+                                    "\n\n",
+                                ]:
                                     self._process_sentence(sentence)
                                     sentence = []
                     if self.processing:
@@ -518,7 +536,12 @@ class Glados:
         """
         sentence = "".join(current_sentence)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
-        sentence = sentence.replace("\n\n", ". ").replace("\n", ". ").replace("  ", " ").replace(":", " ")
+        sentence = (
+            sentence.replace("\n\n", ". ")
+            .replace("\n", ". ")
+            .replace("  ", " ")
+            .replace(":", " ")
+        )
         if sentence:
             self.tts_queue.put(sentence)
 
