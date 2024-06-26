@@ -1,13 +1,14 @@
+from dataclasses import dataclass
 import re
 import subprocess
-from typing import List, Optional
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import numpy as np
+import json
 import onnxruntime
 
 # Constants
 MAX_WAV_VALUE = 32767.0
-RATE = 22050
 
 # Settings
 MODEL_PATH = "./models/glados.onnx"
@@ -178,6 +179,48 @@ PHONEME_ID_MAP = {
 }
 
 
+@dataclass
+class PiperConfig:
+    """Piper configuration"""
+
+    num_symbols: int
+    """Number of phonemes"""
+
+    num_speakers: int
+    """Number of speakers"""
+
+    sample_rate: int
+    """Sample rate of output audio"""
+
+    espeak_voice: str
+    """Name of espeak-ng voice or alphabet"""
+
+    length_scale: float
+    noise_scale: float
+    noise_w: float
+
+    phoneme_id_map: Mapping[str, Sequence[int]]
+    """Phoneme -> [id,]"""
+
+    speaker_id_map: Optional[Dict[str, int]] = None
+
+    @staticmethod
+    def from_dict(config: Dict[str, Any]) -> "PiperConfig":
+        inference = config.get("inference", {})
+
+        return PiperConfig(
+            num_symbols=config["num_symbols"],
+            num_speakers=config["num_speakers"],
+            sample_rate=config["audio"]["sample_rate"],
+            noise_scale=inference.get("noise_scale", 0.667),
+            length_scale=inference.get("length_scale", 1.0),
+            noise_w=inference.get("noise_w", 0.8),
+            espeak_voice=config["espeak"]["voice"],
+            phoneme_id_map=config["phoneme_id_map"],
+            speaker_id_map=config.get("speaker_id_map", {}),
+        )
+
+
 class Synthesizer:
     """Synthesizer, based on the VITS model.
 
@@ -214,9 +257,35 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str, use_cuda: bool):
+    def __init__(
+        self, model_path: str, use_cuda: bool, speaker_id: Optional[int] = None
+    ):
         self.session = self._initialize_session(model_path, use_cuda)
         self.id_map = PHONEME_ID_MAP
+        try:
+            # Load the configuration file
+            config_file_path = model_path + ".json"
+            with open(config_file_path, "r", encoding="utf-8") as config_file:
+                config_dict = json.load(config_file)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Configuration file not found at path: {config_file_path}"
+            )
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}"
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"An unexpected error occurred while reading the configuration file at path: {config_file_path}. Error: {e}"
+            )
+        self.config = PiperConfig.from_dict(config_dict)
+        self.rate = self.config.sample_rate
+        self.speaker_id = (
+            self.config.speaker_id_map.get(str(speaker_id), 0)
+            if self.config.num_speakers > 1
+            else None
+        )
 
     def _initialize_session(
         self, model_path: str, use_cuda: bool
@@ -289,11 +358,19 @@ class Synthesizer:
     def _synthesize_ids_to_raw(
         self,
         phoneme_ids: List[int],
-        length_scale: Optional[float] = 1.0,
-        noise_scale: Optional[float] = 0.667,
-        noise_w: Optional[float] = 0.8,  # 0.8
+        length_scale: Optional[float] = None,
+        noise_scale: Optional[float] = None,
+        noise_w: Optional[float] = None,
     ) -> bytes:
         """Synthesize raw audio from phoneme ids."""
+        if length_scale is None:
+            length_scale = self.config.length_scale
+
+        if noise_scale is None:
+            noise_scale = self.config.noise_scale
+
+        if noise_w is None:
+            noise_w = self.config.noise_w
 
         phoneme_ids_array = np.expand_dims(np.array(phoneme_ids, dtype=np.int64), 0)
         phoneme_ids_lengths = np.array([phoneme_ids_array.shape[1]], dtype=np.int64)
@@ -303,6 +380,11 @@ class Synthesizer:
             dtype=np.float32,
         )
 
+        sid = None
+
+        if self.speaker_id is not None:
+            sid = np.array([self.speaker_id], dtype=np.int64)
+
         # Synthesize through Onnx
         audio = self.session.run(
             None,
@@ -310,6 +392,7 @@ class Synthesizer:
                 "input": phoneme_ids_array,
                 "input_lengths": phoneme_ids_lengths,
                 "scales": scales,
+                "sid": sid,
             },
         )[0].squeeze((0, 1))
 
