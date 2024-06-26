@@ -21,6 +21,7 @@ from sounddevice import CallbackFlags
 from glados import asr, tts, vad
 from glados.llama import LlamaServer, LlamaServerConfig
 
+
 logger.remove(0)
 logger.add(sys.stderr, level="INFO")
 
@@ -70,7 +71,11 @@ class GladosConfig:
         return cls(**config)
 
 
+
+
 class Glados:
+
+
 
     def __init__(
         self,
@@ -144,7 +149,8 @@ class Glados:
         if announcement:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
-            sd.play(audio, self._tts.rate)
+            self.play_sound(audio, tts.RATE)
+
             if not self.interruptible:
                 sd.wait()
 
@@ -366,7 +372,7 @@ class Glados:
                     total_samples = len(audio)
 
                     if total_samples:
-                        sd.play(audio, self._tts.rate)
+                        self.play_sound(audio, tts.RATE)
 
                         interrupted, percentage_played = self.percentage_played(
                             total_samples
@@ -404,6 +410,10 @@ class Glados:
 
             except queue.Empty:
                 pass
+
+    def play_sound(self, audio, rate) -> None:
+        sd.play(audio, rate, blocksize=2048)
+
 
     def clip_interrupted_sentence(
         self, generated_text: str, percentage_played: float
