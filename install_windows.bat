@@ -11,21 +11,21 @@ call .\venv\Scripts\activate
 pip install -r requirements_cuda.txt
 
 echo Downloading Llama...
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b2839/cudart-llama-bin-win-cu12.2.0-x64.zip" --output "cudart-llama-bin-win-cu12.2.0-x64.zip"
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b2839/llama-b2839-bin-win-cuda-cu12.2.0-x64.zip" --output "llama-b2839-bin-win-cuda-cu12.2.0-x64.zip"
+curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/cudart-llama-bin-win-cu12.2.0-x64.zip" --output "cudart-llama-bin-win-cu12.2.0-x64.zip"
+curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/llama-b3266-bin-win-cuda-cu12.2.0-x64.zip" --output "llama-bin-win-cuda-cu12.2.0-x64.zip"
 echo Unzipping Llama...
 tar -xf cudart-llama-bin-win-cu12.2.0-x64.zip -C submodules\llama.cpp
-tar -xf llama-b2839-bin-win-cuda-cu12.2.0-x64.zip -C submodules\llama.cpp
+tar -xf llama-bin-win-cuda-cu12.2.0-x64.zip -C submodules\llama.cpp
 
 echo Downloading Whisper...
-curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.5.4/whisper-cublas-12.2.0-bin-x64.zip" --output "whisper-cublas-12.2.0-bin-x64.zip"
+curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-cublas-12.2.0-bin-x64.zip" --output "whisper-cublas-12.2.0-bin-x64.zip"
 echo Unzipping Whisper...
 tar -xf whisper-cublas-12.2.0-bin-x64.zip -C submodules\whisper.cpp
 
 echo Cleaning up...
 del whisper-cublas-12.2.0-bin-x64.zip
 del cudart-llama-bin-win-cu12.2.0-x64.zip
-del llama-b2839-bin-win-cuda-cu12.2.0-x64.zip
+del llama-bin-win-cuda-cu12.2.0-x64.zip
 
 REM Download ASR and LLM Models
 echo Downloading Models...
