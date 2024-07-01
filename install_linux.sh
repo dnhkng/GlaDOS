@@ -32,8 +32,8 @@ rm cudart-llama-bin-linux-cu12.2.0-x64.tar.gz
 rm llama-bin-linux-cuda-cu12.2.0-x64.tar.gz
 
 echo "Downloading Models..."
-mkdir -p models
-curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models/ggml-medium-32-2.en.bin"
-curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
+mkdir -p models || { echo "Failed to create models directory"; exit 1; }
+curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models/ggml-medium-32-2.en.bin" || { echo "Failed to download ggml-medium-32-2.en.bin"; exit 1; }
+curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models/Meta-Llama-3-8B-Instruct-Q6_K.gguf" || { echo "Failed to download Meta-Llama-3-8B-Instruct-Q6_K.gguf"; exit 1; }
 
 echo "Done!"
