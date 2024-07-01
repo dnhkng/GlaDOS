@@ -51,7 +51,7 @@ This is still experimental, any issues can be helped in the discord server, if y
 1. Install Python 3.12 from pythons website (https://www.python.org/downloads/release/python-3124/)
 2. (Optional) Install homebrew prior to running the `install_mac.sh`, if you dont do this it will install it for you (Not tested)
 3. `git clone` this repository using `git clone github.com/dnhkng/glados.git`
-4. Run the `install_mac.sh`. If you do not have python installed then you will run into an error
+4. Run the `install_mac.sh`. If you do not have Python installed, then you will run into an error.
 5. Once this finishes run the `start_mac.sh` to start GLaDOS
 
 ## Regular installation
