@@ -10,9 +10,9 @@ cd ..
 rm -rf espeak-ng-1.51
 rm espeak-ng-1.51.tar.gz
 
-python3.12 -m venv venv
-source venv/bin/activate
-pip install -r requirements_cuda.txt
+python3.12 -m venv venv || { echo "Failed to create virtual environment"; exit 1; }
+source venv/bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
+pip install -r requirements_cuda.txt || { echo "Failed to install Python dependencies"; exit 1; }
 
 echo "Downloading Llama..."
 curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/cudart-llama-bin-linux-cu12.2.0-x64.tar.gz" --output "cudart-llama-bin-linux-cu12.2.0-x64.tar.gz"
