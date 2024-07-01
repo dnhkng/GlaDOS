@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 echo "Install espeak-ng..."
 curl -L "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-1.51.tar.gz" --output "espeak-ng-1.51.tar.gz"
 tar -xzf espeak-ng-1.51.tar.gz
