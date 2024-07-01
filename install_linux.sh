@@ -27,9 +27,9 @@ echo "Unzipping Whisper..."
 tar -xzf whisper-cublas-12.2.0-bin-x64.tar.gz -C submodules/whisper.cpp || { echo "Failed to extract whisper"; exit 1; }
 
 echo "Cleaning up..."
-rm whisper-cublas-12.2.0-bin-x64.tar.gz
-rm cudart-llama-bin-linux-cu12.2.0-x64.tar.gz
-rm llama-bin-linux-cuda-cu12.2.0-x64.tar.gz
+rm whisper-cublas-12.2.0-bin-x64.tar.gz || { echo "Failed to remove whisper tarball"; exit 1; }
+rm cudart-llama-bin-linux-cu12.2.0-x64.tar.gz || { echo "Failed to remove cudart-llama tarball"; exit 1; }
+rm llama-bin-linux-cuda-cu12.2.0-x64.tar.gz || { echo "Failed to remove llama tarball"; exit 1; }
 
 echo "Downloading Models..."
 mkdir -p models || { echo "Failed to create models directory"; exit 1; }
