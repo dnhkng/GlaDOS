@@ -44,6 +44,15 @@ Don't want to compile anything?  Try this simplified process, but be aware it's 
 3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
 4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
 
+### *Even newer Simplified macOS Installation Process*
+This is still experimental, any issues can be helped in the discord server, if you create an issue related to this you will be reffered to the discord serer
+
+
+1. Install Python 3.12 from pythons website (https://www.python.org/downloads/release/python-3124/)
+2. (Optional) Install homebrew prior to running the `install_mac.sh`, if you dont do this it will install it for you (Not tested)
+3. `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+4. Run the `install_mac.sh`. If you do not have python installed then you will run into an error
+5. Once this finishes run the `start_mac.sh` to start GLaDOS
 
 ## Regular installation
 
