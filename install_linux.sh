@@ -6,8 +6,10 @@ command_exists() {
 
 echo "Installing espeak-ng..."
 if command_exists apt; then
+    sudo add-apt-repository ppa:deadsnakes/ppa || { echo "Failed to add apt repository"; exit 1; }
+    sudo apt install python3.12 python3.12-venv || { echo "Failed to install python3.12 with apt"; exit 1; }
     sudo apt-get update || { echo "Failed to update package list"; exit 1; }
-    sudo apt-get install -y espeak-ng || { echo "Failed to install espeak-ng with apt-get"; exit 1; }
+    sudo apt-get install -y espeak-ng || { echo "Failed to install espeak-ng with apt"; exit 1; }
 elif command_exists pacman; then
     sudo pacman -Syu --noconfirm || { echo "Failed to update package list"; exit 1; }
     sudo pacman -S --noconfirm espeak-ng || { echo "Failed to install espeak-ng with pacman"; exit 1; }
