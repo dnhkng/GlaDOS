@@ -1,11 +1,11 @@
 #!/bin/bash
 echo "Install espeak-ng..."
-curl -L "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-1.51.tar.gz" --output "espeak-ng-1.51.tar.gz"
-tar -xzf espeak-ng-1.51.tar.gz
+curl -L "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-1.51.tar.gz" --output "espeak-ng-1.51.tar.gz" || { echo "Failed to download espeak-ng"; exit 1; }
+tar -xzf espeak-ng-1.51.tar.gz || { echo "Failed to extract espeak-ng"; exit 1; }
 cd espeak-ng-1.51 || exit
-./configure
-make
-sudo make install
+./configure || { echo "Failed to configure espeak-ng"; exit 1; }
+make || { echo "Failed to build espeak-ng"; exit 1; }
+sudo make install || { echo "Failed to install espeak-ng"; exit 1; }
 cd ..
 rm -rf espeak-ng-1.51
 rm espeak-ng-1.51.tar.gz
