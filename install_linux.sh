@@ -22,9 +22,9 @@ tar -xzf cudart-llama-bin-linux-cu12.2.0-x64.tar.gz -C submodules/llama.cpp
 tar -xzf llama-bin-linux-cuda-cu12.2.0-x64.tar.gz -C submodules/llama.cpp
 
 echo "Downloading Whisper..."
-curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-cublas-12.2.0-bin-x64.tar.gz" --output "whisper-cublas-12.2.0-bin-x64.tar.gz"
+curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-cublas-12.2.0-bin-x64.tar.gz" --output "whisper-cublas-12.2.0-bin-x64.tar.gz" || { echo "Failed to download whisper"; exit 1; }
 echo "Unzipping Whisper..."
-tar -xzf whisper-cublas-12.2.0-bin-x64.tar.gz -C submodules/whisper.cpp
+tar -xzf whisper-cublas-12.2.0-bin-x64.tar.gz -C submodules/whisper.cpp || { echo "Failed to extract whisper"; exit 1; }
 
 echo "Cleaning up..."
 rm whisper-cublas-12.2.0-bin-x64.tar.gz
