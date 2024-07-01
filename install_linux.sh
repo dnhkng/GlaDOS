@@ -15,11 +15,11 @@ source venv/bin/activate || { echo "Failed to activate virtual environment"; exi
 pip install -r requirements_cuda.txt || { echo "Failed to install Python dependencies"; exit 1; }
 
 echo "Downloading Llama..."
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/cudart-llama-bin-linux-cu12.2.0-x64.tar.gz" --output "cudart-llama-bin-linux-cu12.2.0-x64.tar.gz"
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/llama-b3266-bin-linux-cuda-cu12.2.0-x64.tar.gz" --output "llama-bin-linux-cuda-cu12.2.0-x64.tar.gz"
+curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/cudart-llama-bin-linux-cu12.2.0-x64.tar.gz" --output "cudart-llama-bin-linux-cu12.2.0-x64.tar.gz" || { echo "Failed to download cudart-llama"; exit 1; }
+curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/llama-b3266-bin-linux-cuda-cu12.2.0-x64.tar.gz" --output "llama-bin-linux-cuda-cu12.2.0-x64.tar.gz" || { echo "Failed to download llama"; exit 1; }
 echo "Unzipping Llama..."
-tar -xzf cudart-llama-bin-linux-cu12.2.0-x64.tar.gz -C submodules/llama.cpp
-tar -xzf llama-bin-linux-cuda-cu12.2.0-x64.tar.gz -C submodules/llama.cpp
+tar -xzf cudart-llama-bin-linux-cu12.2.0-x64.tar.gz -C submodules/llama.cpp || { echo "Failed to extract cudart-llama"; exit 1; }
+tar -xzf llama-bin-linux-cuda-cu12.2.0-x64.tar.gz -C submodules/llama.cpp || { echo "Failed to extract llama"; exit 1; }
 
 echo "Downloading Whisper..."
 curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-cublas-12.2.0-bin-x64.tar.gz" --output "whisper-cublas-12.2.0-bin-x64.tar.gz" || { echo "Failed to download whisper"; exit 1; }
