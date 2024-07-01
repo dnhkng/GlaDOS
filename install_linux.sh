@@ -1,14 +1,23 @@
 #!/bin/bash
-echo "Install espeak-ng..."
-curl -L "https://github.com/espeak-ng/espeak-ng/archive/refs/tags/1.51.tar.gz" --output "espeak-ng-1.51.tar.gz" || { echo "Failed to download espeak-ng"; exit 1; }
-tar -xzf espeak-ng-1.51.tar.gz || { echo "Failed to extract espeak-ng"; exit 1; }
-cd espeak-ng-1.51 || exit
-./configure || { echo "Failed to configure espeak-ng"; exit 1; }
-make || { echo "Failed to build espeak-ng"; exit 1; }
-sudo make install || { echo "Failed to install espeak-ng"; exit 1; }
-cd ..
-rm -rf espeak-ng-1.51
-rm espeak-ng-1.51.tar.gz
+
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+echo "Installing espeak-ng..."
+if command_exists apt; then
+    sudo apt-get update || { echo "Failed to update package list"; exit 1; }
+    sudo apt-get install -y espeak-ng || { echo "Failed to install espeak-ng with apt-get"; exit 1; }
+elif command_exists pacman; then
+    sudo pacman -Syu --noconfirm || { echo "Failed to update package list"; exit 1; }
+    sudo pacman -S --noconfirm espeak-ng || { echo "Failed to install espeak-ng with pacman"; exit 1; }
+elif command_exists dnf; then
+    sudo dnf check-update || { echo "Failed to check for updates"; exit 1; }
+    sudo dnf install -y espeak-ng || { echo "Failed to install espeak-ng with dnf"; exit 1; }
+else
+    echo "No compatible package manager found (apt-get, pacman, dnf)"
+    exit 1
+fi
 
 python3.12 -m venv venv || { echo "Failed to create virtual environment"; exit 1; }
 source venv/bin/activate || { echo "Failed to activate virtual environment"; exit 1; }
@@ -33,7 +42,7 @@ rm llama-bin-linux-cuda-cu12.2.0-x64.tar.gz || { echo "Failed to remove llama ta
 
 echo "Downloading Models..."
 mkdir -p models || { echo "Failed to create models directory"; exit 1; }
-curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models/ggml-medium-32-2.en.bin" || { echo "Failed to download ggml-medium-32-2.en.bin"; exit 1; }
+curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output "models/ggml-medium-32-2.en.bin" || { echo "Failed to download ggml-medium-32-2.en.bin"; exit 1; }
 curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models/Meta-Llama-3-8B-Instruct-Q6_K.gguf" || { echo "Failed to download Meta-Llama-3-8B-Instruct-Q6_K.gguf"; exit 1; }
 
 echo "Done!"
