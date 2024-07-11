@@ -34,6 +34,7 @@ curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/
 
 echo Done!
 
++ REM Handle user choice to start GlaDOS
 choice /C NY /M "Start GlaDOS? "
 goto %errorlevel%
 
