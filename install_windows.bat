@@ -33,3 +33,12 @@ curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggm
 curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models\Meta-Llama-3-8B-Instruct-Q6_K.gguf"
 
 echo Done!
+
+choice /C NY /M "Start GlaDOS? "
+goto %errorlevel%
+
+:1 Y
+./start_windows.bat
+goto end
+:end
+exit /B
