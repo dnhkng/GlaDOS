@@ -7,6 +7,8 @@ import numpy as np
 import json
 import onnxruntime
 
+from playsound import playsound # Use to play sounds instead (please help idk how to implment).
+
 # Constants
 MAX_WAV_VALUE = 32767.0
 
