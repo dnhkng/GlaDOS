@@ -26,7 +26,7 @@ To do this, the system constantly records data to a circular buffer, waiting for
 
 ### Subgoals
  - The other aim of the project is to minimize dependencies, so this can run on constrained hardware. That means no PyTorch or other large packages.
- - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 dependencies: numpy, onnxruntime, and sounddevice.
+ - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 (soon to be 4) dependencies: numpy, onnxruntime, (playsound,) and sounddevice.
 
 ## Hardware System
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
@@ -42,7 +42,7 @@ Don't want to compile anything?  Try this simplified process, but be aware it's 
    a. To use Python 3.10, install `typing_extensions` and replace `import typing` in `glados/llama.py` with `import typing_extensions`.
 2. Download and unzip this repository somewhere in your home folder.
 3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
-4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
+4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script or choose yes after the installer.
 
 ### *Even newer Simplified macOS Installation Process*
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.
