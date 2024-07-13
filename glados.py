@@ -491,23 +491,27 @@ class Glados:
                         if self.processing is False:
                             break  # If the stop flag is set from new voice input, halt processing
                         if line:  # Filter out empty keep-alive new lines
-                            line = self._clean_raw_bytes(line)
-                            next_token = self._process_line(line)
-                            if next_token:
-                                sentence.append(next_token)
-                                # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [
-                                    ".",
-                                    "!",
-                                    "?",
-                                    ":",
-                                    ";",
-                                    "?!",
-                                    "\n",
-                                    "\n\n",
-                                ]:
-                                    self._process_sentence(sentence)
-                                    sentence = []
+                            line = line.decode("utf-8")
+                            if line == "data: [DONE]":
+                                break
+                            else:
+                                json_line = self._line_to_json(line)
+                                next_token = self._process_line(json_line)
+                                if next_token:
+                                    sentence.append(next_token)
+                                    # If there is a pause token, send the sentence to the TTS queue
+                                    if next_token in [
+                                        ".",
+                                        "!",
+                                        "?",
+                                        ":",
+                                        ";",
+                                        "?!",
+                                        "\n",
+                                        "\n\n",
+                                    ]:
+                                        self._process_sentence(sentence)
+                                        sentence = []
                     if self.processing:
                         if sentence:
                             self._process_sentence(sentence)
@@ -535,32 +539,28 @@ class Glados:
         if sentence:
             self.tts_queue.put(sentence)
 
-    def _process_line(self, line):
+    def _process_line(self, json_line):
         """
-        Processes a single line of text from the LLM server.
+        Processes a single stream token of text from the LLM server.
 
         Args:
-            line (dict): The line of text from the LLM server.
+            json_line (dict): The response piece from the LLM server.
         """
-
-        if not line["stop"]:
-            token = line["content"]
+        if json_line["choices"][0]["finish_reason"] == "null":
+            token = json_line["choices"][0]["text"]
             return token
         return None
 
-    def _clean_raw_bytes(self, line):
+    def _line_to_json(self, response_data):
         """
-        Cleans the raw bytes from the LLM server for processing.
-
-        Coverts the bytes to a dictionary.
+        Coverts stream response data to a dictionary.
 
         Args:
-            line (bytes): The raw bytes from the LLM server.
+            response_data (string): The raw response string from the LLM server.
         """
-        line = line.decode("utf-8")
-        line = line.removeprefix("data: ")
-        line = json.loads(line)
-        return line
+        response_data = response_data.removeprefix("data: ")
+        json_line = json.loads(response_data)
+        return json_line
 
 
 def start() -> None:
