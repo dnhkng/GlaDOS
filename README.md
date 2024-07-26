@@ -49,7 +49,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 
 1. Install Python 3.12 from pythons website (https://www.python.org/downloads/release/python-3124/)
-2. (Optional) Install [Homebrew](brew.sh) before running the `install_mac.sh`. If you don't do this, it will install it for you (Not tested) If you can test this then please create an issue or ping me (`@_Ghostboo__#2590`) in the discord server.
+2. (Optional) Install [Homebrew](https://brew.sh/) before running the `install_mac.sh`. If you don't do this, it will install it for you (Not tested) If you can test this then please create an issue or ping me (`@_Ghostboo__#2590`) in the discord server.
 3. Clone this repository using `git clone https://github.com/Ghostboo-124/GlaDOS.git` from the terminal in the directory that you want it to be in
 4. Run `git switch macOS` to get to the macOS branch of my tree
 5. Run the `install_mac.sh`. If you do not have Python or Homebrew installed, then you will run into an error.
