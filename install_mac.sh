@@ -16,10 +16,20 @@ else
     brew update
 fi
 
+cd $SCRIPT_DIR/
+
+# Installing espeak-ng through homebrew
+echo Installing espeak-ng
 brew install espeak-ng
 
-python3.12 -m venv venv > /dev/null
-source venv/bin/activate > /dev/null
+# Installing ccache for faster compilation times
+echo Installing ccache
+brew install ccache
+
+# Making, starting venv, and then installing python requirements
+python3.12 -m venv venv
+source venv/bin/activate
+echo Installing python requirements
 python3.12 -m pip install -r requirements.txt > /dev/null
 
 # Installing Whisper and llama
@@ -36,7 +46,7 @@ cd ..
 # Compiling llama
 echo "Compiling llama"
 cd submodules/llama.cpp
-make server > /dev/null
+make llama-server > /dev/null
 cd ..
 cd ..
 
