@@ -118,7 +118,7 @@ class Typewriter(Static):
 class SplashScreen(Screen):
     """Splash screen shown on startup."""
 
-    with open(Path("./glados_ui/images/splash.ansi")) as f:
+    with open(Path("./glados_ui/images/splash.ansi"), 'r', encoding='utf-8') as f:
         SPLASH_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
@@ -182,7 +182,7 @@ class GladosUI(App):
 
     SUB_TITLE = "(c) 1982 Aperture Science, Inc."
 
-    with open(Path("./glados_ui/images/logo.ansi")) as f:
+    with open(Path("./glados_ui/images/logo.ansi"), 'r', encoding='utf-8') as f:
         LOGO_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
