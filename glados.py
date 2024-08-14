@@ -44,6 +44,24 @@ DEFAULT_PERSONALITY_PREPROMPT = (
     },
 )
 
+@dataclass
+class LlamaGenConfig:
+    temperature: float = 0.7
+    dynatemp_range: float = 0.0
+    dynatemp_exponent: float = 1.1
+    top_k: int = 40,
+    top_p: float = 0.95,
+    min_p: float = 0.05
+
+    @classmethod
+    def from_yaml(cls, filename):
+        config = {}
+        with open(filename, 'r') as file:
+            data = yaml.safe_load(file)
+            if 'LlamaGenConfig' in data:
+                config.update(data['LlamaGenConfig'])
+            return cls(**config)
+
 
 @dataclass
 class GladosConfig:
@@ -82,6 +100,12 @@ class Glados:
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
         interruptible: bool = True,
+        temperature = float,
+        dynatemp_range = float,
+        dynatemp_exponent = float,
+        top_k = int,
+        top_p = float,
+        min_p = float,
     ) -> None:
         """
         Initializes the VoiceRecognition class, setting up necessary models, streams, and queues.
@@ -135,6 +159,14 @@ class Glados:
 
         self.template = Template(LLAMA3_TEMPLATE)
 
+        #LLama generation/sampler parameters.
+        self.temperature = temperature
+        self.dynatemp_range = dynatemp_range
+        self.dynatemp_exponent = dynatemp_exponent
+        self.top_k = top_k
+        self.top_p = top_p
+        self.min_p = min_p
+
         llm_thread = threading.Thread(target=self.process_LLM)
         llm_thread.start()
 
@@ -169,7 +201,7 @@ class Glados:
         return self._messages
 
     @classmethod
-    def from_config(cls, config: GladosConfig):
+    def from_config(cls, config: GladosConfig, llama_gen_config: LlamaGenConfig):
 
         personality_preprompt = []
         for line in config.personality_preprompt:
@@ -186,6 +218,12 @@ class Glados:
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
             interruptible=config.interruptible,
+            temperature=llama_gen_config.temperature,
+            dynatemp_range=llama_gen_config.dynatemp_range,
+            dynatemp_exponent=llama_gen_config.dynatemp_exponent,
+            top_k=llama_gen_config.top_k,
+            top_p=llama_gen_config.top_p,
+            min_p=llama_gen_config.min_p
         )
 
     @classmethod
@@ -473,6 +511,12 @@ class Glados:
 
                 data = {
                     "stream": True,
+                    "temperature": self.temperature,
+                    "dynatemp_range": self.dynatemp_range,
+                    "dynatemp_exponent": self.dynatemp_exponent,
+                    "top_k": self.top_k,
+                    "top_p": self.top_p,
+                    "min_p": self.min_p,
                     "prompt": prompt,
                 }
                 logger.debug(f"starting request on {self.messages=}")
@@ -585,8 +629,10 @@ def start() -> None:
             raise ValueError(
                 "Glados needs a non-empty completion_url if LlamaServer is not configured!"
             )
+    # Load LLama server generation/sampling parameters from YAML file
+    llama_gen_config = LlamaGenConfig.from_yaml("glados_config.yml")
 
-    glados = Glados.from_config(glados_config)
+    glados = Glados.from_config(glados_config, llama_gen_config)
 
     glados.start_listen_event_loop()
 
