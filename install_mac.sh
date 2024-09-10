@@ -57,4 +57,4 @@ curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/
 
 # Fixes ggml-metal.metal
 echo Fixing Whisper.cpp
-sed -i "1,6s|ggml-common.h|$SCRIPT_DIR/submodules/whisper.cpp/ggml-common.h|" submodules/whisper.cpp/ggml/src/ggml-metal.metal
+sed -i "1,6s|ggml-common.h|$SCRIPT_DIR/submodules/whisper.cpp/ggml/src/ggml-common.h|" submodules/whisper.cpp/ggml/src/ggml-metal.metal
