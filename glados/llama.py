@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from dataclasses import dataclass
@@ -86,9 +87,16 @@ class LlamaServer:
 
     @classmethod
     def from_config(cls, config: LlamaServerConfig):
-        llama_cpp_repo_path = Path(config.llama_cpp_repo_path) / "llama-server"
+        llama_cpp_repo_path = Path(
+            os.path.join(
+                os.path.expanduser(config.llama_cpp_repo_path),
+                "llama-server"
+            )
+        ).resolve()
         llama_cpp_repo_path = llama_cpp_repo_path.resolve()
-        model_path = Path(config.model_path).resolve()
+        model_path = Path(
+            os.path.expanduser(config.model_path)
+        ).resolve()
 
         return cls(
             llama_cpp_repo_path=llama_cpp_repo_path,
@@ -174,7 +182,8 @@ class LlamaServer:
                         f"Couldn't establish connection after {max_connection_attempts=}"
                     )
                     return False
-            time.sleep(sleep_time_between_attempts)
+            finally:
+                time.sleep(sleep_time_between_attempts)
 
     def stop(self):
         if self.process:

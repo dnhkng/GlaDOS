@@ -27,7 +27,42 @@ logger.add(sys.stderr, level="INFO")
 ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
-LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
+TEMPLATES = {
+    "LLAMA3": "".join([
+        "{% set loop_messages = messages %}",
+        "{% for message in loop_messages %}",
+        "    {% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}",
+        "    {% if loop.index0 == 0 %}",
+        "        {% set content = bos_token + content %}",
+        "    {% endif %}",
+        "    {{ content }}",
+        "{% endfor %}",
+        "{% if add_generation_prompt %}",
+        "    {{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
+        "{% endif %}"
+    ]),
+    "CHATML": "".join([
+        "{% if messages[0]['role'] == 'system' %}",
+        "    {% set offset = 1 %}",
+        "{% else %}",
+        "    {% set offset = 0 %}",
+        "{% endif %}",
+        "",
+        "{{ bos_token }}",
+        "{% for message in messages %}",
+        "    {% if (message['role'] == 'user') != (loop.index0 % 2 == offset) %}",
+        "        {{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}",
+        "    {% endif %}",
+        "",
+        "    {{ '<|im_start|>' + message['role'] + '\n' + message['content'] | trim + '<|im_end|>\n' }}",
+        "{% endfor %}",
+        "",
+        "{% if add_generation_prompt %}",
+        "    {{ '<|im_start|>assistant\n' }}",
+        "{% endif %}"
+    ])
+}
+
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
@@ -53,6 +88,7 @@ class GladosConfig:
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
     interruptible: bool
+    template: str = "LLAMA3"
     voice_model: str = "glados.onnx"
     speaker_id: int = None
 
@@ -79,6 +115,7 @@ class Glados:
         completion_url: str,
         api_key: str | None = None,
         wake_word: str | None = None,
+        template: str = "LLAMA3",
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
         interruptible: bool = True,
@@ -133,7 +170,7 @@ class Glados:
 
         self.shutdown_event = threading.Event()
 
-        self.template = Template(LLAMA3_TEMPLATE)
+        self.template = Template(TEMPLATES[template])
 
         llm_thread = threading.Thread(target=self.process_LLM)
         llm_thread.start()
@@ -183,6 +220,7 @@ class Glados:
             completion_url=config.completion_url,
             api_key=config.api_key,
             wake_word=config.wake_word,
+            template=config.template,
             personality_preprompt=personality_preprompt,
             announcement=config.announcement,
             interruptible=config.interruptible,
@@ -508,6 +546,11 @@ class Glados:
                                 ]:
                                     self._process_sentence(sentence)
                                     sentence = []
+                                # If the model sent <|im_end|>, then stop
+                                # listening for more tokens and just close
+                                # the connection.
+                                if next_token == "<|im_end|>":
+                                    break
                     if self.processing:
                         if sentence:
                             self._process_sentence(sentence)
@@ -519,12 +562,16 @@ class Glados:
         """
         Join text, remove inflections and actions, and send to the TTS queue.
 
+        If the model sent <|im_end|> we need to remove it and any text following
+        it.
+
         The LLM like to *whisper* things or (scream) things, and prompting is not a 100% fix.
         We use regular expressions to remove text between ** and () to clean up the text.
         Finally, we remove any non-alphanumeric characters/punctuation and send the text
         to the TTS queue.
         """
         sentence = "".join(current_sentence)
+        sentence = re.sub(r"\<\|im_end\|\>.*$", "", sentence)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
         sentence = (
             sentence.replace("\n\n", ". ")
