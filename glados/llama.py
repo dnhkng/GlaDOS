@@ -121,7 +121,7 @@ class LlamaServer:
         return f"{self.base_url}/health"
 
     def start(self):
-        logger.info(f"Starting the server by executing command {self.command=}")
+        logger.info(f"Starting the server by executing command: {" ".join([str(clause) for clause in self.command])}")
         self.process = subprocess.Popen(
             self.command,
             stdout=subprocess.DEVNULL,
@@ -135,7 +135,7 @@ class LlamaServer:
     def is_running(
         self,
         max_connection_attempts: int = 10,
-        sleep_time_between_attempts: float = 0.01,
+        sleep_time_between_attempts: float = 0.50,
         max_wait_time_for_model_loading: float = 60.0,
     ) -> bool:
         if self.process is None:
@@ -182,8 +182,7 @@ class LlamaServer:
                         f"Couldn't establish connection after {max_connection_attempts=}"
                     )
                     return False
-            finally:
-                time.sleep(sleep_time_between_attempts)
+            time.sleep(sleep_time_between_attempts)
 
     def stop(self):
         if self.process:

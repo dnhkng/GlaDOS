@@ -29,34 +29,19 @@ VAD_MODEL = "silero_vad.onnx"
 LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
 TEMPLATES = {
     "LLAMA3": "".join([
-        "{% set loop_messages = messages %}",
-        "{% for message in loop_messages %}",
-        "    {% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}",
-        "    {% if loop.index0 == 0 %}",
-        "        {% set content = bos_token + content %}",
-        "    {% endif %}",
-        "    {{ content }}",
+        "{{ bos_token }}",
+        "{% for message in messages %}",
+        "    {{ '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' }}",
         "{% endfor %}",
         "{% if add_generation_prompt %}",
         "    {{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
         "{% endif %}"
     ]),
     "CHATML": "".join([
-        "{% if messages[0]['role'] == 'system' %}",
-        "    {% set offset = 1 %}",
-        "{% else %}",
-        "    {% set offset = 0 %}",
-        "{% endif %}",
-        "",
         "{{ bos_token }}",
         "{% for message in messages %}",
-        "    {% if (message['role'] == 'user') != (loop.index0 % 2 == offset) %}",
-        "        {{ raise_exception('Conversation roles must alternate user/assistant/user/assistant/...') }}",
-        "    {% endif %}",
-        "",
         "    {{ '<|im_start|>' + message['role'] + '\n' + message['content'] | trim + '<|im_end|>\n' }}",
         "{% endfor %}",
-        "",
         "{% if add_generation_prompt %}",
         "    {{ '<|im_start|>assistant\n' }}",
         "{% endif %}"
@@ -623,7 +608,7 @@ def start() -> None:
     if llama_server is not None:
         if glados_config.completion_url:
             raise ValueError(
-                f"Should not pass completion_ulr to glados config if LlamaServer is configured!"
+                f"Should not pass completion_url to glados config if LlamaServer is configured!"
                 f"Got {glados_config.completion_url=}"
             )
         glados_config.completion_url = llama_server.completion_url
