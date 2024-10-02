@@ -93,7 +93,6 @@ class LlamaServer:
                 "llama-server"
             )
         ).resolve()
-        llama_cpp_repo_path = llama_cpp_repo_path.resolve()
         model_path = Path(
             os.path.expanduser(config.model_path)
         ).resolve()

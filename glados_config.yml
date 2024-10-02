@@ -19,8 +19,13 @@ Glados:
 
 LlamaServer:
   model_path: "./models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
-  # https://huggingface.co/TheBloke/rocket-3B-GGUF/blob/main/rocket-3b.Q4_K_M.gguf
+  # Rocket 3B model
+  # Download URL: https://huggingface.co/TheBloke/rocket-3B-GGUF/blob/main/rocket-3b.Q4_K_M.gguf
+  # Rocket 3B is an alternative model (Only requires 4.7 GiB VRAM as opposed to
+  # the 7.5 GiB VRAM required by Meta-Llama-3-8B-Instruct-Q6_K model, and thus
+  # can easily run on an 8GiB VRAM card even with both Whisper and Piper running
+  # on the same card)
+  # rocket-3b model requires CHATML template in Glados section
   # model_path: "./models/rocket-3b.Q4_K_M.gguf"
-  # rocket-3b model requires CHATML template
   llama_cpp_repo_path: "./submodules/llama.cpp"
   context_length: 8192
