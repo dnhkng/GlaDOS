@@ -2,7 +2,8 @@ Glados:
   completion_url: ""
   api_key: "Bearer your_api_key_here"
   announcement: "All neural network modules are now loaded. No network access detected. How very annoying. System Operational."
-  template: "CHATML"
+  template: "LLAMA3"
+  # template: "CHATML"
   # voice_model: "en_US-libritts_r-medium.onnx"
   # speaker_id: 1740
   interruptible: true
@@ -17,8 +18,9 @@ Glados:
   wake_word: null
 
 LlamaServer:
-  # model_path: "./models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
+  model_path: "./models/Meta-Llama-3-8B-Instruct-Q6_K.gguf"
   # https://huggingface.co/TheBloke/rocket-3B-GGUF/blob/main/rocket-3b.Q4_K_M.gguf
-  model_path: "./models/rocket-3b.Q4_K_M.gguf"
+  # model_path: "./models/rocket-3b.Q4_K_M.gguf"
+  # rocket-3b model requires CHATML template
   llama_cpp_repo_path: "./submodules/llama.cpp"
   context_length: 8192
