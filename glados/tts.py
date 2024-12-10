@@ -2,16 +2,21 @@ from dataclasses import dataclass
 import re
 import subprocess
 from typing import Any, Dict, List, Mapping, Optional, Sequence
+from pathlib import Path
+from pickle import load
 
 import numpy as np
 import json
 import onnxruntime
+
+from . import phonemizer
 
 # Constants
 MAX_WAV_VALUE = 32767.0
 
 # Settings
 MODEL_PATH = "./models/glados.onnx"
+PHONEME_TO_ID_PATH = Path("./models/phoneme_to_id.pkl")
 USE_CUDA = True
 
 # Conversions
@@ -261,7 +266,11 @@ class Synthesizer:
         self, model_path: str, use_cuda: bool, speaker_id: Optional[int] = None
     ):
         self.session = self._initialize_session(model_path, use_cuda)
-        self.id_map = PHONEME_ID_MAP
+        self.phonemizer = phonemizer.Phonemizer()
+        # self.id_map = PHONEME_ID_MAP
+
+        self.id_map = self._load_pickle(PHONEME_TO_ID_PATH)
+
         try:
             # Load the configuration file
             config_file_path = model_path + ".json"
@@ -286,6 +295,12 @@ class Synthesizer:
             if self.config.num_speakers > 1
             else None
         )
+
+    @staticmethod
+    def _load_pickle(path: Path) -> dict:
+        """Load a pickled dictionary from path."""
+        with path.open('rb') as f:
+            return load(f)
 
     def _initialize_session(
         self, model_path: str, use_cuda: bool
@@ -315,30 +330,9 @@ class Synthesizer:
 
     def _phonemizer(self, input_text: str) -> List[str]:
         """Converts text to phonemes using espeak-ng."""
+        phonemes = self.phonemizer.convert_to_phonemes([input_text], 'en_us')
 
-        try:
-            # Prepare the command to call espeak with the desired flags
-            command = [
-                "espeak-ng",  # 'C:\Program Files\eSpeak NG\espeak-ng.exe',
-                "--ipa=2",  # Output phonemes in IPA format
-                "-q",  # Quiet, no output except the phonemes
-                "--stdout",  # Output the phonemes to stdout
-                input_text,
-            ]
-
-            # Execute the command and capture the output
-            result = subprocess.run(
-                command, capture_output=True, text=True, check=True, encoding="utf-8"
-            )
-
-            phonemes = result.stdout.strip().replace("\n", ".").replace("  ", " ")
-            phonemes = re.sub(r"_+", "_", phonemes)
-            phonemes = re.sub(r"_ ", " ", phonemes)
-            return phonemes.splitlines()
-
-        except subprocess.CalledProcessError as e:
-            print("Error in phonemization:", str(e))
-            return []
+        return phonemes
 
     def _phonemes_to_ids(self, phonemes: str) -> List[int]:
         """Phonemes to ids."""
