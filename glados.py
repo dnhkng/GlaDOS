@@ -12,6 +12,7 @@ from typing import Any, List, Optional, Sequence, Tuple
 import numpy as np
 import requests
 import sounddevice as sd
+from sounddevice import CallbackFlags
 import yaml
 from jinja2 import Template
 from Levenshtein import distance
@@ -19,21 +20,17 @@ from loguru import logger
 from sounddevice import CallbackFlags
 
 from glados import asr, tts, vad
-from glados.llama import LlamaServer, LlamaServerConfig
 
 logger.remove(0)
-logger.add(sys.stderr, level="INFO")
+logger.add(sys.stderr, level="SUCCESS")
 
-ASR_MODEL = "ggml-medium-32-2.en.bin"
 VAD_MODEL = "silero_vad.onnx"
-LLM_STOP_SEQUENCE = "<|eot_id|>"  # End of sentence token for Meta-Llama-3
-LLAMA3_TEMPLATE = "{% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
 VAD_THRESHOLD = 0.9  # Threshold for VAD detection
 BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
-PAUSE_LIMIT = 400  # Milliseconds of pause allowed before processing
+PAUSE_LIMIT = 500  # Milliseconds of pause allowed before processing
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
 NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
@@ -48,6 +45,7 @@ DEFAULT_PERSONALITY_PREPROMPT = (
 @dataclass
 class GladosConfig:
     completion_url: str
+    model: str
     api_key: Optional[str]
     wake_word: Optional[str]
     announcement: Optional[str]
@@ -69,14 +67,13 @@ class GladosConfig:
 
         return cls(**config)
 
-
 class Glados:
-
     def __init__(
         self,
         voice_model: str,
         speaker_id: int,
         completion_url: str,
+        model: str,
         api_key: str | None = None,
         wake_word: str | None = None,
         personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
@@ -103,15 +100,19 @@ class Glados:
             wake_word (str, optional): The wake word to use for activation. Defaults to None.
         """
         self.completion_url = completion_url
+        self.model = model
         self.wake_word = wake_word
         self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
-        self._asr_model = asr.ASR(model=str(Path.cwd() / "models" / ASR_MODEL))
+        self._asr_model = asr.AudioTranscriber()
         self._tts = tts.Synthesizer(
             model_path=str(Path.cwd() / "models" / voice_model),
-            use_cuda=False,
             speaker_id=speaker_id,
         )
 
+        # warm up onnx ASR model
+        self._asr_model.transcribe_file("data/0.wav")
+        
+    
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
 
@@ -130,10 +131,7 @@ class Glados:
         self.processing = False
         self.currently_speaking = False
         self.interruptible = interruptible
-
         self.shutdown_event = threading.Event()
-
-        self.template = Template(LLAMA3_TEMPLATE)
 
         llm_thread = threading.Thread(target=self.process_LLM)
         llm_thread.start()
@@ -148,13 +146,12 @@ class Glados:
             if not self.interruptible:
                 sd.wait()
 
-        # signature defined by sd.InputStream, see docstring of callback there
-        # noinspection PyUnusedLocal
         def audio_callback_for_sdInputStream(
             indata: np.ndarray, frames: int, time: Any, status: CallbackFlags
         ):
             data = indata.copy().squeeze()  # Reduce to single channel if necessary
-            vad_confidence = self._vad_model.process_chunk(data) > VAD_THRESHOLD
+            vad_value = self._vad_model.process_chunk(data)
+            vad_confidence = vad_value > VAD_THRESHOLD
             self._sample_queue.put((data, vad_confidence))
 
         self.input_stream = sd.InputStream(
@@ -181,6 +178,7 @@ class Glados:
             voice_model=config.voice_model,
             speaker_id=config.speaker_id,
             completion_url=config.completion_url,
+            model=config.model,
             api_key=config.api_key,
             wake_word=config.wake_word,
             personality_preprompt=personality_preprompt,
@@ -329,7 +327,7 @@ class Glados:
         logger.debug("Resetting recorder...")
         self._recording_started = False
         self._samples.clear()
-        self._gap_counter = 0
+        self._gap_counter = 0 
         with self._buffer.mutex:
             self._buffer.queue.clear()
 
@@ -352,6 +350,7 @@ class Glados:
 
         while not self.shutdown_event.is_set():
             try:
+                start = time.time()
                 generated_text = self.tts_queue.get(timeout=PAUSE_TIME)
 
                 if (
@@ -361,8 +360,11 @@ class Glados:
                 elif not generated_text:
                     logger.warning("Empty string sent to TTS")  # should not happen!
                 else:
-                    logger.success(f"TTS text: {generated_text}")
+                    logger.success(f"LLM text: {generated_text}")
+                    logger.info(f"LLM inference time: {(time.time() - start):.2f}s")
+                    start = time.time()
                     audio = self._tts.generate_speech_audio(generated_text)
+                    logger.info(f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio)/self._tts.rate:.2f}s")
                     total_samples = len(audio)
 
                     if total_samples:
@@ -463,17 +465,10 @@ class Glados:
 
                 self.messages.append({"role": "user", "content": detected_text})
 
-                prompt = self.template.render(
-                    messages=self.messages,
-                    bos_token="<|begin_of_text|>",
-                    add_generation_prompt=True,
-                )
-
-                logger.debug(f"{prompt=}")
-
                 data = {
+                    "model": self.model,
                     "stream": True,
-                    "prompt": prompt,
+                    "messages": self.messages,
                 }
                 logger.debug(f"starting request on {self.messages=}")
                 logger.debug("Performing request to LLM server...")
@@ -497,6 +492,7 @@ class Glados:
                                 sentence.append(next_token)
                                 # If there is a pause token, send the sentence to the TTS queue
                                 if next_token in [
+                                    ",",
                                     ".",
                                     "!",
                                     "?",
@@ -542,9 +538,8 @@ class Glados:
         Args:
             line (dict): The line of text from the LLM server.
         """
-
-        if not line["stop"]:
-            token = line["content"]
+        if line["done"] == False:
+            token = line['message']["content"]
             return token
         return None
 
@@ -565,30 +560,10 @@ class Glados:
 
 def start() -> None:
     """Set up the LLM server and start GlaDOS."""
-    llama_server_config = LlamaServerConfig.from_yaml("glados_config.yml")
-
-    llama_server = None
-    if llama_server_config is not None:
-        llama_server = LlamaServer.from_config(llama_server_config)
-        llama_server.start()
-
     glados_config = GladosConfig.from_yaml("glados_config.yml")
-    if llama_server is not None:
-        if glados_config.completion_url:
-            raise ValueError(
-                f"Should not pass completion_ulr to glados config if LlamaServer is configured!"
-                f"Got {glados_config.completion_url=}"
-            )
-        glados_config.completion_url = llama_server.completion_url
-    else:
-        if not glados_config.completion_url:
-            raise ValueError(
-                "Glados needs a non-empty completion_url if LlamaServer is not configured!"
-            )
-
     glados = Glados.from_config(glados_config)
-
     glados.start_listen_event_loop()
+
 
 if __name__ == "__main__":
     start()

@@ -1,35 +1,55 @@
 @echo off
 REM Download and install the required dependencies for the project on Windows
 
-echo Install espeak-ng...
-curl -L "https://github.com/espeak-ng/espeak-ng/releases/download/1.51/espeak-ng-X64.msi" --output "espeak-ng-X64.msi"
-espeak-ng-X64.msi
-del espeak-ng-X64.msi
+echo Creating Virtual Environment...
+pip install uv
+uv self update
+uv venv --python 3.12.8
+call  .venv\Scripts\activate
 
-python3.12 -m venv venv
-call .\venv\Scripts\activate
-pip install -r requirements_cuda.txt
+echo Installing Dependencies...
+nvcc --version >nul 2>&1
+if %ERRORLEVEL%==0 (
+    echo CUDA is available. Installing requirements-cuda.txt...
+    uv pip install -r requirements_cuda.txt
+) else (
+    echo CUDA is not available. Installing requirements.txt...
+    UV pip install -r requirements.txt
+)
 
-echo Downloading Llama...
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/cudart-llama-bin-win-cu12.2.0-x64.zip" --output "cudart-llama-bin-win-cu12.2.0-x64.zip"
-curl -L "https://github.com/ggerganov/llama.cpp/releases/download/b3266/llama-b3266-bin-win-cuda-cu12.2.0-x64.zip" --output "llama-bin-win-cuda-cu12.2.0-x64.zip"
-echo Unzipping Llama...
-tar -xf cudart-llama-bin-win-cu12.2.0-x64.zip -C submodules\llama.cpp
-tar -xf llama-bin-win-cuda-cu12.2.0-x64.zip -C submodules\llama.cpp
-
-echo Downloading Whisper...
-curl -L "https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-cublas-12.2.0-bin-x64.zip" --output "whisper-cublas-12.2.0-bin-x64.zip"
-echo Unzipping Whisper...
-tar -xf whisper-cublas-12.2.0-bin-x64.zip -C submodules\whisper.cpp
-
-echo Cleaning up...
-del whisper-cublas-12.2.0-bin-x64.zip
-del cudart-llama-bin-win-cu12.2.0-x64.zip
-del llama-bin-win-cuda-cu12.2.0-x64.zip
-
-REM Download ASR and LLM Models
 echo Downloading Models...
-curl -L "https://huggingface.co/distil-whisper/distil-medium.en/resolve/main/ggml-medium-32-2.en.bin" --output  "models\ggml-medium-32-2.en.bin"
-curl -L "https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF/resolve/main/Meta-Llama-3-8B-Instruct-Q6_K.gguf?download=true" --output "models\Meta-Llama-3-8B-Instruct-Q6_K.gguf"
+:: Enable delayed expansion for working with variables inside loops
+setlocal enabledelayedexpansion
 
-echo Done!
+:: Define the list of files with their URLs and local paths
+set files[0]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx models\glados.onnx"
+set files[1]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx models\nemo-parakeet_tdt_ctc_110m.onnx"
+set files[2]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx models\phomenizer_en.onnx"
+set files[3]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx models\silero_vad.onnx"
+
+:: Loop through the list
+for /l %%i in (0,1,2) do (
+    for /f "tokens=1,2" %%A in ("!files[%%i]!") do (
+        set "url=%%A"
+        set "file=%%B"
+    )
+
+    echo Checking file: !file!
+
+    if exist "!file!" (
+        echo File "!file!" already exists.
+    ) else (
+        echo File "!file!" does not exist. Downloading...
+        curl -L "!url!" --output "!file!"
+        
+        :: Check if the download was successful
+        if exist "!file!" (
+            echo Download successful.
+        ) else (
+            echo Download failed.
+        )
+    )
+)
+
+echo Installation Complete!
+pause

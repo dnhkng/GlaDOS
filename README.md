@@ -1,6 +1,6 @@
 # GLaDOS Personality Core
 
-This is a project dedicated to building a real-life version of GLaDOS.
+This is a project dedicated to building a real-life version of GLaDOS!
 
 NEW: If you want to chat or join the community, [Join our discord!](https://discord.com/invite/ERTDKwpjNB)
 
@@ -26,7 +26,7 @@ To do this, the system constantly records data to a circular buffer, waiting for
 
 ### Subgoals
  - The other aim of the project is to minimize dependencies, so this can run on constrained hardware. That means no PyTorch or other large packages.
- - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code. i.e. as GLaDOS only speaks English, I have rewritten the wrapper around [espeak](https://espeak.sourceforge.net/) and the entire Text-to-Speech subsystem is about 500 LOC and has only 3 dependencies: numpy, onnxruntime, and sounddevice.
+ - As I want to fully understand the system, I have removed a large amount of redirection: which means extracting and rewriting code.
 
 ## Hardware System
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
@@ -34,15 +34,23 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 ## Installation Instruction
 
 
-### *New Simplified  Windows Installation Process*
-Don't want to compile anything?  Try this simplified process, but be aware it's still in the experimental stage!
+## *New Simplified  Windows Installation Process*
+Try this simplified process, but be aware it's still in the experimental stage!
+### Set up a local LLM server:
+1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
+2. Once installed, download a small 2B model for testing, at a command prompt use: `ollama pull llama3.2`
 
-
-1. Open the Microsoft Store, search for `python` and install Python 3.12.
-   a. To use Python 3.10, install `typing_extensions` and replace `import typing` in `glados/llama.py` with `import typing_extensions`.
+### Install GLaDOS
+1. Open the Microsoft Store, search for `python` and install Python 3.12
 2. Download and unzip this repository somewhere in your home folder.
-3. Run the `install_windows.bat`. During the process, you will be prompted to install eSpeak-ng, which is necessary for GLaDOS's speech capabilities. This step also downloads the Whisper voice recognition model and the Llama-3 8B model.
-4. Once this is all done, you can initiate  GLaDOS with the `start_windows.bat` script.
+3. Run the `install_windows.bat`.
+4. Once this is all done, you can initiate GLaDOS with the `start_windows.bat` script.
+
+
+# The methods below are now out of date, and will be updated soon!
+
+
+
 
 ### *Even newer Simplified macOS Installation Process*
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.
@@ -54,11 +62,12 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 4. Run the `install_mac.sh`. If you do not have Python installed, then you will run into an error.
 5. Once this finishes run the `start_mac.sh` to start GLaDOS
 
-## Regular installation
+
+Regular installation
 
 If you want to install the TTS Engine on your machine, please follow the steps
 below.  This has only been tested on Linux, but I think it will work on Windows with small tweaks.
-If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.
+If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windows and Mac support is in development.~~
 
 1. Install the [`espeak`](https://github.com/espeak-ng/espeak-ng) synthesizer
    according to the [installation
@@ -93,10 +102,9 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
       2. Edit the glados_config.yaml
          1. update `completion_url` to the URL of your local server
          2. for commercial APIs, add the `api_key`
-         3. remove the LlamaServer configurations (make them null)
+         3. ~~remove the LlamaServer configurations (make them null)~~
 
-
-## Help Section
+Help Section
 
 1. If you have an error about packages or files not being found, make sure you have the whisper and llama binaries in the respective submodules folders!  They are empty by default, and you manually have to add the binaries as described above!
 
@@ -109,7 +117,7 @@ If you are on Windows, I would recommend WSL with an Ubuntu image.  Proper Windo
    2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To accomplish this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
 
 
-## Windows Run
+Windows Run
 
 Prerequisite WSL2 with fresh drivers, here is guide https://docs.docker.com/desktop/gpu/
 1. `git submodule update --init --recursive`
@@ -120,7 +128,7 @@ Prerequisite WSL2 with fresh drivers, here is guide https://docs.docker.com/desk
 It works in ubuntu terminal started with WSL2
 
 
-## Running GLaDOS
+Running GLaDOS
 
 To start GLaDOS, use:
 `python glados.py`
@@ -128,7 +136,7 @@ To start GLaDOS, use:
 You can stop with "Ctrl-c".
 
 
-## Testing
+Testing
 You can test the systems by exploring the 'demo.ipynb'.
 
 
