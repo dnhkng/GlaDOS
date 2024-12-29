@@ -1,108 +1,135 @@
-import ctypes
+import sys
+from typing import Dict, List
 
+import librosa
 import numpy as np
+import onnxruntime as ort
 from loguru import logger
 
-from . import whisper_cpp_wrapper
+# Default OnnxRuntime is way to verbose
+ort.set_default_logger_severity(4)
 
-LANG = "en"
-WORD_LEVEL_TIMINGS = False
-BEAM_SEARCH = True
+# Settings
+MODEL_PATH = "./models/nemo-parakeet_tdt_ctc_110m.onnx"
+TOKEN_PATH = "./models/nemo-parakeet_tdt_ctc_110m_tokens.txt"
 
-# Translate ggml log levels to loguru levels
-# From ggml.h:
-# enum ggml_log_level {
-#   GGML_LOG_LEVEL_ERROR = 2,
-#   GGML_LOG_LEVEL_WARN  = 3,
-#   GGML_LOG_LEVEL_INFO  = 4,
-#   GGML_LOG_LEVEL_DEBUG = 5
-#};
-_log_at_level = {2: logger.error, 3: logger.warning, 4: logger.info, 5: logger.debug}
+class AudioTranscriber:
+    def __init__(
+        self,
+        model_path: str = MODEL_PATH,
+        tokens_file: str = TOKEN_PATH,
+        sample_rate: int = 16000,
+    ) -> None:
+        self.sample_rate = sample_rate
 
-def _unlog(level: ctypes.c_int, text: ctypes.c_char_p, user_data: ctypes.c_void_p) -> None:
-        """Callback function to log output from whisper.cpp to the loguru log.
-        """
-        _log_at_level[level](text.rstrip())
-
-_unlog_func = whisper_cpp_wrapper.ggml_log_callback(_unlog)
-
-
-class ASR:
-    """Wrapper around whisper.cpp, which is a C++ implementation of the Whisper
-    speech recognition model.
-
-    This class is not thread-safe, so you should only use it from one thread.
-
-    Args:
-        model: The path to the model file to use.
-    """
-
-    def __init__(self, model: str) -> None:
-        # set whisper's logging to use the _unlog callback function, so that messages
-        # are logged to the loguru logger instead of stdout/stderr
-        whisper_cpp_wrapper.whisper_log_set(_unlog_func, ctypes.c_void_p(0))
-        self.ctx = whisper_cpp_wrapper.whisper_init_from_file(model.encode("utf-8"))
-        self.params = self._whisper_cpp_params(
-            language=LANG,
-            word_level_timings=WORD_LEVEL_TIMINGS,
-            beam_search=BEAM_SEARCH,
+        self.session = ort.InferenceSession(
+            model_path,
+            sess_options=ort.SessionOptions(),
+            providers=ort.get_available_providers(),
         )
+        self.vocab = self._load_vocabulary(tokens_file)
+
+        # Standard mel spectrogram parameters
+        self.n_mels = 80
+        self.n_fft = 400
+        self.hop_length = 160
+        self.win_length = 400
+
+    def _load_vocabulary(self, tokens_file: str) -> Dict[int, str]:
+        vocab = {}
+        with open(tokens_file, "r", encoding="utf-8") as f:
+            for line in f:
+                token, index = line.strip().split()
+                vocab[int(index)] = token
+        return vocab
+
+    def process_audio(self, audio: np.ndarray) -> np.ndarray:
+        """
+        Load and process audio file into mel spectrogram with improved normalization.
+        """
+        # Compute mel spectrogram
+        mel_spec = librosa.feature.melspectrogram(
+            y=audio,
+            sr=self.sample_rate,
+            n_mels=self.n_mels,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
+            power=2.0,
+        )
+
+        # Convert to log scale with improved scaling
+        mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
+
+        # Normalize
+        mel_spec = (mel_spec - mel_spec.mean()) / (mel_spec.std() + 1e-5)
+
+        # Add batch dimension and ensure correct shape
+        mel_spec = np.expand_dims(mel_spec, axis=0)  # [1, n_mels, time]
+
+        return mel_spec
+
+    def decode_output(self, output_logits: np.ndarray) -> List[str]:
+        """Decode model output logits into text with improved token handling."""
+        predictions = np.argmax(output_logits, axis=-1)
+
+        decoded_texts = []
+        for batch_idx in range(predictions.shape[0]):
+            tokens = []
+            prev_token = None
+
+            for idx in predictions[batch_idx]:
+                if idx in self.vocab:
+                    token = self.vocab[idx]
+                    # Skip <blk> tokens and repeated tokens
+                    if token != "<blk>" and token != prev_token:
+                        tokens.append(token)
+                        prev_token = token
+
+            # Combine tokens with improved handling
+            text = ""
+            for token in tokens:
+                if token.startswith("▁"):
+                    text += " " + token[1:]
+                else:
+                    text += token
+
+            # Clean up the text
+            text = text.strip()
+            text = " ".join(text.split())  # Remove multiple spaces
+
+            decoded_texts.append(text)
+
+        return decoded_texts
 
     def transcribe(self, audio: np.ndarray) -> str:
-        """Transcribe audio using the given parameters.
-
-        Any is whisper_cpp.WhisperParams, but we can't import that here
-        because it's a C++ class.
+        """
+        Transcribe an audio file to text.
         """
 
-        # Run the model
-        whisper_cpp_audio = audio.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-        result = whisper_cpp_wrapper.whisper_full(
-            self.ctx, self.params, whisper_cpp_audio, len(audio)
-        )
-        if result != 0:
-            raise Exception(f"Error from whisper.cpp: {result}")
+        # Process audio
+        mel_spec = self.process_audio(audio)
 
-        # Get the text
-        n_segments = whisper_cpp_wrapper.whisper_full_n_segments((self.ctx))
-        text = [
-            whisper_cpp_wrapper.whisper_full_get_segment_text((self.ctx), i)
-            for i in range(n_segments)
-        ]
+        # Prepare length input
+        length = np.array([mel_spec.shape[2]], dtype=np.int64)
 
-        if not text:
-            return ""
-        else:
-            return text[0].decode("utf-8")[1:]
+        # Create input dictionary
+        input_dict = {"audio_signal": mel_spec, "length": length}
 
-    def __del__(self):
+        # Run inference
+        outputs = self.session.run(None, input_dict)
+
+        # Decode output
+        transcription = self.decode_output(outputs[0])
+
+        return transcription[0]
+
+    def transcribe_file(self, audio_path: str) -> str:
         """
-        Free the C++ object when this Python object is garbage collected.
+        Transcribe an audio file to text.
         """
-        whisper_cpp_wrapper.whisper_free(self.ctx)
 
-    def _whisper_cpp_params(
-        self,
-        language: str,
-        word_level_timings: bool,
-        beam_search: bool = True,
-        print_realtime=False,
-        print_progress=False,
-    ):
-        if beam_search:
-            params = whisper_cpp_wrapper.whisper_full_default_params(
-                whisper_cpp_wrapper.WHISPER_SAMPLING_BEAM_SEARCH
-            )
-        else:
-            params = whisper_cpp_wrapper.whisper_full_default_params(
-                whisper_cpp_wrapper.WHISPER_SAMPLING_GREEDY
-            )
+        # Load audio
+        audio, sr = librosa.load(audio_path, sr=self.sample_rate)
 
-        params.print_realtime = print_realtime
-        params.print_progress = print_progress
-        params.language = whisper_cpp_wrapper.String(language.encode("utf-8"))
-        params.max_len = ctypes.c_int(100)
-        params.max_len = 1 if word_level_timings else 0
-        params.token_timestamps = word_level_timings
-        params.no_timestamps = True
-        return params
+        return self.transcribe(audio)

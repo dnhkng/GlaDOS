@@ -13,15 +13,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
-from textual.widgets import (
-    Digits,
-    Footer,
-    Header,
-    Label,
-    Log,
-    RichLog,
-    Static,
-)
+from textual.widgets import Digits, Footer, Header, Label, Log, RichLog, Static
 
 from glados_ui.text_resources import aperture, help_text, login_text, recipe
 
@@ -122,7 +114,7 @@ class SplashScreen(Screen):
         SPLASH_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
-        with Container( id="splash_logo_container"):
+        with Container(id="splash_logo_container"):
             yield Static(self.SPLASH_ANSI, id="splash_logo")
             yield Label(aperture, id="banner")
         yield Typewriter(login_text, id="login_text", speed=0.0075)
@@ -134,7 +126,7 @@ class SplashScreen(Screen):
     def on_key(self, event: events.Key) -> None:
         """An  key is pressed."""
         # fire her up.....
-        if event.key == 'q':
+        if event.key == "q":
             app.action_quit()
         self.dismiss()
         app.start_glados()
@@ -148,10 +140,7 @@ class HelpScreen(ModalScreen):
     TITLE = "Help"
 
     def compose(self) -> ComposeResult:
-        yield Container(
-            Typewriter(help_text, id="help_text"),
-            id="help_dialog"
-            )
+        yield Container(Typewriter(help_text, id="help_text"), id="help_dialog")
 
     def on_mount(self) -> None:
         dialog = self.query_one("#help_dialog")
@@ -159,8 +148,8 @@ class HelpScreen(ModalScreen):
         dialog.border_subtitle = "[blink]Press Esc key to continue[/]"
 
 
-
 # The App
+
 
 class GladosUI(App):
     """The main app class for the GlaDOS ui."""
@@ -195,7 +184,9 @@ class GladosUI(App):
             with Horizontal():
                 yield (Printer(id="log_area"))
                 with Container(id="utility_area"):
-                    typewriter = Typewriter(recipe, id="recipe", speed=0.01, repeat=True)
+                    typewriter = Typewriter(
+                        recipe, id="recipe", speed=0.01, repeat=True
+                    )
                     yield typewriter
 
         yield Footer()
@@ -234,7 +225,7 @@ class GladosUI(App):
         logger.debug(f"Pressed {event.character}")
         logger.info("some warning")
 
-    def action_quit(self) -> None: # type: ignore
+    def action_quit(self) -> None:  # type: ignore
         """Bye bye."""
         # self.glados.cancel()
         self.exit(0)

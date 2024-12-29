@@ -1,6 +1,9 @@
 import numpy as np
 import onnxruntime as ort
 
+# Default OnnxRuntime is way to verbose
+ort.set_default_logger_severity(4)
+
 SAMPLE_RATE = 16000
 
 
@@ -9,7 +12,11 @@ class VAD:
     _initial_c = np.zeros((2, 1, 64)).astype("float32")
 
     def __init__(self, model_path, window_size_samples: int = int(SAMPLE_RATE / 10)):
-        self.ort_sess = ort.InferenceSession(model_path)
+        self.ort_sess = ort.InferenceSession(
+            model_path,
+            sess_options=ort.SessionOptions(),
+            providers=ort.get_available_providers(),
+        )
         self.window_size_samples = window_size_samples
         self.sr = SAMPLE_RATE
         self._h = self._initial_h
