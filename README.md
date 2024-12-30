@@ -53,13 +53,27 @@ This is still experimental. Any issues can be addressed in the Discord server. I
    1. Download and unzip this repository somewhere in your home folder, or
    2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
 2. In a terminal, go to the repository folder and run these commands:
-         ```sdfr
-         chmod +x start_mac.command
+
          chmod +x install_mac.command
-         ```
+         chmod +x start_mac.command
+
 3. In the Finder, double click `install_mac.command`, and wait until the installation in complete.
 4. Double click `start_mac.sh` to start GLaDOS!
 
+## Linux Installation Process
+This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  This has been tested on Ubuntu 24.04.1 LTS
+
+
+1. Downlod this repository, either:
+   1. Download and unzip this repository somewhere in your home folder, or
+   2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+2. In a terminal, go to the repository folder and run these commands:
+   
+         chmod +x install_ubuntu.sh
+         chmod +x start_ubuntu.sh
+
+3. In the a terminal in the GLaODS folder, run `./install_ubuntu.sh`, and wait until the installation in complete.
+4. Run  `./start_ubuntu.sh` to start GLaDOS!
 
 ## Changing the LLM Model
 
