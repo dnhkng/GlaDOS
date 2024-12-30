@@ -3,15 +3,24 @@
 # First, change to the script's directory
 cd "$(dirname "$0")"
 
-# Check if pip is installed
-if ! command -v pip &> /dev/null; then
-    echo "pip is not installed. Installing pip..."
-    sudo apt-get update
-    sudo apt-get install -y python3-pip
+# Check if UV is installed
+if command -v uv &> /dev/null; then
+    echo "UV is already installed."
+else
+    echo "UV is not installed. Installing UV..."
+    # Run the installation script
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Verify if installation was successful
+    if command -v uv &> /dev/null; then
+        echo "UV installed successfully."
+    else
+        echo "Failed to install UV. Please check the installation script or your internet connection."
+        exit 1
+    fi
 fi
 
 echo "Creating Virtual Environment..."
-pip install uv
 uv venv --python 3.12.8
 source .venv/bin/activate
 echo "Installing Dependencies..."
@@ -67,4 +76,4 @@ echo "Installation Complete!"
 
 # Keep the terminal window open to see any errors
 echo "Press any key to close..."
-read
+read -n 1
