@@ -31,13 +31,22 @@ To do this, the system constantly records data to a circular buffer, waiting for
 ## Hardware System
 This will be based on servo- and stepper-motors. 3D printable STL will be provided to create GlaDOS's body, and she will be given a set of animations to express herself. The vision system will allow her to track and turn toward people and things of interest.
 
-## Installation Instruction
+# Installation Instruction
 Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
-### Set up a local LLM server:
+
+## Install Drivers in necessary
+If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
+https://onnxruntime.ai/docs/install/
+
+If you are using another accelerator (ROCm, DirectML etc), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
+
+## Set up a local LLM server:
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
 2. Once installed, download a small 2B model for testing, at a terminal or command prompt use: `ollama pull llama3.2`
 
-### Windows Installation Process
+
+
+## Windows Installation Process
 1. Open the Microsoft Store, search for `python` and install Python 3.12
 2. Downlod this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
@@ -46,7 +55,7 @@ Try this simplified process, but be aware it's still in the experimental stage! 
 4. Double click `start_windows.bat` to start GLaDOS!
 
 ## macOS Installation Process
-This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.
+This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  Note: I was getting Segfaults!  Please leave feedback!
 
 
 1. Downlod this repository, either:
