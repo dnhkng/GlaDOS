@@ -18,35 +18,37 @@ if %ERRORLEVEL%==0 (
 )
 
 echo Downloading Models...
+
 :: Enable delayed expansion for working with variables inside loops
 setlocal enabledelayedexpansion
 
 :: Define the list of files with their URLs and local paths
-set files[0]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx models\glados.onnx"
-set files[1]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx models\nemo-parakeet_tdt_ctc_110m.onnx"
-set files[2]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx models\phomenizer_en.onnx"
-set files[3]="https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx models\silero_vad.onnx"
+:: Removed quotes around the entire string and fixed paths
+set "files[0]=https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx;models/glados.onnx"
+set "files[1]=https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx;models/nemo-parakeet_tdt_ctc_110m.onnx"
+set "files[2]=https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx;models/phomenizer_en.onnx"
+set "files[3]=https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx;models/silero_vad.onnx"
 
 :: Loop through the list
-for /l %%i in (0,1,2) do (
-    for /f "tokens=1,2" %%A in ("!files[%%i]!") do (
-        set "url=%%A"
-        set "file=%%B"
-    )
-
-    echo Checking file: !file!
-
-    if exist "!file!" (
-        echo File "!file!" already exists.
-    ) else (
-        echo File "!file!" does not exist. Downloading...
-        curl -L "!url!" --output "!file!"
+for /l %%i in (0,1,3) do (
+    for /f "tokens=1,2 delims=;" %%a in ("!files[%%i]!") do (
+        set "url=%%a"
+        set "file=%%b"
         
-        :: Check if the download was successful
+        echo Checking file: !file!
+        
         if exist "!file!" (
-            echo Download successful.
+            echo File "!file!" already exists.
         ) else (
-            echo Download failed.
+            echo Downloading !file!...
+            curl -L "!url!" --create-dirs -o "!file!"
+            
+            if exist "!file!" (
+                echo Download successful.
+            ) else (
+                echo Download failed for !file!
+                echo URL: !url!
+            )
         )
     )
 )
