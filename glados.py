@@ -67,6 +67,7 @@ class GladosConfig:
 
         return cls(**config)
 
+
 class Glados:
     def __init__(
         self,
@@ -111,8 +112,6 @@ class Glados:
 
         # warm up onnx ASR model
         self._asr_model.transcribe_file("data/0.wav")
-        
-    
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
 
@@ -327,7 +326,7 @@ class Glados:
         logger.debug("Resetting recorder...")
         self._recording_started = False
         self._samples.clear()
-        self._gap_counter = 0 
+        self._gap_counter = 0
         with self._buffer.mutex:
             self._buffer.queue.clear()
 
@@ -364,7 +363,9 @@ class Glados:
                     logger.info(f"LLM inference time: {(time.time() - start):.2f}s")
                     start = time.time()
                     audio = self._tts.generate_speech_audio(generated_text)
-                    logger.info(f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio)/self._tts.rate:.2f}s")
+                    logger.info(
+                        f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio)/self._tts.rate:.2f}s"
+                    )
                     total_samples = len(audio)
 
                     if total_samples:
@@ -389,9 +390,9 @@ class Glados:
                         assistant_text.append(generated_text)
 
                 if finished:
-                    self.messages.append(
-                        {"role": "assistant", "content": " ".join(assistant_text)}
-                    )
+                    # self.messages.append(
+                    #     {"role": "assistant", "content": " ".join(assistant_text)}
+                    # )
                     # if interrupted:
                     #     self.messages.append(
                     #         {
@@ -463,14 +464,16 @@ class Glados:
             try:
                 detected_text = self.llm_queue.get(timeout=0.1)
 
-                self.messages.append({"role": "user", "content": detected_text})
+                # self.messages.append({"role": "user", "content": detected_text})
+                messages = copy.copy(self.messages)
+                messages.append({"role": "user", "content": detected_text})
 
                 data = {
                     "model": self.model,
                     "stream": True,
-                    "messages": self.messages,
+                    "messages": messages,
                 }
-                logger.debug(f"starting request on {self.messages=}")
+                logger.debug(f"starting request on {messages=}")
                 logger.debug("Performing request to LLM server...")
 
                 # Perform the request and process the stream
@@ -487,7 +490,12 @@ class Glados:
                             break  # If the stop flag is set from new voice input, halt processing
                         if line:  # Filter out empty keep-alive new lines
                             line = self._clean_raw_bytes(line)
-                            next_token = self._process_line(line)
+                            
+                            if line:
+                                next_token = self._process_line(line)
+                            else:
+                                next_token = None
+
                             if next_token:
                                 sentence.append(next_token)
                                 # If there is a pause token, send the sentence to the TTS queue
@@ -504,6 +512,7 @@ class Glados:
                                 ]:
                                     self._process_sentence(sentence)
                                     sentence = []
+
                     if self.processing:
                         if sentence:
                             self._process_sentence(sentence)
@@ -538,8 +547,8 @@ class Glados:
         Args:
             line (dict): The line of text from the LLM server.
         """
-        if line["done"] == False:
-            token = line['message']["content"]
+        if line["choices"][0]["finish_reason"] != "stop":
+            token = line["choices"][0]["delta"]["content"]
             return token
         return None
 
@@ -552,10 +561,14 @@ class Glados:
         Args:
             line (bytes): The raw bytes from the LLM server.
         """
+
         line = line.decode("utf-8")
         line = line.removeprefix("data: ")
-        line = json.loads(line)
-        return line
+        try:
+            line = json.loads(line)
+            return line
+        except:
+            return None
 
 
 def start() -> None:
