@@ -67,7 +67,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
          chmod +x start_mac.command
 
 3. In the Finder, double click `install_mac.command`, and wait until the installation in complete.
-4. Double click `start_mac.sh` to start GLaDOS!
+4. Double click `start_mac.command` to start GLaDOS!
 
 ## Linux Installation Process
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  This has been tested on Ubuntu 24.04.1 LTS
