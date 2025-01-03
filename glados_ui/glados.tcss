@@ -16,7 +16,6 @@ $primary: #ffb000;
 $foreground: #ffb000;
 $background: #282828;
 $surface: $background;
-$panel: $background;
 
 
 
