@@ -6,12 +6,12 @@ NEW: If you want to chat or join the community, [Join our discord!](https://disc
 
 [![localGLaDOS](https://img.youtube.com/vi/KbUfWpykBGg/0.jpg)](https://www.youtube.com/watch?v=KbUfWpykBGg)
 
-## *Update 3-1-2025* Got GLaDOS running on an 8Gb SBC!
+## Update 3-1-2025 *Got GLaDOS running on an 8Gb SBC!*
 
 https://github.com/user-attachments/assets/99e599bb-4701-438a-a311-8e6cd595796c
 
-This is really tricky, so only for geeks! Checkout the 'rock5b' branch, and my OpenAI API fpr the [RK3588 system](https://github.com/dnhkng/RKLLM-Gradio)
-Don't expect support for this, it's in active development.
+This is really tricky, so only for hardcore geeks! Checkout the 'rock5b' branch, and my OpenAI API for the [RK3588 NPU system](https://github.com/dnhkng/RKLLM-Gradio)
+Don't expect support for this, it's in active development, and requires lots of messing about in armbian linux etc.
 
 ## Goals
 *This is a hardware and software project that will create an aware, interactive, and embodied GLaDOS.*
