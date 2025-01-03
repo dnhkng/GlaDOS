@@ -7,7 +7,7 @@ NEW: If you want to chat or join the community, [Join our discord!](https://disc
 [![localGLaDOS](https://img.youtube.com/vi/KbUfWpykBGg/0.jpg)](https://www.youtube.com/watch?v=KbUfWpykBGg)
 
 # *Update*
-https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados_update.mp4
+https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados_update.mov
 #### Got GLaDOS running on an 8Gb SBC!
 This is really tricky, so only for geeks! Checkout the 'rock5b' branch, and my OpenAI API fpr the [RK3588 system](https://github.com/dnhkng/RKLLM-Gradio)
 
