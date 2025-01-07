@@ -15,3 +15,42 @@ Glados:
     - user: "What game should I play?"
     - assistant: "Russian Roulette. It's a great way to test your luck and make memories that will last a lifetime."
   wake_word: null
+
+# Generation/Sampling configuration to be sent with the prompts. https://github.com/ggerganov/llama.cpp/blob/master/examples/server/README.md#api-endpoints
+# 0.1 temperature often recommended for Llama3(.1) and 0.7 is default in llama.cp chat UI.
+# TODO: Implement the rest of the parameters (min_p onwards don't do anything.)
+LlamaGenConfig:
+  temperature: 0.1
+  dynatemp_range: 0.0
+  dynatemp_exponent: 1.1
+  top_k: 40
+  top_p: 0.95
+  min_p: 0.05
+  # n_predict: -1
+  # n_keep: -1
+  # tfs_z: false
+  # typical_p: false
+  # repeat_penalty: true
+  # repeat_last_n: -1
+  # penalize_nl: true
+  # presence_penalty: false
+  # frequency_penalty: false
+  # penalty_prompt:
+  # - "penalty prompt"
+  # mirostat: 0
+  # mirostat_tau: 5.0
+  # mirostat_eta: 0.1
+  # grammar:
+  # - "grammar"
+  # json_schema:
+  # - {"items": {"type": "string"}, "minItems": 10, "maxItems": 100}
+  # seed: -1
+  # ignore_eos: false
+  # logit_bias:
+  # - [15043,1.0]
+  # n_probs: 0
+  # min_keep: 0
+  # image_data:
+  # - {"data": "<BASE64_STRING>", "id": 12}
+  # id_slot: -1
+  # cache_prompt: false
