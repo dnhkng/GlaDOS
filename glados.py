@@ -46,8 +46,8 @@ class LlamaGenConfig:
     temperature: float = 0.7
     dynatemp_range: float = 0.0
     dynatemp_exponent: float = 1.1
-    top_k: int = 40,
-    top_p: float = 0.95,
+    top_k: int = 40
+    top_p: float = 0.95
     min_p: float = 0.05
 
     @classmethod
