@@ -1,6 +1,4 @@
 import json
-import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from pickle import load
@@ -103,9 +101,7 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(
-        self, model_path: str, speaker_id: Optional[int] = None
-    ):
+    def __init__(self, model_path: str, speaker_id: Optional[int] = None):
         self.session = ort.InferenceSession(
             model_path,
             sess_options=ort.SessionOptions(),

@@ -501,11 +501,11 @@ class Glados:
                             break  # If the stop flag is set from new voice input, halt processing
                         if line:  # Filter out empty keep-alive new lines
                             line = self._clean_raw_bytes(line)
-                            next_token = self._process_line(line)
-                            if next_token:
-                                sentence.append(next_token)
+                            chunk = self._process_chunk(line)
+                            if chunk:
+                                sentence.append(chunk)
                                 # If there is a pause token, send the sentence to the TTS queue
-                                if next_token in [
+                                if chunk in [
                                     ",",
                                     ".",
                                     "!",
@@ -518,9 +518,9 @@ class Glados:
                                 ]:
                                     self._process_sentence(sentence)
                                     sentence = []
-                    if self.processing:
-                        if sentence:
-                            self._process_sentence(sentence)
+
+                    if self.processing and sentence:
+                        self._process_sentence(sentence)
                     self.tts_queue.put("<EOS>")  # Add end of stream token to the queue
             except queue.Empty:
                 time.sleep(PAUSE_TIME)
@@ -545,7 +545,7 @@ class Glados:
         if sentence:
             self.tts_queue.put(sentence)
 
-    def _process_line(self, line):
+    def _process_chunk(self, line):
         """
         Processes a single line of text from the LLM server.
 
@@ -559,17 +559,24 @@ class Glados:
 
     def _clean_raw_bytes(self, line):
         """
-        Cleans the raw bytes from the LLM server for processing.
-
-        Coverts the bytes to a dictionary.
+        Cleans the raw bytes from the server and converts to OpenAI format.
 
         Args:
-            line (bytes): The raw bytes from the LLM server.
+            line (bytes): The raw bytes from the server
+
+        Returns:
+            dict or None: Parsed JSON response in OpenAI format, or None if parsing fails
         """
-        line = line.decode("utf-8")
-        line = line.removeprefix("data: ")
-        line = json.loads(line)
-        return line
+        try:
+            line = line.decode("utf-8")
+            if line.startswith("data: "):
+                line = line.removeprefix("data: ")
+                if line.strip() == "[DONE]":
+                    return None
+            return json.loads(line)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            logger.warning("Failed to parse server response")
+            return None
 
 
 def start() -> None:
