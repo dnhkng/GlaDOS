@@ -14,10 +14,8 @@ import requests
 import sounddevice as sd
 from sounddevice import CallbackFlags
 import yaml
-from jinja2 import Template
 from Levenshtein import distance
 from loguru import logger
-from sounddevice import CallbackFlags
 
 from glados import asr, tts, vad
 
@@ -25,6 +23,7 @@ logger.remove(0)
 logger.add(sys.stderr, level="SUCCESS")
 
 VAD_MODEL = "silero_vad.onnx"
+VOICE_MODEL = "glados.onnx"
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
@@ -51,8 +50,8 @@ class GladosConfig:
     announcement: Optional[str]
     personality_preprompt: List[dict[str, str]]
     interruptible: bool
-    voice_model: str = "glados.onnx"
-    speaker_id: int = None
+    voice_model: str = VOICE_MODEL
+    speaker_id: Optional[int] = None
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
@@ -67,11 +66,12 @@ class GladosConfig:
 
         return cls(**config)
 
+
 class Glados:
     def __init__(
         self,
         voice_model: str,
-        speaker_id: int,
+        speaker_id: Optional[int],
         completion_url: str,
         model: str,
         api_key: str | None = None,
@@ -111,8 +111,7 @@ class Glados:
 
         # warm up onnx ASR model
         self._asr_model.transcribe_file("data/0.wav")
-        
-    
+
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {"Authorization": api_key or "Bearer your_api_key_here"}
 
@@ -327,7 +326,7 @@ class Glados:
         logger.debug("Resetting recorder...")
         self._recording_started = False
         self._samples.clear()
-        self._gap_counter = 0 
+        self._gap_counter = 0
         with self._buffer.mutex:
             self._buffer.queue.clear()
 
@@ -364,7 +363,9 @@ class Glados:
                     logger.info(f"LLM inference time: {(time.time() - start):.2f}s")
                     start = time.time()
                     audio = self._tts.generate_speech_audio(generated_text)
-                    logger.info(f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio)/self._tts.rate:.2f}s")
+                    logger.info(
+                        f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio)/self._tts.rate:.2f}s"
+                    )
                     total_samples = len(audio)
 
                     if total_samples:
@@ -437,13 +438,26 @@ class Glados:
         start_time = time.time()
         played_samples = 0.0
 
-        while sd.get_stream().active:
-            time.sleep(PAUSE_TIME)  # Should the TTS stream should still be active?
-            if self.processing is False:
-                sd.stop()  # Stop the audio stream
-                self.tts_queue = queue.Queue()  # Clear the TTS queue
-                interrupted = True
-                break
+        try:
+            stream = sd.get_stream()
+
+            while stream and stream.active:
+                time.sleep(PAUSE_TIME)
+                if self.processing is False:
+                    sd.stop()
+                    with self.tts_queue.mutex:
+                        self.tts_queue.queue.clear()
+                    interrupted = True
+                    break
+
+                try:
+                    if not stream.active:
+                        break
+                except sd.PortAudioError:
+                    break
+
+        except (sd.PortAudioError, RuntimeError):
+            logger.debug("Audio stream already closed or invalid")
 
         elapsed_time = (
             time.time() - start_time + 0.12
@@ -538,8 +552,8 @@ class Glados:
         Args:
             line (dict): The line of text from the LLM server.
         """
-        if line["done"] == False:
-            token = line['message']["content"]
+        if not line["done"]:
+            token = line["message"]["content"]
             return token
         return None
 
