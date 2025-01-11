@@ -4,7 +4,7 @@ This is a project dedicated to building a real-life version of GLaDOS!
 
 NEW: If you want to chat or join the community, [Join our discord!](https://discord.com/invite/ERTDKwpjNB)
 
-[![localGLaDOS](https://img.youtube.com/vi/KbUfWpykBGg/0.jpg)](https://www.youtube.com/watch?v=KbUfWpykBGg)
+https://github.com/user-attachments/assets/c22049e4-7fba-4e84-8667-2c6657a656a0
 
 ## Update 3-1-2025 *Got GLaDOS running on an 8Gb SBC!*
 
