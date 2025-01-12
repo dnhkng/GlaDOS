@@ -57,8 +57,14 @@ class GladosConfig:
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
         key_to_config = key_to_config or []
 
-        with open(path, "r") as file:
-            data = yaml.safe_load(file)
+        try:
+            # First attempt with UTF-8
+            with open(path, "r", encoding="utf-8") as file:
+                data = yaml.safe_load(file)
+        except UnicodeDecodeError:
+            # Fall back to utf-8-sig if UTF-8 fails (handles BOM)
+            with open(path, "r", encoding="utf-8-sig") as file:
+                data = yaml.safe_load(file)
 
         config = data
         for nested_key in key_to_config:
