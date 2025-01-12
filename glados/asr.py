@@ -27,11 +27,15 @@ class AudioTranscriber:
         sample_rate: int = SAMPLE_RATE,
     ) -> None:
         self.sample_rate = sample_rate
+        
+        providers = ort.get_available_providers()
+        if "TensorrtExecutionProvider" in providers:
+            providers.remove("TensorrtExecutionProvider")
 
         self.session = ort.InferenceSession(
             model_path,
             sess_options=ort.SessionOptions(),
-            providers=ort.get_available_providers(),
+            providers=providers,
         )
         self.vocab = self._load_vocabulary(tokens_file)
 
