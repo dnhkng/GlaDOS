@@ -11,7 +11,7 @@ import numpy as np
 import onnxruntime as ort
 
 # Default OnnxRuntime is way to verbose
-ort.set_default_logger_severity(3)
+ort.set_default_logger_severity(4)
 
 
 @dataclass
