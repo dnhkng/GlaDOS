@@ -102,10 +102,14 @@ class Synthesizer:
     """
 
     def __init__(self, model_path: str, speaker_id: Optional[int] = None):
+        providers = ort.get_available_providers()
+        if "TensorrtExecutionProvider" in providers:
+            providers.remove("TensorrtExecutionProvider")
+
         self.session = ort.InferenceSession(
             model_path,
             sess_options=ort.SessionOptions(),
-            providers=ort.get_available_providers(),
+            providers=providers,
         )
         self.phonemizer = phonemizer.Phonemizer()
         # self.id_map = PHONEME_ID_MAP
