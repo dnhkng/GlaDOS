@@ -93,7 +93,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 ## Changing the LLM Model
 
-To use other models, use the conmmand:
+To use other models, use the command:
 ```ollama pull {modelname}```
 and then add {modelname} to glados_config.yaml as the model.
 
