@@ -8,7 +8,7 @@ from pickle import load
 from typing import Dict, Iterable, List, Union
 
 import numpy as np
-import onnxruntime as ort
+import onnxruntime as ort  # type: ignore
 
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
@@ -103,16 +103,19 @@ class Phonemizer:
     """
 
     def __init__(self, config=ModelConfig()) -> None:
-
         self.config = config
         self.phoneme_dict = self._load_pickle(self.config.PHONEME_DICT_PATH)
         self.token_to_idx = self._load_pickle(self.config.TOKEN_TO_IDX_PATH)
         self.idx_to_token = self._load_pickle(self.config.IDX_TO_TOKEN_PATH)
 
+        providers = ort.get_available_providers()
+        if "TensorrtExecutionProvider" in providers:
+            providers.remove("TensorrtExecutionProvider")
+
         self.ort_session = ort.InferenceSession(
             self.config.MODEL_NAME,
             sess_options=ort.SessionOptions(),
-            providers=ort.get_available_providers(),
+            providers=providers,
         )
 
         self.special_tokens: set[str] = {
@@ -194,8 +197,10 @@ class Phonemizer:
                 expanded.append(a)
                 if b is not None and b.isupper():
                     expanded.append(Punctuation.HYPHEN.value)
-            expanded = "".join(expanded)
-            subwords.append(expanded)
+            expanded_flat = "".join(
+                expanded
+            )  # Flatten the list of characters into a string
+            subwords.append(expanded_flat)
         return Punctuation.HYPHEN.value.join(subwords)
 
     def encode(self, sentence: Iterable[str]) -> List[int]:
@@ -285,14 +290,16 @@ class Phonemizer:
         phons = word_phonemes[word]
         if phons is None:
             subwords = word_splits[word]
-            subphons = [word_phonemes[w] for w in subwords]
-            phons = "".join(subphons)
+            subphons_converted = [word_phonemes[w] for w in subwords]
+            phons = "".join(
+                [subphon for subphon in subphons_converted if subphon is not None]
+            )
         return phons
 
     def _clean_and_split_texts(
         self, texts: List[str], punc_set: set[str], punc_pattern: re.Pattern
     ) -> tuple[List[List[str]], set[str]]:
-        split_text, cleaned_words = [], set()
+        split_text, cleaned_words = [], set[str]()
         for text in texts:
             cleaned_text = "".join(t for t in text if t.isalnum() or t in punc_set)
             split = [s for s in re.split(punc_pattern, cleaned_text) if len(s) > 0]
@@ -308,7 +315,9 @@ class Phonemizer:
         :param lang: Language of the texts.
         :return: List of phonemes.
         """
-        split_text, cleaned_words = [], set()
+        split_text: List[str] = []
+        cleaned_words = set[str]()
+
         punc_set = Punctuation.get_punc_set()
         punc_pattern = Punctuation.get_punc_pattern()
 
