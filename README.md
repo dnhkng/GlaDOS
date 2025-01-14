@@ -47,7 +47,7 @@ Try this simplified process, but be aware it's still in the experimental stage! 
 If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
 https://onnxruntime.ai/docs/install/
 
-If you are using another accelerator (ROCm, DirectML etc), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
+If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
 
 ## Set up a local LLM server:
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
@@ -57,7 +57,7 @@ If you are using another accelerator (ROCm, DirectML etc), after following the i
 
 ## Windows Installation Process
 1. Open the Microsoft Store, search for `python` and install Python 3.12
-2. Downlod this repository, either:
+2. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
    2. If you have Git set up, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
 3. In the repository folder, run the `install_windows.bat`, and wait until the installation in complete.
@@ -67,7 +67,7 @@ If you are using another accelerator (ROCm, DirectML etc), after following the i
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  Note: I was getting Segfaults!  Please leave feedback!
 
 
-1. Downlod this repository, either:
+1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
    2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
 2. In a terminal, go to the repository folder and run these commands:
@@ -82,7 +82,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  This has been tested on Ubuntu 24.04.1 LTS
 
 
-1. Downlod this repository, either:
+1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
    2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
 2. In a terminal, go to the repository folder and run these commands:
@@ -95,7 +95,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 ## Changing the LLM Model
 
-To use other models, use the conmmand:
+To use other models, use the command:
 ```ollama pull {modelname}```
 and then add {modelname} to glados_config.yaml as the model.
 
