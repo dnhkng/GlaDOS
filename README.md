@@ -81,17 +81,21 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 ## Linux Installation Process
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  This has been tested on Ubuntu 24.04.1 LTS
 
-
-1. Download this repository, either:
+1. Install the PortAudio library, if you don't yet have it installed:
+   
+         sudo apt update
+         sudo apt install libportaudio2
+   
+2. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
    2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
-2. In a terminal, go to the repository folder and run these commands:
+3. In a terminal, go to the repository folder and run these commands:
    
          chmod +x install_ubuntu.sh
          chmod +x start_ubuntu.sh
 
-3. In the a terminal in the GLaODS folder, run `./install_ubuntu.sh`, and wait until the installation in complete.
-4. Run  `./start_ubuntu.sh` to start GLaDOS!
+4. In the a terminal in the GLaODS folder, run `./install_ubuntu.sh`, and wait until the installation in complete.
+5. Run  `./start_ubuntu.sh` to start GLaDOS!
 
 ## Changing the LLM Model
 
@@ -103,8 +107,7 @@ and then add {modelname} to glados_config.yaml as the model.
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
    1. Solve this by upgrading your hardware. You need to you either headphone, so she can't physically hear herself speak, or a conference-style room microphone/speaker. These have hardware sound cancellation, and prevent these loops.
    2. Disable voice interruption. This means neither you nor GLaDOS can interrupt when GLaDOS is speaking. To accomplish this, edit the `glados_config.yaml`, and change `interruptible:` to  `false`.
-
-
+2. If you want to the the Text UI, you should use the glados-ui.py file instead of glado.py
 
 
 ## Testing the submodules
