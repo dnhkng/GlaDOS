@@ -101,7 +101,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 To use other models, use the command:
 ```ollama pull {modelname}```
-and then add {modelname} to glados_config.yaml as the model.
+and then add {modelname} to glados_config.yaml as the model. You can find [more models here!](https://ollama.com/library)
 
 ## Common Issues
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
