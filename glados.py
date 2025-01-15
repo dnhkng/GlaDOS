@@ -72,6 +72,22 @@ class GladosConfig:
 
         return cls(**config)
 
+def configure_io(path: str, key: str = "IO"):
+    data = None
+    
+    try:
+        # First attempt with UTF-8
+        with open(path, "r", encoding="utf-8") as file:
+            data = yaml.safe_load(file).get(key, None)
+    except UnicodeDecodeError:
+        # Fall back to utf-8-sig if UTF-8 fails (handles BOM)
+        with open(path, "r", encoding="utf-8-sig") as file:
+            data = yaml.safe_load(file).get(key, None)
+    
+    if data is not None:
+        if "speaker_device" in data.keys():
+            logger.debug(f"Setting speaker device to {data['speaker_device']}")
+            sd.default.device = data["speaker_device"]
 
 class Glados:
     def __init__(
@@ -604,6 +620,7 @@ class Glados:
 
 def start() -> None:
     """Set up the LLM server and start GlaDOS."""
+    configure_io("glados_config.yml")
     glados_config = GladosConfig.from_yaml("glados_config.yml")
     glados = Glados.from_config(glados_config)
     glados.start_listen_event_loop()
