@@ -20,7 +20,7 @@ Don't expect support for this, it's in active development, and requires lots of 
 This will entail:
 - [x] Train GLaDOS voice generator
 - [x] Generate a prompt that leads to a realistic "Personality Core"
-- [ ] Generate a [MemGPT](https://github.com/cpacker/MemGPT) medium- and long-term memory for GLaDOS
+- [ ] Generate a [Letta](https://github.com/letta-ai/letta) medium- and long-term memory for GLaDOS
 - [ ] Give GLaDOS vision via [LLaVA](https://llava-vl.github.io/)
 - [ ] Create 3D-printable parts
 - [ ] Design the animatronics system
