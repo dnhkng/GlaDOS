@@ -21,7 +21,7 @@ This will entail:
 - [x] Train GLaDOS voice generator
 - [x] Generate a prompt that leads to a realistic "Personality Core"
 - [ ] Generate a medium- and long-term memory for GLaDOS (Probably a custom vector DB in a simpy Numpy array!) 
-- [ ] Give GLaDOS vision via a VLM (either a full VLM for everything, or a 'vision module' unsing a tiny VLM the GLaDOS can function call!)
+- [ ] Give GLaDOS vision via a VLM (either a full VLM for everything, or a 'vision module' using a tiny VLM the GLaDOS can function call!)
 - [ ] Create 3D-printable parts
 - [ ] Design the animatronics system
 
@@ -52,6 +52,7 @@ If you are using another accelerator (ROCm, DirectML etc.), after following the 
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
 2. Once installed, download a small 2B model for testing, at a terminal or command prompt use: `ollama pull llama3.2`
 
+Note: You can use any OpenAI or Ollama compatible server, local or cloud based. Just edit the glados_config.yaml and update the completion_url, model and the api_key if necessary.
 
 
 ## Windows Installation Process
