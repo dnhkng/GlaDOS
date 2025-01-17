@@ -42,26 +42,26 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 # Installation Instruction
 Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
 
-## Install Drivers in necessary
-If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
-https://onnxruntime.ai/docs/install/
-
-If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
-
-## Set up a local LLM server:
+## Ollama Installation Process (required for all operating systems)
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
 2. Once installed, download a small 2B model for testing, at a terminal or command prompt use: `ollama pull llama3.2`
 
 Note: You can use any OpenAI or Ollama compatible server, local or cloud based. Just edit the glados_config.yaml and update the completion_url, model and the api_key if necessary.
 
+## Driver Installation Process (required for GPU acceleration)
+If you are an Nvidia system running Windows, the installer will automatically install the following if they are missing: `Python`, `CUDA`, `CuDNN`. All you need to manually install is an up-to-date graphics driver.
+
+If you are an Nvidia system running Linux or macOS, make sure you manually install the necessary drivers and CUDA, info here:
+https://onnxruntime.ai/docs/install/
+
+If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
 
 ## Windows Installation Process
-1. Open the Microsoft Store, search for `python` and install Python 3.12
-2. Download this repository, either:
+1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
    2. If you have Git set up, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
-3. In the repository folder, run the `install_windows.bat`, and wait until the installation in complete.
-4. Double click `start_windows.bat` to start GLaDOS!
+2. In the repository folder, run the `install_windows.bat`, and wait until the installation in complete.
+3. Double click `start_windows.bat` to start GLaDOS!
 
 ## macOS Installation Process
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  Note: I was getting Segfaults!  Please leave feedback!
