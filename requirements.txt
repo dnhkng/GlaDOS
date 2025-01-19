@@ -6,4 +6,5 @@ jinja2
 requests
 textual
 pyyaml
-librosa
+numba
+soundfile

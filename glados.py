@@ -370,7 +370,6 @@ class Glados:
                     logger.info(f"LLM inference time: {(time.time() - start):.2f}s")
                     start = time.time()
                     spoken_text = self._stc.text_to_spoken(generated_text)
-                    logger.success(f"LLM spoken_text: {spoken_text}")
                     audio = self._tts.generate_speech_audio(spoken_text)
                     logger.info(
                         f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio) / self._tts.rate:.2f}s"
