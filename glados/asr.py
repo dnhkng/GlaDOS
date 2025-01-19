@@ -1,6 +1,8 @@
 from typing import Dict, List
 
-import librosa
+from glados.mel_spectrogram import MelSpectrogramCalculator
+
+import soundfile as sf
 import numpy as np
 import onnxruntime as ort
 
@@ -11,23 +13,13 @@ ort.set_default_logger_severity(4)
 MODEL_PATH = "./models/nemo-parakeet_tdt_ctc_110m.onnx"
 TOKEN_PATH = "./models/nemo-parakeet_tdt_ctc_110m_tokens.txt"
 
-# Constants
-SAMPLE_RATE = 16000
-N_MELS = 80
-N_FFT = 400
-HOP_LENGTH = 160
-WIN_LENGTH = 400
-
 
 class AudioTranscriber:
     def __init__(
         self,
         model_path: str = MODEL_PATH,
         tokens_file: str = TOKEN_PATH,
-        sample_rate: int = SAMPLE_RATE,
     ) -> None:
-        self.sample_rate = sample_rate
-        
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
@@ -40,10 +32,7 @@ class AudioTranscriber:
         self.vocab = self._load_vocabulary(tokens_file)
 
         # Standard mel spectrogram parameters
-        self.n_mels = N_MELS
-        self.n_fft = N_FFT
-        self.hop_length = HOP_LENGTH
-        self.win_length = WIN_LENGTH
+        self.melspectrogram = MelSpectrogramCalculator()
 
     def _load_vocabulary(self, tokens_file: str) -> Dict[int, str]:
         vocab = {}
@@ -57,19 +46,7 @@ class AudioTranscriber:
         """
         Load and process audio file into mel spectrogram with improved normalization.
         """
-        # Compute mel spectrogram
-        mel_spec = librosa.feature.melspectrogram(
-            y=audio,
-            sr=self.sample_rate,
-            n_mels=self.n_mels,
-            n_fft=self.n_fft,
-            hop_length=self.hop_length,
-            win_length=self.win_length,
-            power=2.0,
-        )
-
-        # Convert to log scale with improved scaling
-        mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
+        mel_spec = self.melspectrogram.compute(audio)
 
         # Normalize
         mel_spec = (mel_spec - mel_spec.mean()) / (mel_spec.std() + 1e-5)
@@ -140,6 +117,6 @@ class AudioTranscriber:
         """
 
         # Load audio
-        audio, sr = librosa.load(audio_path, sr=self.sample_rate)
+        audio, sr = sf.read(audio_path)
 
         return self.transcribe(audio)

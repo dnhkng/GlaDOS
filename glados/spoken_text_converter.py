@@ -38,7 +38,8 @@ class SpokenTextConverter:
             |\$|£                     # Currency symbols
             |[×÷^√∛]                 # Unambiguous mathematical operators (removed hyphen)
             |\b(?:Dr|Mr|Mrs|Ms)\.    # Common abbreviations
-        """
+            |\.{3,}|\. \. \.         # Triple dots (including spaced version)
+            """
         )
 
         # TODO: Add compiled regex patterns for other conversions
@@ -457,8 +458,12 @@ class SpokenTextConverter:
         text = text.replace("(", "«").replace(")", "»")
 
         # 3. Punctuation normalization
+        # a. Replace common punctuation marks
         for a, b in zip("、。！，：；？", ",.!,:;?"):
             text = text.replace(a, b + " ")
+
+        # b. Remove ellipses
+        text = re.sub(r'\.{3,}|\. \. \.', '', text)
 
         # 4. Whitespace normalization
         text = re.sub(r"[^\S \n]", " ", text)
