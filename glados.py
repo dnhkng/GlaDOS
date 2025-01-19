@@ -17,7 +17,7 @@ import yaml
 from Levenshtein import distance
 from loguru import logger
 
-from glados import asr, tts, vad
+from glados import asr, tts, vad, spoken_text_converter as stc
 
 logger.remove(0)
 logger.add(sys.stderr, level="SUCCESS")
@@ -114,6 +114,7 @@ class Glados:
             model_path=str(Path.cwd() / "models" / voice_model),
             speaker_id=speaker_id,
         )
+        self._stc = stc.SpokenTextConverter()
 
         # warm up onnx ASR model
         self._asr_model.transcribe_file("data/0.wav")
@@ -368,7 +369,9 @@ class Glados:
                     logger.success(f"LLM text: {generated_text}")
                     logger.info(f"LLM inference time: {(time.time() - start):.2f}s")
                     start = time.time()
-                    audio = self._tts.generate_speech_audio(generated_text)
+                    spoken_text = self._stc.text_to_spoken(generated_text)
+                    logger.success(f"LLM spoken_text: {spoken_text}")
+                    audio = self._tts.generate_speech_audio(spoken_text)
                     logger.info(
                         f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio) / self._tts.rate:.2f}s"
                     )
@@ -383,7 +386,7 @@ class Glados:
 
                         if interrupted:
                             clipped_text = self.clip_interrupted_sentence(
-                                generated_text, percentage_played
+                                spoken_text, percentage_played
                             )
 
                             logger.info(
@@ -393,7 +396,7 @@ class Glados:
                             system_text.append(clipped_text)
                             finished = True
 
-                        assistant_text.append(generated_text)
+                        assistant_text.append(spoken_text)
 
                 if finished:
                     self.messages.append(
