@@ -1,5 +1,6 @@
 import re
 
+
 class SpokenTextConverter:
     """
     A utility class for converting text containing numbers, dates, times, and currency
@@ -329,6 +330,86 @@ class SpokenTextConverter:
 
         return re.sub(r"(\d+\.?\d*)%", replace_match, text)
 
+    def _convert_mathematical_notation(self, text: str) -> str:
+        """
+        Convert mathematical notation to spoken form.
+
+        Handles:
+        - Exponents (e.g., "8^2" → "eight to the power of two")
+        - Square/cube roots (e.g., "√9" → "square root of nine")
+        - Basic operations (e.g., "5 + 3" → "five plus three")
+        - Fractions (e.g., "1/2" → "one over two")
+        - Equals signs (e.g., "=" → "equals")
+        - Division signs (e.g., "÷" → "divided by")
+        - Multiplication signs (e.g., "×" → "times")
+
+        :param text: Text containing mathematical notation
+        :return: Text with mathematical notation converted to spoken form
+        """
+
+        # Helper function to convert numbers in matched patterns
+        def convert_numbers_in_match(match, pattern):
+            parts = list(match.groups())
+            for i, part in enumerate(parts):
+                if part and part.isdigit():
+                    parts[i] = self._number_to_words(int(part))
+            return pattern.format(*parts)
+
+        # Convert basic arithmetic symbols first
+        text = text.replace(" = ", " equals ")
+        text = text.replace("=", " equals ")
+        text = text.replace(" + ", " plus ")
+        text = text.replace("+", " plus ")
+        text = text.replace(" - ", " minus ")
+        text = text.replace(" × ", " times ")
+        text = text.replace("×", " times ")
+        text = text.replace(" ÷ ", " divided by ")
+        text = text.replace("÷", " divided by ")
+
+        # Convert exponents (e.g., 8^2, x^2, etc.)
+        text = re.sub(
+            r"(\d+)\^(\d+)",
+            lambda m: convert_numbers_in_match(m, "{0} to the power of {1}"),
+            text,
+        )
+
+        # Convert letter variables with exponents (e.g., x^2)
+        text = re.sub(
+            r"([a-zA-Z])\^(\d+)",
+            lambda m: f"{m.group(1)} to the power of {self._number_to_words(int(m.group(2)))}",
+            text,
+        )
+
+        # Convert square roots (√)
+        text = re.sub(
+            r"√(\d+)",
+            lambda m: f"square root of {self._number_to_words(int(m.group(1)))}",
+            text,
+        )
+
+        # Convert cube roots (∛)
+        text = re.sub(
+            r"∛(\d+)",
+            lambda m: f"cube root of {self._number_to_words(int(m.group(1)))}",
+            text,
+        )
+
+        # Convert mathematical fractions (only if not part of a date)
+        def convert_fraction(match):
+            # Skip if it looks like a date (e.g., 1/1/2024)
+            if re.match(r"\d{1,2}/\d{1,2}/\d{2,4}", match.group(0)):
+                return match.group(0)
+            num = self._number_to_words(int(match.group(1)))
+            den = self._number_to_words(int(match.group(2)))
+            return f"{num} over {den}"
+
+        text = re.sub(r"(\d+)/(\d+)(?!/)", convert_fraction, text)
+
+        # Clean up any extra spaces that may have been introduced
+        text = re.sub(r"\s+", " ", text).strip()
+
+        return text
+
     def text_to_spoken(self, text) -> str:
         """
         Convert a given text into its spoken-word equivalent.
@@ -400,7 +481,10 @@ class SpokenTextConverter:
 
         text = re.sub(r"\b\d{1,2}/\d{1,2}/(?:\d{4}|\d{2})\b", convert_date, text)
 
-        # 9. Number conversions in specific order:
+        # 9. Convert mathematical notation (before other number conversions)
+        text = self._convert_mathematical_notation(text)
+
+        # 10. Number conversions in specific order:
         # a. Percentages first
         text = self._convert_percentages(text)
 
@@ -427,6 +511,9 @@ class SpokenTextConverter:
 
         # e. Decimal numbers
         text = re.sub(r"\d*\.\d+", self._point_num, text)
+
+        # f. Standalone integers (new addition)
+        text = re.sub(r"\b\d+\b", lambda m: self._number_to_words(int(m.group())), text)
 
         # 10. Final formatting
         text = re.sub(r"(?<=\d)-(?=\d)", " to ", text)

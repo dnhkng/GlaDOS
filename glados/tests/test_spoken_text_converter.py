@@ -100,6 +100,14 @@ def test_convert_decimal_numbers(input_text, expected):
         "Meeting from 9:00am to 5:00pm costs $100.50.",
         "Meeting from nine o'clock to five o'clock costs one hundred dollars and fifty cents."
     ),
+    (
+        "8 is the square root of 64",
+        "eight is the square root of sixty-four"
+    ),
+    (
+        "8^2 = 64",
+        "eight to the power of two equals sixty-four"
+    ),
 ])
 def test_convert_mixed_text(input_text, expected):
     result = converter.text_to_spoken(input_text)
@@ -116,5 +124,22 @@ def test_convert_mixed_text(input_text, expected):
     ("yeah", "ye'a"),
 ])
 def test_convert_special_cases(input_text, expected):
+    result = converter.text_to_spoken(input_text)
+    assert result.lower() == expected.lower()
+
+
+@pytest.mark.parametrize("input_text, expected", [
+    ("8^2 = 64", "eight to the power of two equals sixty-four"),
+    ("2^3 = 8", "two to the power of three equals eight"),
+    ("√16 = 4", "square root of sixteen equals four"),
+    ("∛27 = 3", "cube root of twenty-seven equals three"),
+    ("5 + 3 = 8", "five plus three equals eight"),
+    ("10 - 5 = 5", "ten minus five equals five"),
+    ("4 × 2 = 8", "four times two equals eight"),
+    ("8 ÷ 2 = 4", "eight divided by two equals four"),
+    ("x^2 + y^2 = z^2", "x to the power of two plus y to the power of two equals z to the power of two"),
+    ("15/3 = 5", "fifteen over three equals five"),
+])
+def test_convert_mathematical_notation(input_text, expected):
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
