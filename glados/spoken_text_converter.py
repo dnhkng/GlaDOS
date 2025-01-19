@@ -29,7 +29,19 @@ class SpokenTextConverter:
 
     def __init__(self):
         # Initialize any necessary state or configurations here, maybe for other languages?
-        pass
+
+        # Precompile quick check pattern
+        # Note: Only check for mathematical operators that aren't commonly used in regular text
+        self.convertible_pattern = re.compile(
+            r"""(?x)
+            \d                        # Any digit
+            |\$|£                     # Currency symbols
+            |[×÷^√∛]                 # Unambiguous mathematical operators (removed hyphen)
+            |\b(?:Dr|Mr|Mrs|Ms)\.    # Common abbreviations
+        """
+        )
+
+        # TODO: Add compiled regex patterns for other conversions
 
     def _number_to_words(self, num):
         """
@@ -330,6 +342,13 @@ class SpokenTextConverter:
 
         return re.sub(r"(\d+\.?\d*)%", replace_match, text)
 
+    def _contains_convertible_content(self, text: str) -> bool:
+        """
+        Fast check if text contains any content that needs conversion.
+        Only looks for unambiguous indicators of convertible content.
+        """
+        return bool(self.convertible_pattern.search(text))
+
     def _convert_mathematical_notation(self, text: str) -> str:
         """
         Convert mathematical notation to spoken form.
@@ -346,6 +365,10 @@ class SpokenTextConverter:
         :param text: Text containing mathematical notation
         :return: Text with mathematical notation converted to spoken form
         """
+
+        # Fast fail if no convertible content
+        if not self._contains_convertible_content(text):
+            return text
 
         # Helper function to convert numbers in matched patterns
         def convert_numbers_in_match(match, pattern):
