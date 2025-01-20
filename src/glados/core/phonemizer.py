@@ -354,7 +354,6 @@ class Phonemizer:
             word for word, phons in word_phonemes.items() if phons is None and len(word_splits.get(word, [])) <= 1
         ]
 
-        print(f"Words to predict: {words_to_predict}")
         if words_to_predict:
             input_batch = [self.encode(word) for word in words_to_predict]
             input_batch_padded: NDArray[np.int64] = self.pad_sequence_fixed(input_batch, self.config.MODEL_INPUT_LENGTH)
@@ -364,13 +363,9 @@ class Phonemizer:
 
             ids = self._process_model_output(ort_outs)
 
-            print(f"IDs: {ids}")
-
             # Step 5: Add predictions to the dictionary
             for id, word in zip(ids, words_to_predict, strict=False):
                 word_phonemes[word] = self.decode(id)
-
-            print(f"Word phonemes: {word_phonemes}")
 
         # Step 6: Get phonemes for each word in the text
         phoneme_lists = []
