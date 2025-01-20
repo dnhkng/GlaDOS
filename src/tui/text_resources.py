@@ -1,3 +1,4 @@
+# ruff: noqa: RUF001
 """ "Long text resources, to avoid cluttering up the main file."""
 
 aperture = r"""

@@ -1,6 +1,7 @@
 import numpy as np
-import onnxruntime as ort
-import soundfile as sf
+from numpy.typing import NDArray
+import onnxruntime as ort  # type: ignore
+import soundfile as sf  # type: ignore
 
 from .mel_spectrogram import MelSpectrogramCalculator
 
@@ -40,10 +41,12 @@ class AudioTranscriber:
                 vocab[int(index)] = token
         return vocab
 
-    def process_audio(self, audio: np.ndarray) -> np.ndarray:
+    def process_audio(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Load and process audio file into mel spectrogram with improved normalization.
         """
+
+
         mel_spec = self.melspectrogram.compute(audio)
 
         # Normalize
@@ -54,7 +57,7 @@ class AudioTranscriber:
 
         return mel_spec
 
-    def decode_output(self, output_logits: np.ndarray) -> list[str]:
+    def decode_output(self, output_logits: NDArray[np.float32]) -> list[str]:
         """Decode model output logits into text with improved token handling."""
         predictions = np.argmax(output_logits, axis=-1)
 
@@ -87,7 +90,7 @@ class AudioTranscriber:
 
         return decoded_texts
 
-    def transcribe(self, audio: np.ndarray) -> str:
+    def transcribe(self, audio: NDArray[np.float32]) -> str:
         """
         Transcribe an audio file to text.
         """
@@ -115,6 +118,6 @@ class AudioTranscriber:
         """
 
         # Load audio
-        audio, sr = sf.read(audio_path)
+        audio, sr = sf.read(audio_path, dtype='float32')
 
         return self.transcribe(audio)

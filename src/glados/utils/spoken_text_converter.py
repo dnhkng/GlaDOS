@@ -1,4 +1,6 @@
+# ruff: noqa: RUF001, RUF002
 import re
+from typing import ClassVar
 
 
 class SpokenTextConverter:
@@ -26,6 +28,22 @@ class SpokenTextConverter:
         >>> print(result)
         The meeting is at three o'clock on one/one/twenty twenty-four.
     """
+
+    CONTRACTIONS: ClassVar[dict[str, str]] = {
+        "I'm":  "I am",
+        "I'll": "I will",
+        "I've": "I have",
+        "I'd": "I would",
+        "won't": "will not",
+        "can't": "cannot",
+        "n't": " not",
+        "'ll": " will",
+        "'re": " are",
+        "'ve": " have",
+        "'m": " am",
+        "'d": " would",
+        "ain't": "is not",
+    }
 
     def __init__(self) -> None:
         # Initialize any necessary state or configurations here, maybe for other languages?
@@ -198,61 +216,77 @@ class SpokenTextConverter:
         - Years (e.g., "1999" → "nineteen ninety-nine")
         - Regular numbers (e.g., "1000" → "one thousand")
 
-        :param num: The input number, time, or year to convert.
-        :type num: str
+        :param num: The match object from regex containing the number/time/year.
         :return: The spoken-word equivalent of the input.
-        :rtype: str
         """
         try:
-            num = num.group()
-            if "." in num:
-                return self._number_to_words(float(num))
-            elif ":" in num:
+            match_str = num.group()
+            if ":" in match_str:
+                # Split out any AM/PM first
+                time_str = match_str.lower()
+                am_pm = ""
+                if "am" in time_str:
+                    am_pm = " a m"
+                    time_str = time_str.replace("am", "").strip()
+                elif "pm" in time_str:
+                    am_pm = " p m"
+                    time_str = time_str.replace("pm", "").strip()
+
                 try:
-                    h, m = [int(n) for n in num.split(":")]
+                    h, m = [int(n) for n in time_str.split(":")]
                     if not (0 <= h <= 23 and 0 <= m <= 59):
-                        return num  # Return original if invalid time
+                        return match_str
+                    
+                    # Handle minutes based on whether we have AM/PM
                     if m == 0:
-                        return f"{self._number_to_words(h)} o'clock"
+                        if am_pm:  # If we have AM/PM, just use the hour
+                            time = f"{self._number_to_words(h)}"
+                        else:  # No AM/PM, use o'clock
+                            time = f"{self._number_to_words(h)} o'clock"
                     elif m < 10:
-                        return f"{self._number_to_words(h)} oh {self._number_to_words(m)}"
-                    return f"{self._number_to_words(h)} {self._number_to_words(m)}"
+                        time = f"{self._number_to_words(h)} oh {self._number_to_words(m)}"
+                    else:
+                        time = f"{self._number_to_words(h)} {self._number_to_words(m)}"
+                    
+                    return f"{time}{am_pm}"
+
                 except ValueError:
-                    return num
+                    return match_str
 
             # Year handling
             try:
-                year = int(num[:4])
-                if len(num) == 4 or (len(num) == 5 and num.endswith("s")):
-                    if 1000 <= year <= 9999:
-                        left, right = divmod(year, 100)
-                        s = "s" if num.endswith("s") else ""
+                number = int(match_str.rstrip('s'))  # Remove 's' if present
+                if len(match_str) == 4 or (len(match_str) == 5 and match_str.endswith("s")):
+                    left, right = divmod(number, 100)
+                    s = "s" if match_str.endswith("s") else ""
 
-                        # Special case for 2000 and 2000s
-                        if year == 2000:
-                            if s:
-                                return "twenty hundreds"  # Handle "2000s"
-                            else:
-                                return "two thousand"  # Handle "2000"
-                        elif right == 0:
-                            return f"{self._number_to_words(left)} hundred{s}"
-                        elif right < 10:
-                            return f"{self._number_to_words(left)} oh {self._number_to_words(right)}{s}"
+                    # Special case for 2000 and 2000s
+                    if number == 2000:
+                        if s:
+                            return "twenty hundreds"
                         else:
-                            # Handle plural for decades (e.g., 1950s → "nineteen fifties")
-                            if s and right >= 10:
-                                decade_word = self._number_to_words(right).replace(" ", "-")
-                                if decade_word.endswith("y"):
-                                    decade_word = decade_word[:-1] + "ies"  # Replace "y" with "ies"
-                                else:
-                                    decade_word += "s"
-                                return f"{self._number_to_words(left)} {decade_word}"
-                            return f"{self._number_to_words(left)} {self._number_to_words(right)}{s}"
-                return num
+                            return "two thousand"
+                    elif right == 0:
+                        return f"{self._number_to_words(left)} hundred{s}"
+                    elif right < 10:
+                        return f"{self._number_to_words(left)} oh {self._number_to_words(right)}{s}"
+                    else:
+                        # Handle plural for decades (e.g., 1950s → "nineteen fifties")
+                        if s and right >= 10:
+                            decade_word = self._number_to_words(right).replace(" ", "-")
+                            if decade_word.endswith("y"):
+                                decade_word = decade_word[:-1] + "ies"
+                            else:
+                                decade_word += "s"
+                            return f"{self._number_to_words(left)} {decade_word}"
+                        return f"{self._number_to_words(left)} {self._number_to_words(right)}{s}"
+                        
+                return self._number_to_words(number)
             except ValueError:
-                return num
+                return match_str
         except Exception:
-            return num
+            return num.group()
+
 
     def _flip_money(self, m: re.Match[str]) -> str:
         """
@@ -433,7 +467,12 @@ class SpokenTextConverter:
         :rtype: str
         :raises ValueError: If the input text contains invalid or unsupported formats.
         """
-        # 1. Basic text cleanup
+        # 1. First expand contractions (this part works correctly)
+        for contraction, expansion in sorted(self.CONTRACTIONS.items(), 
+                                        key=lambda x: len(x[0]), 
+                                        reverse=True):
+            text = text.replace(contraction, expansion)
+        
         # remove leading and trailing whitespace and empty lines
         text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
@@ -464,6 +503,21 @@ class SpokenTextConverter:
         text = re.sub(r"\betc\.(?! [A-Z])", "etc", text)
         text = re.sub(r"(?i)\b(y)eah?\b", r"\1e'a", text)
 
+
+
+        # Convert mixed case words to lowercase unless they're acronyms
+        def process_word(match: re.Match) -> str:
+            word = match.group(0)
+            # Keep uppercase if it's an acronym (all caps and length > 1)
+            if word.isupper() and len(word) > 1:
+                return ' '.join(word)  # Split into individual letters
+            # Special case: preserve "I" as uppercase
+            if word == "I":
+                return word
+            return word.lower()
+            
+        text = re.sub(r'\b[A-Za-z]+\b', process_word, text)
+
         # 6. Number formatting preparation
         # Remove commas in numbers but preserve them for later conversion
         def preserve_large_numbers(match: re.Match) -> str:
@@ -474,7 +528,7 @@ class SpokenTextConverter:
         text = re.sub(r"(?<=\d),(?=\d)", "", text)
 
         # 7. Remove AM/PM but preserve the time part
-        text = re.sub(r"(\d+:\d+)\s*(?:am|pm)\b", r"\1", text, flags=re.IGNORECASE)
+        # text = re.sub(r"(\d+:\d+)\s*(?:am|pm)\b", r"\1", text, flags=re.IGNORECASE)
 
         # 8. Date conversion (before other number conversions)
         def convert_date(match: re.Match) -> str:
@@ -511,15 +565,16 @@ class SpokenTextConverter:
 
         # c. Times
         text = re.sub(
-            r"\b(?:[1-9]|1[0-2]):[0-5]\d\b",
+            r'\b(\d{1,2}):(\d{2})(?:\s*(?:am|pm))?\b',
             self._split_num,
             text,
+            flags=re.IGNORECASE
         )
 
-        # d. Years
+        # d. Years - The key fix is to use lambda to return string directly
         text = re.sub(
-            r"\b\d{4}s?\b",
-            self._split_num,
+            r'\b\d{4}s?\b',
+            lambda m: self._split_num(m),
             text,
         )
 
@@ -538,7 +593,7 @@ class SpokenTextConverter:
         text = re.sub(r"(?i)(?<=[A-Z])\.(?=[A-Z])", "-", text)
 
         # 11. Final cleanup
-        text = re.sub(r"\b(?:am|pm)\b", "", text, flags=re.IGNORECASE)
+        # text = re.sub(r"\b(?:am|pm)\b", "", text, flags=re.IGNORECASE)
         text = re.sub(r"  +", " ", text)  # Clean up any double spaces that may have been created
 
         return text.strip()

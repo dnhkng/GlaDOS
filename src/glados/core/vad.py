@@ -1,5 +1,6 @@
 import numpy as np
-import onnxruntime as ort
+from numpy.typing import NDArray
+import onnxruntime as ort  # type: ignore
 
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
@@ -31,19 +32,20 @@ class VAD:
         self._h = self._initial_h
         self._c = self._initial_c
 
-    def process_chunk(self, chunk: np.ndarray) -> np.ndarray:
+    def process_chunk(self, chunk: NDArray[np.float32]) -> NDArray[np.float32]:
         ort_inputs = {
             "input": np.expand_dims(chunk, 0),
             "h": self._h,
             "c": self._c,
             "sr": np.array(self.sr, dtype="int64"),
         }
+        out: NDArray[np.float32]
         out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
         return np.squeeze(out)
 
-    def process_file(self, audio: np.ndarray) -> np.ndarray:
+    def process_file(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         self.reset()
-        results = []
+        results_list = []
         for i in range(0, len(audio), self.window_size_samples):
             chunk = audio[i : i + self.window_size_samples]
             if len(chunk) < self.window_size_samples:
@@ -55,6 +57,6 @@ class VAD:
                 "sr": np.array(self.sr, dtype="int64"),
             }
             out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
-            results.append(np.squeeze(out))
-        results = np.stack(results, axis=0)
+            results_list.append(np.squeeze(out))
+        results: NDArray[np.float32] = np.stack(results_list, axis=0)
         return results

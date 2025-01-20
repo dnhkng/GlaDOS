@@ -14,7 +14,7 @@ from Levenshtein import distance
 from loguru import logger
 import numpy as np
 import requests
-import sounddevice as sd
+import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
 import yaml
 
@@ -156,7 +156,7 @@ class Glados:
                 sd.wait()
 
         def audio_callback_for_sd_input_stream(
-            indata: np.ndarray, frames: int, time: sd.CallbackTime, status: CallbackFlags
+            indata: np.ndarray, frames: int, time: sd.CallbackStop, status: CallbackFlags
         ) -> None:
             data = indata.copy().squeeze()  # Reduce to single channel if necessary
             vad_value = self._vad_model.process_chunk(data)

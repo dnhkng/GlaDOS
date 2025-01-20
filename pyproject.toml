@@ -16,17 +16,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cuda = [
-    "onnxruntime-gpu>=1.16.0",
-]
-cpu = [
-    "onnxruntime>=1.16.0",
-]
-dev = [
-    "pytest",
-    "ruff",
-    "ipykernel",
-]
+cuda = ["onnxruntime-gpu>=1.16.0"]
+cpu = ["onnxruntime>=1.16.0"]
+dev = ["pytest", "ruff", "ipykernel", "types-requests", "types-PyYAML"]
+
+
+[project.scripts]
+glados = "glados.cli:main"
+
+
 # Build system
 [build-system]
 requires = ["hatchling"]
@@ -40,16 +38,16 @@ indent-width = 4
 
 # Enable all rules, including those that replace Black and isort
 lint.extend-select = [
-    "E",    # pycodestyle errors
-    "F",    # pyflakes
-    "I",    # isort
-    "N",    # pep8-naming
-    "UP",   # pyupgrade
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "RUF",  # Ruff-specific rules
-    "ANN",  # Annotation rules
-    "PYI",  # Type stub rules
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "RUF", # Ruff-specific rules
+    "ANN", # Annotation rules
+    "PYI", # Type stub rules
 ]
 
 # Assume Python 3.12

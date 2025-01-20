@@ -6,7 +6,8 @@ from pickle import load
 from typing import Any
 
 import numpy as np
-import onnxruntime as ort
+from numpy.typing import NDArray
+import onnxruntime as ort  # type: ignore
 
 from .phonemizer import Phonemizer
 
@@ -123,36 +124,42 @@ class Synthesizer:
             with open(config_file_path, encoding="utf-8") as config_file:
                 config_dict = json.load(config_file)
         except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found at path: {config_file_path}")
+            raise FileNotFoundError(f"Configuration file not found at path: {config_file_path}") from None
         except json.JSONDecodeError as e:
-            raise ValueError(f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}")
+            raise ValueError(f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}") from e
         except Exception as e:
             raise RuntimeError(
-                f"An unexpected error occurred while reading the configuration file at path: {config_file_path}. Error: {e}"
-            )
+                "An unexpected error occurred while reading the configuration file "
+                f"at path: {config_file_path}. Error: {e}"
+            ) from e
         self.config = PiperConfig.from_dict(config_dict)
         self.rate = self.config.sample_rate
-        self.speaker_id = self.config.speaker_id_map.get(str(speaker_id), 0) if self.config.num_speakers > 1 else None
+        self.speaker_id = (
+            self.config.speaker_id_map.get(str(speaker_id), 0)
+            if self.config.num_speakers > 1 and self.config.speaker_id_map is not None
+            else None
+        )
 
     @staticmethod
-    def _load_pickle(path: Path) -> dict:
+    def _load_pickle(path: Path) -> dict[str, Any]:
         """Load a pickled dictionary from path."""
         with path.open("rb") as f:
-            return load(f)
+            return dict(load(f))
 
-    def generate_speech_audio(self, text: str) -> np.ndarray:
+    def generate_speech_audio(self, text: str) -> NDArray[np.float32]:
         phonemes = self._phonemizer(text)
         audio = self.say_phonemes(phonemes)
-        return audio
+        return np.array(audio, dtype=np.float32)
 
-    def say_phonemes(self, phonemes: list[str]) -> np.ndarray:
-        audio = []
+    def say_phonemes(self, phonemes: list[str]) -> NDArray[np.float32]:
+        audio_list = []
         for sentence in phonemes:
             audio_chunk = self._say_phonemes(sentence)
-            audio.append(audio_chunk)
-        if audio:
-            return np.concatenate(audio, axis=1).T
-        return np.array([])
+            audio_list.append(audio_chunk)
+        if audio_list:
+            audio: NDArray[np.float32] = np.concatenate(audio_list, axis=1).T
+            return audio
+        return np.array([], dtype=np.float32)
 
     def _phonemizer(self, input_text: str) -> list[str]:
         """Converts text to phonemes using espeak-ng."""
@@ -181,7 +188,7 @@ class Synthesizer:
         length_scale: float | None = None,
         noise_scale: float | None = None,
         noise_w: float | None = None,
-    ) -> bytes:
+    ) -> NDArray[np.float32]:
         """Synthesize raw audio from phoneme ids."""
         if length_scale is None:
             length_scale = self.config.length_scale
@@ -206,7 +213,7 @@ class Synthesizer:
             sid = np.array([self.speaker_id], dtype=np.int64)
 
         # Synthesize through Onnx
-        audio = self.session.run(
+        audio: NDArray[np.float32] = self.session.run(
             None,
             {
                 "input": phoneme_ids_array,
@@ -218,10 +225,10 @@ class Synthesizer:
 
         return audio
 
-    def _say_phonemes(self, phonemes: str) -> bytes:
+    def _say_phonemes(self, phonemes: str) -> NDArray[np.float32]:
         """Say phonemes."""
 
         phoneme_ids = self._phonemes_to_ids(phonemes)
-        audio = self._synthesize_ids_to_raw(phoneme_ids)
+        audio: NDArray[np.float32] = self._synthesize_ids_to_raw(phoneme_ids)
 
         return audio

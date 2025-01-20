@@ -1,6 +1,7 @@
+# ruff: noqa: RUF001
 import pytest
 
-from src.spoken_text_converter import SpokenTextConverter
+from glados.utils.spoken_text_converter import SpokenTextConverter
 
 # Create an instance of SpokenTextConverter for testing
 converter = SpokenTextConverter()
@@ -18,7 +19,7 @@ converter = SpokenTextConverter()
         ("12.00%", "twelve percent"),
     ],
 )
-def test_convert_percentages(input_text, expected) -> None:
+def test_convert_percentages(input_text: str, expected: str) -> None:
     result = converter._convert_percentages(input_text)
     assert result.lower() == expected
 
@@ -33,12 +34,12 @@ def test_convert_percentages(input_text, expected) -> None:
         ("12:00", "twelve o'clock"),
         ("9:15", "nine fifteen"),
         ("11:45", "eleven forty-five"),
-        ("3:00pm", "three o'clock"),
-        ("7:30AM", "seven thirty"),
-        ("8:05 pm", "eight oh five"),
+        ("3:00pm", "three p m"),
+        ("7:30AM", "seven thirty a m"),
+        ("8:05 pm", "eight oh five p m"),
     ],
 )
-def test_convert_times(input_text, expected) -> None:
+def test_convert_times(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -61,7 +62,7 @@ def test_convert_times(input_text, expected) -> None:
         ("£99.99", "ninety-nine pounds and ninety-nine pence"),
     ],
 )
-def test_convert_currency(input_text, expected) -> None:
+def test_convert_currency(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -82,7 +83,7 @@ def test_convert_currency(input_text, expected) -> None:
         ("1950s", "nineteen fifties"),
     ],
 )
-def test_convert_years(input_text, expected) -> None:
+def test_convert_years(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -99,7 +100,7 @@ def test_convert_years(input_text, expected) -> None:
         ("0.333", "zero point three three three"),
     ],
 )
-def test_convert_decimal_numbers(input_text, expected) -> None:
+def test_convert_decimal_numbers(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -110,7 +111,7 @@ def test_convert_decimal_numbers(input_text, expected) -> None:
     [
         (
             "The meeting at 3:00pm on 1/1/2024 will cost $50.00.",
-            "The meeting at three o'clock on one/one/twenty twenty-four will cost fifty dollars.",
+            "The meeting at three p m on one/one/twenty twenty-four will cost fifty dollars.",
         ),
         (
             "In 1999, the company grew by 25% and made £1000000.",
@@ -121,14 +122,14 @@ def test_convert_decimal_numbers(input_text, expected) -> None:
             "Temperature is ninety-eight point six° with zero point five percent margin of error.",
         ),
         (
-            "Meeting from 9:00am to 5:00pm costs $100.50.",
-            "Meeting from nine o'clock to five o'clock costs one hundred dollars and fifty cents.",
+            "I am at a meeting from 9:00am to 5:00 costs $100.50.",
+            "I am at a meeting from nine a m to five o'clock costs one hundred dollars and fifty cents.",
         ),
         ("8 is the square root of 64", "eight is the square root of sixty-four"),
         ("8^2 = 64", "eight to the power of two equals sixty-four"),
     ],
 )
-def test_convert_mixed_text(input_text, expected) -> None:
+def test_convert_mixed_text(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -146,7 +147,7 @@ def test_convert_mixed_text(input_text, expected) -> None:
         ("yeah", "ye'a"),
     ],
 )
-def test_convert_special_cases(input_text, expected) -> None:
+def test_convert_special_cases(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()
 
@@ -166,6 +167,6 @@ def test_convert_special_cases(input_text, expected) -> None:
         ("15/3 = 5", "fifteen over three equals five"),
     ],
 )
-def test_convert_mathematical_notation(input_text, expected) -> None:
+def test_convert_mathematical_notation(input_text: str, expected: str) -> None:
     result = converter.text_to_spoken(input_text)
     assert result.lower() == expected.lower()

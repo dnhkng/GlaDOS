@@ -5,8 +5,8 @@ from pathlib import Path
 import random
 import sys
 import types
+from typing import ClassVar
 
-from glados_ui.text_resources import aperture, help_text, login_text, recipe
 from loguru import logger
 from rich.text import Text
 from textual import events
@@ -15,6 +15,8 @@ from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Digits, Footer, Header, Label, Log, RichLog, Static
+
+from tui.text_resources import aperture, help_text, login_text, recipe
 
 # This ugly stuff is necessary because there is a `glados` module as well as a `glados`
 # package, so a normal `import glados` does the wrong thing.  If/when this is fixed
@@ -132,7 +134,9 @@ class SplashScreen(Screen):
 class HelpScreen(ModalScreen):
     """The help screen. Possibly not that helpful."""
 
-    BINDINGS = [("escape", "app.pop_screen", "Close screen")]
+    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
+        ("escape", "app.pop_screen", "Close screen")
+    ]
 
     TITLE = "Help"
 
@@ -151,7 +155,7 @@ class HelpScreen(ModalScreen):
 class GladosUI(App):
     """The main app class for the GlaDOS ui."""
 
-    BINDINGS = [
+    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
         Binding(key="q", action="quit", description="Quit"),
         Binding(
             key="question_mark",

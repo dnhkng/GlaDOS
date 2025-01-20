@@ -1,3 +1,4 @@
+# ruff: noqa: RUF001
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
@@ -6,8 +7,10 @@ from itertools import zip_longest
 from pathlib import Path
 from pickle import load
 import re
+from typing import Any
 
 import numpy as np
+from numpy.typing import NDArray
 import onnxruntime as ort  # type: ignore
 
 # Default OnnxRuntime is way to verbose
@@ -95,7 +98,11 @@ class Phonemizer:
         _get_phonemes(word: str, word_phonemes: Dict[str, Union[str, None]], word_splits: Dict[str, List[str]]) -> str:
             Get the phonemes for a word.
 
-        _clean_and_split_texts(texts: List[str], punc_set: set[str], punc_pattern: re.Pattern) -> tuple[List[List[str]], set[str]]:
+        _clean_and_split_texts(
+            texts: List[str],
+            punc_set: set[str],
+            punc_pattern: re.Pattern
+        ) -> tuple[List[List[str]], set[str]]:
             Clean and split texts.
 
         convert_to_phonemes(texts: List[str], lang: str) -> List[str]:
@@ -106,7 +113,10 @@ class Phonemizer:
         if config is None:
             config = ModelConfig()
         self.config = config
-        self.phoneme_dict = self._load_pickle(self.config.PHONEME_DICT_PATH)
+        self.phoneme_dict: dict[str, str] = self._load_pickle(self.config.PHONEME_DICT_PATH)
+
+        self.phoneme_dict['glados'] = 'ɡlˈɑːdɑːs' # Add GLaDOS to the phoneme dictionary!
+
         self.token_to_idx = self._load_pickle(self.config.TOKEN_TO_IDX_PATH)
         self.idx_to_token = self._load_pickle(self.config.IDX_TO_TOKEN_PATH)
 
@@ -127,19 +137,20 @@ class Phonemizer:
         }
 
     @staticmethod
-    def _load_pickle(path: Path) -> dict:
+    def _load_pickle(path: Path) -> dict[str, Any]:
         """Load a p_ickled dictionary from path."""
         with path.open("rb") as f:
-            return load(f)
+            return load(f)  # type: ignore
 
     @staticmethod
-    def _unique_consecutive(arr: np.ndarray) -> List[np.ndarray]:
+    def _unique_consecutive(arr: list[NDArray[np.int64]]) -> list[NDArray[np.int64]]:
         """
         Equivalent to torch.unique_consecutive for numpy arrays.
 
         :param arr: Array to process.
         :return: Array with consecutive duplicates removed.
         """
+        
         result = []
         for row in arr:
             if len(row) == 0:
@@ -147,14 +158,15 @@ class Phonemizer:
             else:
                 mask = np.concatenate(([True], row[1:] != row[:-1]))
                 result.append(row[mask])
+
         return result
 
     @staticmethod
-    def _remove_padding(arr: np.ndarray, padding_value: int = 0) -> List[np.ndarray]:
+    def _remove_padding(arr: list[NDArray[np.int64]], padding_value: int = 0) -> list[NDArray[np.int64]]:
         return [row[row != padding_value] for row in arr]
 
     @staticmethod
-    def _trim_to_stop(arr: np.ndarray, end_index: int = 2) -> List[np.ndarray]:
+    def _trim_to_stop(arr: list[NDArray[np.int64]], end_index: int = 2) -> list[NDArray[np.int64]]:
         """
         Trims the array to the stop index.
 
@@ -170,7 +182,7 @@ class Phonemizer:
                 result.append(row)
         return result
 
-    def _process_model_output(self, arr: np.ndarray) -> List[np.ndarray]:
+    def _process_model_output(self, arr: list[NDArray[np.int64]]) -> list[NDArray[np.int64]]:
         """
         Processes the output of the model to get the phoneme indices.
 
@@ -178,32 +190,27 @@ class Phonemizer:
         :return: List of phoneme indices.
         """
 
-        arr = np.argmax(arr[0], axis=2)
-        arr = self._unique_consecutive(arr)
-        arr = self._remove_padding(arr)
-        arr = self._trim_to_stop(arr)
-        return arr
+        arr_processed: list[NDArray[np.int64]] = np.argmax(arr[0], axis=2)
+        arr_processed = self._unique_consecutive(arr_processed)
+        arr_processed = self._remove_padding(arr_processed)
+        arr_processed = self._trim_to_stop(arr_processed) 
+
+        return arr_processed
 
     @staticmethod
     def _expand_acronym(word: str) -> str:
         """
         Expands an acronym into its subwords.
-
-        :param word: Acronym to expand.
-        :return: Expanded acronym.
+        Now only handles true acronyms since mixed case is handled by SpokenTextConverter.
         """
-        subwords = []
-        for subword in word.split(Punctuation.HYPHEN.value):
-            expanded = []
-            for a, b in zip_longest(subword, subword[1:]):
-                expanded.append(a)
-                if b is not None and b.isupper():
-                    expanded.append(Punctuation.HYPHEN.value)
-            expanded_flat = "".join(expanded)  # Flatten the list of characters into a string
-            subwords.append(expanded_flat)
-        return Punctuation.HYPHEN.value.join(subwords)
+        # Only split on hyphens if they exist
+        if Punctuation.HYPHEN.value in word:
+            return word
+        
+        # For acronyms, just return as is - they're already preprocessed
+        return word
 
-    def encode(self, sentence: Iterable[str]) -> List[int]:
+    def encode(self, sentence: Iterable[str]) -> list[int]:
         """
         Maps a sequence of symbols for a language to a sequence of indices.
 
@@ -215,18 +222,26 @@ class Phonemizer:
         sequence = [self.token_to_idx[c] for c in sentence if c in self.token_to_idx]
         return [self.token_to_idx[SpecialTokens.START.value], *sequence, self.token_to_idx[SpecialTokens.END.value]]
 
-    def decode(self, sequence: np.ndarray) -> str:
+    def decode(self, sequence: NDArray[np.int64]) -> str:
         """
         Maps a sequence of indices to an array of symbols.
 
         :param sequence: Encoded sequence to be decoded.
         :return: Decoded sequence of symbols.
         """
-        decoded = [self.idx_to_token[int(t)] for t in sequence if int(t) in self.idx_to_token]
-        return "".join(d for d in decoded if d not in self.special_tokens)
+        decoded = []
+
+        for t in sequence:
+            idx = t.item()
+            token = self.idx_to_token[idx]
+            decoded.append(token)
+
+        result = "".join(d for d in decoded if d not in self.special_tokens)
+        return result
+
 
     @staticmethod
-    def pad_sequence_fixed(v: list[np.ndarray], target_length: int) -> np.ndarray:
+    def pad_sequence_fixed(v: list[list[int]], target_length: int) -> NDArray[np.int64]:
         """
         Pad or truncate a list of arrays to a fixed length.
 
@@ -234,7 +249,8 @@ class Phonemizer:
         :param target_length: Target length to pad or truncate to.
         :return: Padded array.
         """
-        result = np.zeros((len(v), target_length), dtype=np.int64)
+
+        result: NDArray[np.int64] = np.zeros((len(v), target_length), dtype=np.int64)
 
         for i, seq in enumerate(v):
             length = min(len(seq), target_length)  # Handle both shorter and longer sequences
@@ -253,7 +269,6 @@ class Phonemizer:
         """
         if word in punc_set or len(word) == 0:
             return word
-        # phoneme_dict = self.phoneme_dict[lang]
         if word in self.phoneme_dict:
             return self.phoneme_dict[word]
 
@@ -285,7 +300,7 @@ class Phonemizer:
         return phons
 
     def _clean_and_split_texts(
-        self, texts: list[str], punc_set: set[str], punc_pattern: re.Pattern
+        self, texts: list[str], punc_set: set[str], punc_pattern: re.Pattern[str]
     ) -> tuple[list[list[str]], set[str]]:
         split_text, cleaned_words = [], set[str]()
         for text in texts:
@@ -303,8 +318,9 @@ class Phonemizer:
         :param lang: Language of the texts.
         :return: List of phonemes.
         """
-        split_text: list[str] = []
+        split_text: list[list[str]] = []
         cleaned_words = set[str]()
+
 
         punc_set = Punctuation.get_punc_set()
         punc_pattern = Punctuation.get_punc_pattern()
@@ -338,18 +354,23 @@ class Phonemizer:
             word for word, phons in word_phonemes.items() if phons is None and len(word_splits.get(word, [])) <= 1
         ]
 
+        print(f"Words to predict: {words_to_predict}")
         if words_to_predict:
             input_batch = [self.encode(word) for word in words_to_predict]
-            input_batch = self.pad_sequence_fixed(input_batch, self.config.MODEL_INPUT_LENGTH)
+            input_batch_padded: NDArray[np.int64] = self.pad_sequence_fixed(input_batch, self.config.MODEL_INPUT_LENGTH)
 
-            ort_inputs = {self.ort_session.get_inputs()[0].name: input_batch}
+            ort_inputs = {self.ort_session.get_inputs()[0].name: input_batch_padded}
             ort_outs = self.ort_session.run(None, ort_inputs)
 
             ids = self._process_model_output(ort_outs)
 
+            print(f"IDs: {ids}")
+
             # Step 5: Add predictions to the dictionary
             for id, word in zip(ids, words_to_predict, strict=False):
                 word_phonemes[word] = self.decode(id)
+
+            print(f"Word phonemes: {word_phonemes}")
 
         # Step 6: Get phonemes for each word in the text
         phoneme_lists = []
