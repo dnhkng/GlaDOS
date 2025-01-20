@@ -27,7 +27,7 @@ class SpokenTextConverter:
         The meeting is at three o'clock on one/one/twenty twenty-four.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Initialize any necessary state or configurations here, maybe for other languages?
 
         # Precompile quick check pattern
@@ -44,7 +44,7 @@ class SpokenTextConverter:
 
         # TODO: Add compiled regex patterns for other conversions
 
-    def _number_to_words(self, num):
+    def _number_to_words(self, num: float | str) -> str:
         """
         Convert a number into its spoken-word equivalent.
 
@@ -108,7 +108,7 @@ class SpokenTextConverter:
             ]
             scales = ["", "thousand", "million", "billion"]
 
-            def process_chunk(n, scale):
+            def process_chunk(n: int, scale: int) -> str:
                 if n == 0:
                     return ""
 
@@ -145,18 +145,18 @@ class SpokenTextConverter:
                 if num == 0:
                     return "zero"
 
-                result = []
+                intermediate_result: list[str] = []
                 scale = 0
 
                 while num > 0:
                     chunk = num % 1000
                     if chunk != 0:
                         chunk_words = process_chunk(chunk, scale)
-                        result.insert(0, chunk_words)
+                        intermediate_result.insert(0, chunk_words)
                     num //= 1000
                     scale += 1
 
-                return " ".join(filter(None, result))
+                return " ".join(filter(None, intermediate_result))
             else:
                 # Handle decimal numbers
                 str_num = f"{num:.10f}".rstrip("0")  # Handle floating point precision
@@ -171,29 +171,25 @@ class SpokenTextConverter:
                 if int_num == 0:
                     result = "zero"
                 else:
-                    result = []
+                    intermediate_result = []
                     scale = 0
                     while int_num > 0:
                         chunk = int_num % 1000
                         if chunk != 0:
                             chunk_words = process_chunk(chunk, scale)
-                            result.insert(0, chunk_words)
+                            intermediate_result.insert(0, chunk_words)
                         int_num //= 1000
                         scale += 1
-                    result = " ".join(filter(None, result))
+                    result = " ".join(filter(None, intermediate_result))
 
                 # Add decimal part if it exists
                 if dec_part:
-                    return (
-                        result
-                        + " point "
-                        + " ".join(ones[int(digit)] for digit in dec_part)
-                    )
+                    result = result + " point " + " ".join(ones[int(digit)] for digit in dec_part)
                 return result
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid number format: {num}") from e
 
-    def _split_num(self, num):
+    def _split_num(self, num: re.Match) -> str:
         """
         Convert numbers, times, and years into their spoken-word equivalents.
 
@@ -219,9 +215,7 @@ class SpokenTextConverter:
                     if m == 0:
                         return f"{self._number_to_words(h)} o'clock"
                     elif m < 10:
-                        return (
-                            f"{self._number_to_words(h)} oh {self._number_to_words(m)}"
-                        )
+                        return f"{self._number_to_words(h)} oh {self._number_to_words(m)}"
                     return f"{self._number_to_words(h)} {self._number_to_words(m)}"
                 except ValueError:
                     return num
@@ -247,13 +241,9 @@ class SpokenTextConverter:
                         else:
                             # Handle plural for decades (e.g., 1950s → "nineteen fifties")
                             if s and right >= 10:
-                                decade_word = self._number_to_words(right).replace(
-                                    " ", "-"
-                                )
+                                decade_word = self._number_to_words(right).replace(" ", "-")
                                 if decade_word.endswith("y"):
-                                    decade_word = (
-                                        decade_word[:-1] + "ies"
-                                    )  # Replace "y" with "ies"
+                                    decade_word = decade_word[:-1] + "ies"  # Replace "y" with "ies"
                                 else:
                                     decade_word += "s"
                                 return f"{self._number_to_words(left)} {decade_word}"
@@ -264,7 +254,7 @@ class SpokenTextConverter:
         except Exception:
             return num
 
-    def _flip_money(self, m):
+    def _flip_money(self, m: re.Match[str]) -> str:
         """
         Convert currency expressions into their spoken-word equivalents.
 
@@ -302,18 +292,14 @@ class SpokenTextConverter:
                 if c == 0:
                     return f"{self._number_to_words(int(b))} {bill}{s}"
 
-                coins = (
-                    f"cent{'' if c == 1 else 's'}"
-                    if m[0] == "$"
-                    else ("penny" if c == 1 else "pence")
-                )
+                coins = f"cent{'' if c == 1 else 's'}" if m[0] == "$" else ("penny" if c == 1 else "pence")
                 return f"{self._number_to_words(int(b))} {bill}{s} and {self._number_to_words(c)} {coins}"
             except ValueError as e:
                 raise ValueError(f"Invalid currency format: {m}") from e
         except Exception:
             return m  # Return original text if conversion fails
 
-    def _point_num(self, num) -> str:
+    def _point_num(self, num: re.Match[str]) -> str:
         """
         Convert decimal numbers into their spoken-word equivalents.
 
@@ -324,7 +310,7 @@ class SpokenTextConverter:
         """
         return self._number_to_words(float(num.group()))
 
-    def _convert_percentages(self, text):
+    def _convert_percentages(self, text: str) -> str:
         """
         Convert percentage expressions in the text to their spoken-word equivalents.
 
@@ -334,7 +320,7 @@ class SpokenTextConverter:
         :rtype: str
         """
 
-        def replace_match(match):
+        def replace_match(match: re.Match) -> str:
             number = match.group(1)
             # Handle whole numbers without decimal point
             if "." not in number:
@@ -372,7 +358,7 @@ class SpokenTextConverter:
             return text
 
         # Helper function to convert numbers in matched patterns
-        def convert_numbers_in_match(match, pattern):
+        def convert_numbers_in_match(match: re.Match, pattern: str) -> str:
             parts = list(match.groups())
             for i, part in enumerate(parts):
                 if part and part.isdigit():
@@ -419,7 +405,7 @@ class SpokenTextConverter:
         )
 
         # Convert mathematical fractions (only if not part of a date)
-        def convert_fraction(match):
+        def convert_fraction(match: re.Match) -> str:
             # Skip if it looks like a date (e.g., 1/1/2024)
             if re.match(r"\d{1,2}/\d{1,2}/\d{2,4}", match.group(0)):
                 return match.group(0)
@@ -434,7 +420,7 @@ class SpokenTextConverter:
 
         return text
 
-    def text_to_spoken(self, text) -> str:
+    def text_to_spoken(self, text: str) -> str:
         """
         Convert a given text into its spoken-word equivalent.
 
@@ -459,11 +445,11 @@ class SpokenTextConverter:
 
         # 3. Punctuation normalization
         # a. Replace common punctuation marks
-        for a, b in zip("、。！，：；？", ",.!,:;?"):
+        for a, b in zip("、。！，：；？", ",.!,:;?", strict=False):
             text = text.replace(a, b + " ")
 
         # b. Remove ellipses
-        text = re.sub(r'\.{3,}|\. \. \.', '', text)
+        text = re.sub(r"\.{3,}|\. \. \.", "", text)
 
         # 4. Whitespace normalization
         text = re.sub(r"[^\S \n]", " ", text)
@@ -480,7 +466,7 @@ class SpokenTextConverter:
 
         # 6. Number formatting preparation
         # Remove commas in numbers but preserve them for later conversion
-        def preserve_large_numbers(match):
+        def preserve_large_numbers(match: re.Match) -> str:
             num = int(match.group().replace(",", ""))
             return self._number_to_words(num)
 
@@ -491,7 +477,7 @@ class SpokenTextConverter:
         text = re.sub(r"(\d+:\d+)\s*(?:am|pm)\b", r"\1", text, flags=re.IGNORECASE)
 
         # 8. Date conversion (before other number conversions)
-        def convert_date(match):
+        def convert_date(match: re.Match) -> str:
             parts = match.group().split("/")
             if len(parts) == 3 and len(parts[2]) == 4:
                 # Convert the year part separately
@@ -548,15 +534,11 @@ class SpokenTextConverter:
         text = re.sub(r"(?<=\d)S", " S", text)
         text = re.sub(r"(?<=[BCDFGHJ-NP-TV-Z])'?s\b", "'S", text)
         text = re.sub(r"(?<=X')S\b", "s", text)
-        text = re.sub(
-            r"(?:[A-Za-z]\.){2,} [a-z]", lambda m: m.group().replace(".", "-"), text
-        )
+        text = re.sub(r"(?:[A-Za-z]\.){2,} [a-z]", lambda m: m.group().replace(".", "-"), text)
         text = re.sub(r"(?i)(?<=[A-Z])\.(?=[A-Z])", "-", text)
 
         # 11. Final cleanup
         text = re.sub(r"\b(?:am|pm)\b", "", text, flags=re.IGNORECASE)
-        text = re.sub(
-            r"  +", " ", text
-        )  # Clean up any double spaces that may have been created
+        text = re.sub(r"  +", " ", text)  # Clean up any double spaces that may have been created
 
         return text.strip()

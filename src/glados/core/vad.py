@@ -4,6 +4,7 @@ import onnxruntime as ort
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
+VAD_MODEL = "./models/ASR/silero_vad.onnx"
 SAMPLE_RATE = 16000
 
 
@@ -11,7 +12,7 @@ class VAD:
     _initial_h = np.zeros((2, 1, 64)).astype("float32")
     _initial_c = np.zeros((2, 1, 64)).astype("float32")
 
-    def __init__(self, model_path, window_size_samples: int = int(SAMPLE_RATE / 10)):
+    def __init__(self, model_path: str = VAD_MODEL, window_size_samples: int = int(SAMPLE_RATE / 10)) -> None:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
@@ -26,7 +27,7 @@ class VAD:
         self._h = self._initial_h
         self._c = self._initial_c
 
-    def reset(self):
+    def reset(self) -> None:
         self._h = self._initial_h
         self._c = self._initial_c
 
@@ -40,7 +41,7 @@ class VAD:
         out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
         return np.squeeze(out)
 
-    def process_file(self, audio: np.ndarray):
+    def process_file(self, audio: np.ndarray) -> np.ndarray:
         self.reset()
         results = []
         for i in range(0, len(audio), self.window_size_samples):

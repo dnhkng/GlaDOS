@@ -1,11 +1,12 @@
+from collections.abc import Iterator
 import importlib.machinery
 import importlib.util
+from pathlib import Path
 import random
 import sys
 import types
-from collections.abc import Iterator
-from pathlib import Path
 
+from glados_ui.text_resources import aperture, help_text, login_text, recipe
 from loguru import logger
 from rich.text import Text
 from textual import events
@@ -14,8 +15,6 @@ from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Digits, Footer, Header, Label, Log, RichLog, Static
-
-from glados_ui.text_resources import aperture, help_text, login_text, recipe
 
 # This ugly stuff is necessary because there is a `glados` module as well as a `glados`
 # package, so a normal `import glados` does the wrong thing.  If/when this is fixed
@@ -54,9 +53,7 @@ class ScrollingBlocks(Log):
     def _animate_blocks(self) -> None:
         # Create a string of blocks of the right length, allowing
         # for border and padding
-        random_blocks = " ".join(
-            random.choice(self.BLOCKS) for _ in range(self.size.width - 8)
-        )
+        random_blocks = " ".join(random.choice(self.BLOCKS) for _ in range(self.size.width - 8))
         self.write_line(f"{random_blocks}")
 
     def on_show(self) -> None:
@@ -110,7 +107,7 @@ class Typewriter(Static):
 class SplashScreen(Screen):
     """Splash screen shown on startup."""
 
-    with open(Path("./glados_ui/images/splash.ansi"), 'r', encoding='utf-8') as f:
+    with open(Path("./glados_ui/images/splash.ansi"), encoding="utf-8") as f:
         SPLASH_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
@@ -119,7 +116,7 @@ class SplashScreen(Screen):
             yield Label(aperture, id="banner")
         yield Typewriter(login_text, id="login_text", speed=0.0075)
 
-    def on_mount(self):
+    def on_mount(self) -> None:
         """Keep the screen scrolled to the bottom"""
         self.set_interval(0.5, self.scroll_end)
 
@@ -171,7 +168,7 @@ class GladosUI(App):
 
     SUB_TITLE = "(c) 1982 Aperture Science, Inc."
 
-    with open(Path("./glados_ui/images/logo.ansi"), 'r', encoding='utf-8') as f:
+    with open(Path("./glados_ui/images/logo.ansi"), encoding="utf-8") as f:
         LOGO_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
@@ -180,13 +177,11 @@ class GladosUI(App):
         # https://github.com/Textualize/textual/issues/4666
         yield Header(show_clock=True)
 
-        with Container(id="body"):  # noqa: SIM117
+        with Container(id="body"):
             with Horizontal():
                 yield (Printer(id="log_area"))
                 with Container(id="utility_area"):
-                    typewriter = Typewriter(
-                        recipe, id="recipe", speed=0.01, repeat=True
-                    )
+                    typewriter = Typewriter(recipe, id="recipe", speed=0.01, repeat=True)
                     yield typewriter
 
         yield Footer()
@@ -205,10 +200,7 @@ class GladosUI(App):
         # Cause logger to print all log text. Printed text can then be  captured
         # by the main_log widget
         logger.remove()
-        fmt = (
-            "{time:YYYY-MM-DD HH:mm:ss.SSS} | <level>"
-            "{level: <8}</level> | {name}:{function}:{line} - {message}"
-        )
+        fmt = "{time:YYYY-MM-DD HH:mm:ss.SSS} | <level>{level: <8}</level> | {name}:{function}:{line} - {message}"
         logger.add(print, format=fmt)
 
     def on_mount(self) -> None:
@@ -230,7 +222,7 @@ class GladosUI(App):
         # self.glados.cancel()
         self.exit(0)
 
-    def start_glados(self):
+    def start_glados(self) -> None:
         self.glados = self.run_worker(glados.start, exclusive=True, thread=True)
         pass
 

@@ -1,0 +1,94 @@
+[project]
+name = "glados"
+version = "0.1.0"
+description = "GLaDOS Voice Assistant"
+requires-python = ">=3.12"
+dependencies = [
+    "sounddevice",
+    "levenshtein",
+    "loguru",
+    "jinja2",
+    "requests",
+    "textual",
+    "pyyaml",
+    "numba",
+    "soundfile",
+]
+
+[project.optional-dependencies]
+cuda = [
+    "onnxruntime-gpu>=1.16.0",
+]
+cpu = [
+    "onnxruntime>=1.16.0",
+]
+dev = [
+    "pytest",
+    "ruff",
+    "ipykernel",
+]
+# Build system
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Ruff configuration
+[tool.ruff]
+# Same as Black
+line-length = 120
+indent-width = 4
+
+# Enable all rules, including those that replace Black and isort
+lint.extend-select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "RUF",  # Ruff-specific rules
+    "ANN",  # Annotation rules
+    "PYI",  # Type stub rules
+]
+
+# Assume Python 3.12
+target-version = "py312"
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+[tool.ruff.lint.isort]
+order-by-type = true
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true

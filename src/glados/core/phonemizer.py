@@ -1,11 +1,11 @@
-import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from functools import cache
 from itertools import zip_longest
 from pathlib import Path
 from pickle import load
-from typing import Dict, Iterable, List, Union
+import re
 
 import numpy as np
 import onnxruntime as ort  # type: ignore
@@ -16,10 +16,10 @@ ort.set_default_logger_severity(4)
 
 @dataclass
 class ModelConfig:
-    MODEL_NAME: str = "models/phomenizer_en.onnx"
-    PHONEME_DICT_PATH: Path = Path("./models/lang_phoneme_dict.pkl")
-    TOKEN_TO_IDX_PATH: Path = Path("./models/token_to_idx.pkl")
-    IDX_TO_TOKEN_PATH: Path = Path("./models/idx_to_token.pkl")
+    MODEL_NAME: str = "models/TTS/phomenizer_en.onnx"
+    PHONEME_DICT_PATH: Path = Path("./models/TTS/lang_phoneme_dict.pkl")
+    TOKEN_TO_IDX_PATH: Path = Path("./models/TTS/token_to_idx.pkl")
+    IDX_TO_TOKEN_PATH: Path = Path("./models/TTS/idx_to_token.pkl")
     CHAR_REPEATS: int = 3
     MODEL_INPUT_LENGTH: int = 64
     EXPAND_ACRONYMS: bool = True
@@ -45,7 +45,7 @@ class Punctuation(Enum):
 
     @classmethod
     @cache
-    def get_punc_pattern(cls) -> re.Pattern:
+    def get_punc_pattern(cls) -> re.Pattern[str]:
         return re.compile(f"([{cls.PUNCTUATION.value + cls.SPACE.value}])")
 
 
@@ -102,7 +102,9 @@ class Phonemizer:
             Convert a list of texts to phonemes using a phonemizer.
     """
 
-    def __init__(self, config=ModelConfig()) -> None:
+    def __init__(self, config: ModelConfig | None = None) -> None:
+        if config is None:
+            config = ModelConfig()
         self.config = config
         self.phoneme_dict = self._load_pickle(self.config.PHONEME_DICT_PATH)
         self.token_to_idx = self._load_pickle(self.config.TOKEN_TO_IDX_PATH)
@@ -197,9 +199,7 @@ class Phonemizer:
                 expanded.append(a)
                 if b is not None and b.isupper():
                     expanded.append(Punctuation.HYPHEN.value)
-            expanded_flat = "".join(
-                expanded
-            )  # Flatten the list of characters into a string
+            expanded_flat = "".join(expanded)  # Flatten the list of characters into a string
             subwords.append(expanded_flat)
         return Punctuation.HYPHEN.value.join(subwords)
 
@@ -213,11 +213,7 @@ class Phonemizer:
         sentence = [item for item in sentence for _ in range(self.config.CHAR_REPEATS)]
         sentence = [s.lower() for s in sentence]
         sequence = [self.token_to_idx[c] for c in sentence if c in self.token_to_idx]
-        return (
-            [self.token_to_idx[SpecialTokens.START.value]]
-            + sequence
-            + [self.token_to_idx[SpecialTokens.END.value]]
-        )
+        return [self.token_to_idx[SpecialTokens.START.value], *sequence, self.token_to_idx[SpecialTokens.END.value]]
 
     def decode(self, sequence: np.ndarray) -> str:
         """
@@ -226,13 +222,11 @@ class Phonemizer:
         :param sequence: Encoded sequence to be decoded.
         :return: Decoded sequence of symbols.
         """
-        decoded = [
-            self.idx_to_token[int(t)] for t in sequence if int(t) in self.idx_to_token
-        ]
+        decoded = [self.idx_to_token[int(t)] for t in sequence if int(t) in self.idx_to_token]
         return "".join(d for d in decoded if d not in self.special_tokens)
 
     @staticmethod
-    def pad_sequence_fixed(v: List[np.ndarray], target_length: int) -> np.ndarray:
+    def pad_sequence_fixed(v: list[np.ndarray], target_length: int) -> np.ndarray:
         """
         Pad or truncate a list of arrays to a fixed length.
 
@@ -243,12 +237,8 @@ class Phonemizer:
         result = np.zeros((len(v), target_length), dtype=np.int64)
 
         for i, seq in enumerate(v):
-            length = min(
-                len(seq), target_length
-            )  # Handle both shorter and longer sequences
-            result[i, :length] = seq[
-                :length
-            ]  # Copy either the full sequence or its truncated version
+            length = min(len(seq), target_length)  # Handle both shorter and longer sequences
+            result[i, :length] = seq[:length]  # Copy either the full sequence or its truncated version
 
         return result
 
@@ -278,8 +268,8 @@ class Phonemizer:
     @staticmethod
     def _get_phonemes(
         word: str,
-        word_phonemes: Dict[str, Union[str, None]],
-        word_splits: Dict[str, List[str]],
+        word_phonemes: dict[str, str | None],
+        word_splits: dict[str, list[str]],
     ) -> str:
         """
         Gets the phonemes for a word. If the word is not in the phoneme dictionary, it is split into subwords.
@@ -291,14 +281,12 @@ class Phonemizer:
         if phons is None:
             subwords = word_splits[word]
             subphons_converted = [word_phonemes[w] for w in subwords]
-            phons = "".join(
-                [subphon for subphon in subphons_converted if subphon is not None]
-            )
+            phons = "".join([subphon for subphon in subphons_converted if subphon is not None])
         return phons
 
     def _clean_and_split_texts(
-        self, texts: List[str], punc_set: set[str], punc_pattern: re.Pattern
-    ) -> tuple[List[List[str]], set[str]]:
+        self, texts: list[str], punc_set: set[str], punc_pattern: re.Pattern
+    ) -> tuple[list[list[str]], set[str]]:
         split_text, cleaned_words = [], set[str]()
         for text in texts:
             cleaned_text = "".join(t for t in text if t.isalnum() or t in punc_set)
@@ -307,7 +295,7 @@ class Phonemizer:
             cleaned_words.update(split)
         return split_text, cleaned_words
 
-    def convert_to_phonemes(self, texts: List[str], lang: str = "en_us") -> List[str]:
+    def convert_to_phonemes(self, texts: list[str], lang: str = "en_us") -> list[str]:
         """
         Converts a list of texts to phonemes using a phonemizer.
 
@@ -315,23 +303,19 @@ class Phonemizer:
         :param lang: Language of the texts.
         :return: List of phonemes.
         """
-        split_text: List[str] = []
+        split_text: list[str] = []
         cleaned_words = set[str]()
 
         punc_set = Punctuation.get_punc_set()
         punc_pattern = Punctuation.get_punc_pattern()
 
         # Step 1: Preprocess texts
-        split_text, cleaned_words = self._clean_and_split_texts(
-            texts, punc_set, punc_pattern
-        )
+        split_text, cleaned_words = self._clean_and_split_texts(texts, punc_set, punc_pattern)
 
         # Step 2: Collect dictionary phonemes for words and hyphenated words
         for punct in punc_set:
             self.phoneme_dict[punct] = punct
-        word_phonemes = {
-            word: self.phoneme_dict.get(word.lower()) for word in cleaned_words
-        }
+        word_phonemes = {word: self.phoneme_dict.get(word.lower()) for word in cleaned_words}
 
         # Step 3: If word is not in dictionary, split it into subwords
         words_to_split = [w for w in cleaned_words if word_phonemes[w] is None]
@@ -341,33 +325,22 @@ class Phonemizer:
                 r"([-])",
                 self._expand_acronym(word) if self.config.EXPAND_ACRONYMS else word,
             )
-            for key, word in zip(words_to_split, words_to_split)
+            for key, word in zip(words_to_split, words_to_split, strict=False)
         }
 
-        subwords = {
-            w
-            for values in word_splits.values()
-            for w in values
-            if w not in word_phonemes
-        }
+        subwords = {w for values in word_splits.values() for w in values if w not in word_phonemes}
 
         for subword in subwords:
-            word_phonemes[subword] = self._get_dict_entry(
-                word=subword, punc_set=punc_set
-            )
+            word_phonemes[subword] = self._get_dict_entry(word=subword, punc_set=punc_set)
 
         # Step 4: Predict all subwords that are missing in the phoneme dict
         words_to_predict = [
-            word
-            for word, phons in word_phonemes.items()
-            if phons is None and len(word_splits.get(word, [])) <= 1
+            word for word, phons in word_phonemes.items() if phons is None and len(word_splits.get(word, [])) <= 1
         ]
 
         if words_to_predict:
             input_batch = [self.encode(word) for word in words_to_predict]
-            input_batch = self.pad_sequence_fixed(
-                input_batch, self.config.MODEL_INPUT_LENGTH
-            )
+            input_batch = self.pad_sequence_fixed(input_batch, self.config.MODEL_INPUT_LENGTH)
 
             ort_inputs = {self.ort_session.get_inputs()[0].name: input_batch}
             ort_outs = self.ort_session.run(None, ort_inputs)
@@ -375,17 +348,14 @@ class Phonemizer:
             ids = self._process_model_output(ort_outs)
 
             # Step 5: Add predictions to the dictionary
-            for id, word in zip(ids, words_to_predict):
+            for id, word in zip(ids, words_to_predict, strict=False):
                 word_phonemes[word] = self.decode(id)
 
         # Step 6: Get phonemes for each word in the text
         phoneme_lists = []
         for text in split_text:
             text_phons = [
-                self._get_phonemes(
-                    word=word, word_phonemes=word_phonemes, word_splits=word_splits
-                )
-                for word in text
+                self._get_phonemes(word=word, word_phonemes=word_phonemes, word_splits=word_splits) for word in text
             ]
             phoneme_lists.append(text_phons)
 

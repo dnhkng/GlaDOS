@@ -1,13 +1,14 @@
-import json
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from pickle import load
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any
 
 import numpy as np
 import onnxruntime as ort
 
-from . import phonemizer
+from .phonemizer import Phonemizer
 
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
@@ -16,8 +17,8 @@ ort.set_default_logger_severity(4)
 MAX_WAV_VALUE = 32767.0
 
 # Settings
-MODEL_PATH = "./models/glados.onnx"
-PHONEME_TO_ID_PATH = Path("./models/phoneme_to_id.pkl")
+MODEL_PATH = "./models/TTS/glados.onnx"
+PHONEME_TO_ID_PATH = Path("./models/TTS/phoneme_to_id.pkl")
 USE_CUDA = True
 
 # Conversions
@@ -49,10 +50,10 @@ class PiperConfig:
     phoneme_id_map: Mapping[str, Sequence[int]]
     """Phoneme -> [id,]"""
 
-    speaker_id_map: Optional[Dict[str, int]] = None
+    speaker_id_map: dict[str, int] | None = None
 
     @staticmethod
-    def from_dict(config: Dict[str, Any]) -> "PiperConfig":
+    def from_dict(config: dict[str, Any]) -> "PiperConfig":
         inference = config.get("inference", {})
 
         return PiperConfig(
@@ -101,7 +102,7 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str, speaker_id: Optional[int] = None):
+    def __init__(self, model_path: str = MODEL_PATH, speaker_id: int | None = None) -> None:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
@@ -111,7 +112,7 @@ class Synthesizer:
             sess_options=ort.SessionOptions(),
             providers=providers,
         )
-        self.phonemizer = phonemizer.Phonemizer()
+        self.phonemizer = Phonemizer()
         # self.id_map = PHONEME_ID_MAP
 
         self.id_map = self._load_pickle(PHONEME_TO_ID_PATH)
@@ -119,27 +120,19 @@ class Synthesizer:
         try:
             # Load the configuration file
             config_file_path = model_path + ".json"
-            with open(config_file_path, "r", encoding="utf-8") as config_file:
+            with open(config_file_path, encoding="utf-8") as config_file:
                 config_dict = json.load(config_file)
         except FileNotFoundError:
-            raise FileNotFoundError(
-                f"Configuration file not found at path: {config_file_path}"
-            )
+            raise FileNotFoundError(f"Configuration file not found at path: {config_file_path}")
         except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}"
-            )
+            raise ValueError(f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}")
         except Exception as e:
             raise RuntimeError(
                 f"An unexpected error occurred while reading the configuration file at path: {config_file_path}. Error: {e}"
             )
         self.config = PiperConfig.from_dict(config_dict)
         self.rate = self.config.sample_rate
-        self.speaker_id = (
-            self.config.speaker_id_map.get(str(speaker_id), 0)
-            if self.config.num_speakers > 1
-            else None
-        )
+        self.speaker_id = self.config.speaker_id_map.get(str(speaker_id), 0) if self.config.num_speakers > 1 else None
 
     @staticmethod
     def _load_pickle(path: Path) -> dict:
@@ -152,7 +145,7 @@ class Synthesizer:
         audio = self.say_phonemes(phonemes)
         return audio
 
-    def say_phonemes(self, phonemes: List[str]) -> np.ndarray:
+    def say_phonemes(self, phonemes: list[str]) -> np.ndarray:
         audio = []
         for sentence in phonemes:
             audio_chunk = self._say_phonemes(sentence)
@@ -161,16 +154,16 @@ class Synthesizer:
             return np.concatenate(audio, axis=1).T
         return np.array([])
 
-    def _phonemizer(self, input_text: str) -> List[str]:
+    def _phonemizer(self, input_text: str) -> list[str]:
         """Converts text to phonemes using espeak-ng."""
         phonemes = self.phonemizer.convert_to_phonemes([input_text], "en_us")
 
         return phonemes
 
-    def _phonemes_to_ids(self, phonemes: str) -> List[int]:
+    def _phonemes_to_ids(self, phonemes: str) -> list[int]:
         """Phonemes to ids."""
 
-        ids: List[int] = list(self.id_map[BOS])
+        ids: list[int] = list(self.id_map[BOS])
 
         for phoneme in phonemes:
             if phoneme not in self.id_map:
@@ -184,10 +177,10 @@ class Synthesizer:
 
     def _synthesize_ids_to_raw(
         self,
-        phoneme_ids: List[int],
-        length_scale: Optional[float] = None,
-        noise_scale: Optional[float] = None,
-        noise_w: Optional[float] = None,
+        phoneme_ids: list[int],
+        length_scale: float | None = None,
+        noise_scale: float | None = None,
+        noise_w: float | None = None,
     ) -> bytes:
         """Synthesize raw audio from phoneme ids."""
         if length_scale is None:

@@ -1,17 +1,15 @@
-from typing import Dict, List
-
-from glados.mel_spectrogram import MelSpectrogramCalculator
-
-import soundfile as sf
 import numpy as np
 import onnxruntime as ort
+import soundfile as sf
+
+from .mel_spectrogram import MelSpectrogramCalculator
 
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
 # Settings
-MODEL_PATH = "./models/nemo-parakeet_tdt_ctc_110m.onnx"
-TOKEN_PATH = "./models/nemo-parakeet_tdt_ctc_110m_tokens.txt"
+MODEL_PATH = "./models/ASR/nemo-parakeet_tdt_ctc_110m.onnx"
+TOKEN_PATH = "./models/ASR/nemo-parakeet_tdt_ctc_110m_tokens.txt"
 
 
 class AudioTranscriber:
@@ -34,9 +32,9 @@ class AudioTranscriber:
         # Standard mel spectrogram parameters
         self.melspectrogram = MelSpectrogramCalculator()
 
-    def _load_vocabulary(self, tokens_file: str) -> Dict[int, str]:
+    def _load_vocabulary(self, tokens_file: str) -> dict[int, str]:
         vocab = {}
-        with open(tokens_file, "r", encoding="utf-8") as f:
+        with open(tokens_file, encoding="utf-8") as f:
             for line in f:
                 token, index = line.strip().split()
                 vocab[int(index)] = token
@@ -56,7 +54,7 @@ class AudioTranscriber:
 
         return mel_spec
 
-    def decode_output(self, output_logits: np.ndarray) -> List[str]:
+    def decode_output(self, output_logits: np.ndarray) -> list[str]:
         """Decode model output logits into text with improved token handling."""
         predictions = np.argmax(output_logits, axis=-1)
 

@@ -1,69 +1,71 @@
+from collections.abc import Sequence
 import copy
+from dataclasses import dataclass
 import json
+from pathlib import Path
 import queue
 import re
 import sys
 import threading
 import time
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any
 
+from Levenshtein import distance
+from loguru import logger
 import numpy as np
 import requests
 import sounddevice as sd
 from sounddevice import CallbackFlags
 import yaml
-from Levenshtein import distance
-from loguru import logger
 
-from glados import asr, tts, vad, spoken_text_converter as stc
+from .core import asr, tts, vad
+from .utils import spoken_text_converter as stc
 
 logger.remove(0)
 logger.add(sys.stderr, level="SUCCESS")
 
-VAD_MODEL = "silero_vad.onnx"
-VOICE_MODEL = "glados.onnx"
+VAD_MODEL = str(Path("models/ASR/silero_vad.onnx"))
+VOICE_MODEL = str(Path("models/TTS/glados.onnx"))
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
 VAD_THRESHOLD = 0.9  # Threshold for VAD detection
-BUFFER_SIZE = 600  # Milliseconds of buffer before VAD detection
+BUFFER_SIZE = 600  # Milliseconds of buffer BEFORE VAD detection
 PAUSE_LIMIT = 500  # Milliseconds of pause allowed before processing
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
 NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
-DEFAULT_PERSONALITY_PREPROMPT = (
+DEFAULT_PERSONALITY_PREPROMPT: list[dict[str, str]] = [
     {
         "role": "system",
         "content": "You are a helpful AI assistant. You are here to assist the user in their tasks.",
     },
-)
+]
 
 
 @dataclass
 class GladosConfig:
     completion_url: str
     model: str
-    api_key: Optional[str]
-    wake_word: Optional[str]
-    announcement: Optional[str]
-    personality_preprompt: List[dict[str, str]]
+    api_key: str | None
+    wake_word: str | None
+    announcement: str | None
+    personality_preprompt: list[dict[str, str]]
     interruptible: bool
     voice_model: str = VOICE_MODEL
-    speaker_id: Optional[int] = None
+    speaker_id: int | None = None
 
     @classmethod
-    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)):
+    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)) -> "GladosConfig":
         key_to_config = key_to_config or []
 
         try:
             # First attempt with UTF-8
-            with open(path, "r", encoding="utf-8") as file:
+            with open(path, encoding="utf-8") as file:
                 data = yaml.safe_load(file)
         except UnicodeDecodeError:
             # Fall back to utf-8-sig if UTF-8 fails (handles BOM)
-            with open(path, "r", encoding="utf-8-sig") as file:
+            with open(path, encoding="utf-8-sig") as file:
                 data = yaml.safe_load(file)
 
         config = data
@@ -77,12 +79,12 @@ class Glados:
     def __init__(
         self,
         voice_model: str,
-        speaker_id: Optional[int],
+        speaker_id: int | None,
         completion_url: str,
         model: str,
         api_key: str | None = None,
         wake_word: str | None = None,
-        personality_preprompt: Sequence[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
+        personality_preprompt: list[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
         interruptible: bool = True,
     ) -> None:
@@ -108,11 +110,11 @@ class Glados:
         self.completion_url = completion_url
         self.model = model
         self.wake_word = wake_word
-        self._vad_model = vad.VAD(model_path=str(Path.cwd() / "models" / VAD_MODEL))
+        self._vad_model = vad.VAD()
         self._asr_model = asr.AudioTranscriber()
         self._tts = tts.Synthesizer(
-            model_path=str(Path.cwd() / "models" / voice_model),
-            speaker_id=speaker_id,
+            # model_path=str(Path.cwd() / "models" / voice_model),
+            # speaker_id=speaker_id,
         )
         self._stc = stc.SpokenTextConverter()
 
@@ -121,22 +123,18 @@ class Glados:
 
         # LLAMA_SERVER_HEADERS
         self.prompt_headers = {
-            "Authorization": (
-                f"Bearer {api_key}" if api_key else "Bearer your_api_key_here"
-            ),
+            "Authorization": (f"Bearer {api_key}" if api_key else "Bearer your_api_key_here"),
             "Content-Type": "application/json",
         }
 
         # Initialize sample queues and state flags
-        self._samples: List[np.ndarray] = []
-        self._sample_queue: queue.Queue[Tuple[np.ndarray, np.ndarray]] = queue.Queue()
-        self._buffer: queue.Queue[np.ndarray] = queue.Queue(
-            maxsize=BUFFER_SIZE // VAD_SIZE
-        )
+        self._samples: list[np.ndarray] = []
+        self._sample_queue: queue.Queue[tuple[np.ndarray, np.ndarray]] = queue.Queue()
+        self._buffer: queue.Queue[np.ndarray] = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
         self._recording_started = False
         self._gap_counter = 0
 
-        self._messages = personality_preprompt
+        self._messages: list[dict[str, str]] = personality_preprompt
         self.llm_queue: queue.Queue[str] = queue.Queue()
         self.tts_queue: queue.Queue[str] = queue.Queue()
         self.processing = False
@@ -144,10 +142,10 @@ class Glados:
         self.interruptible = interruptible
         self.shutdown_event = threading.Event()
 
-        llm_thread = threading.Thread(target=self.process_LLM)
+        llm_thread = threading.Thread(target=self.process_llm)
         llm_thread.start()
 
-        tts_thread = threading.Thread(target=self.process_TTS_thread)
+        tts_thread = threading.Thread(target=self.process_tts_thread)
         tts_thread.start()
 
         if announcement:
@@ -157,9 +155,9 @@ class Glados:
             if not self.interruptible:
                 sd.wait()
 
-        def audio_callback_for_sdInputStream(
-            indata: np.ndarray, frames: int, time: Any, status: CallbackFlags
-        ):
+        def audio_callback_for_sd_input_stream(
+            indata: np.ndarray, frames: int, time: sd.CallbackTime, status: CallbackFlags
+        ) -> None:
             data = indata.copy().squeeze()  # Reduce to single channel if necessary
             vad_value = self._vad_model.process_chunk(data)
             vad_confidence = vad_value > VAD_THRESHOLD
@@ -168,21 +166,19 @@ class Glados:
         self.input_stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
-            callback=audio_callback_for_sdInputStream,
+            callback=audio_callback_for_sd_input_stream,
             blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000),
         )
 
     @property
-    def messages(self) -> Sequence[dict[str, str]]:
+    def messages(self) -> list[dict[str, str]]:
         return self._messages
 
     @classmethod
-    def from_config(cls, config: GladosConfig):
+    def from_config(cls, config: GladosConfig) -> "Glados":
         personality_preprompt = []
         for line in config.personality_preprompt:
-            personality_preprompt.append(
-                {"role": list(line.keys())[0], "content": list(line.values())[0]}
-            )
+            personality_preprompt.append({"role": next(iter(line.keys())), "content": next(iter(line.values()))})
 
         return cls(
             voice_model=config.voice_model,
@@ -197,10 +193,10 @@ class Glados:
         )
 
     @classmethod
-    def from_yaml(cls, path: str):
+    def from_yaml(cls, path: str) -> "Glados":
         return cls.from_config(GladosConfig.from_yaml(path))
 
-    def start_listen_event_loop(self):
+    def start_listen_event_loop(self) -> None:
         """
         Starts the Glados voice assistant, continuously listening for input and responding.
         """
@@ -216,7 +212,7 @@ class Glados:
             self.shutdown_event.set()
             self.input_stream.stop()
 
-    def _handle_audio_sample(self, sample: np.ndarray, vad_confidence: bool):
+    def _handle_audio_sample(self, sample: np.ndarray, vad_confidence: bool) -> None:
         """
         Handles the processing of each audio sample.
 
@@ -234,7 +230,7 @@ class Glados:
         else:
             self._process_activated_audio(sample, vad_confidence)
 
-    def _manage_pre_activation_buffer(self, sample: np.ndarray, vad_confidence: bool):
+    def _manage_pre_activation_buffer(self, sample: np.ndarray, vad_confidence: bool) -> None:
         """
         Manages the circular buffer of audio samples before activation (i.e., before the voice is detected).
 
@@ -253,13 +249,11 @@ class Glados:
 
         if vad_confidence:  # Voice activity detected
             sd.stop()  # Stop the audio stream to prevent overlap
-            self.processing = (
-                False  # Turns off processing on threads for the LLM and TTS!!!
-            )
+            self.processing = False  # Turns off processing on threads for the LLM and TTS!!!
             self._samples = list(self._buffer.queue)
             self._recording_started = True
 
-    def _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool):
+    def _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool) -> None:
         """
         Processes audio samples after activation (i.e., after the wake word is detected).
 
@@ -285,12 +279,10 @@ class Glados:
         assert self.wake_word is not None, "Wake word should not be None"
 
         words = text.split()
-        closest_distance = min(
-            [distance(word.lower(), self.wake_word) for word in words]
-        )
-        return closest_distance < SIMILARITY_THRESHOLD
+        closest_distance = min([distance(word.lower(), self.wake_word) for word in words])
+        return bool(closest_distance < SIMILARITY_THRESHOLD)
 
-    def _process_detected_audio(self):
+    def _process_detected_audio(self) -> None:
         """
         Processes the detected audio and generates a response.
 
@@ -321,7 +313,7 @@ class Glados:
         self.reset()
         self.input_stream.start()
 
-    def asr(self, samples: List[np.ndarray]) -> str:
+    def asr(self, samples: list[np.ndarray]) -> str:
         """
         Performs automatic speech recognition on the collected samples.
         """
@@ -330,7 +322,7 @@ class Glados:
         detected_text = self._asr_model.transcribe(audio)
         return detected_text
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Resets the recording state and clears buffers.
         """
@@ -341,27 +333,23 @@ class Glados:
         with self._buffer.mutex:
             self._buffer.queue.clear()
 
-    def process_TTS_thread(self):
+    def process_tts_thread(self) -> None:
         """
         Processes the LLM generated text using the TTS model.
 
         Runs in a separate thread to allow for continuous processing of the LLM output.
         """
-        assistant_text = []  # The text generated by the assistant, to be spoken by the TTS
+        assistant_text: list[str] = []  # The text generated by the assistant, to be spoken by the TTS
         system_text = []  # The text logged to the system prompt when the TTS is interrupted
         finished = False  # a flag to indicate when the TTS has finished speaking
-        interrupted = (
-            False  # a flag to indicate when the TTS was interrupted by new input
-        )
+        interrupted = False  # a flag to indicate when the TTS was interrupted by new input
 
         while not self.shutdown_event.is_set():
             try:
                 start = time.time()
                 generated_text = self.tts_queue.get(timeout=PAUSE_TIME)
 
-                if (
-                    generated_text == "<EOS>"
-                ):  # End of stream token generated in process_LLM_thread
+                if generated_text == "<EOS>":  # End of stream token generated in process_LLM_thread
                     finished = True
                 elif not generated_text:
                     logger.warning("Empty string sent to TTS")  # should not happen!
@@ -372,25 +360,20 @@ class Glados:
                     spoken_text = self._stc.text_to_spoken(generated_text)
                     audio = self._tts.generate_speech_audio(spoken_text)
                     logger.info(
-                        f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio) / self._tts.rate:.2f}s"
+                        f"TTS Complete, inference: {(time.time() - start):.2f}, "
+                        f"length: {len(audio) / self._tts.rate:.2f}s"
                     )
                     total_samples = len(audio)
 
                     if total_samples:
                         sd.play(audio, self._tts.rate)
 
-                        interrupted, percentage_played = self.percentage_played(
-                            total_samples
-                        )
+                        interrupted, percentage_played = self.percentage_played(total_samples)
 
                         if interrupted:
-                            clipped_text = self.clip_interrupted_sentence(
-                                spoken_text, percentage_played
-                            )
+                            clipped_text = self.clip_interrupted_sentence(spoken_text, percentage_played)
 
-                            logger.info(
-                                f"TTS interrupted at {percentage_played}%: {clipped_text}"
-                            )
+                            logger.info(f"TTS interrupted at {percentage_played}%: {clipped_text}")
                             system_text = copy.deepcopy(assistant_text)
                             system_text.append(clipped_text)
                             finished = True
@@ -398,9 +381,7 @@ class Glados:
                         assistant_text.append(spoken_text)
 
                 if finished:
-                    self.messages.append(
-                        {"role": "assistant", "content": " ".join(assistant_text)}
-                    )
+                    self.messages.append({"role": "assistant", "content": " ".join(assistant_text)})
                     # if interrupted:
                     #     self.messages.append(
                     #         {
@@ -416,9 +397,7 @@ class Glados:
             except queue.Empty:
                 pass
 
-    def clip_interrupted_sentence(
-        self, generated_text: str, percentage_played: float
-    ) -> str:
+    def clip_interrupted_sentence(self, generated_text: str, percentage_played: float) -> str:
         """
         Clips the generated text if the TTS was interrupted.
 
@@ -441,7 +420,7 @@ class Glados:
             text = text + "<INTERRUPTED>"
         return text
 
-    def percentage_played(self, total_samples: int) -> Tuple[bool, int]:
+    def percentage_played(self, total_samples: int) -> tuple[bool, int]:
         interrupted = False
         start_time = time.time()
         played_samples = 0.0
@@ -467,16 +446,14 @@ class Glados:
         except (sd.PortAudioError, RuntimeError):
             logger.debug("Audio stream already closed or invalid")
 
-        elapsed_time = (
-            time.time() - start_time + 0.12
-        )  # slight delay to ensure all audio timing is correct
+        elapsed_time = time.time() - start_time + 0.12  # slight delay to ensure all audio timing is correct
         played_samples = elapsed_time * self._tts.rate
 
         # Calculate percentage of audio played
-        percentage_played = min(int((played_samples / total_samples * 100)), 100)
+        percentage_played = min(int(played_samples / total_samples * 100), 100)
         return interrupted, percentage_played
 
-    def process_LLM(self):
+    def process_llm(self) -> None:
         """
         Processes the detected text using the LLM model.
 
@@ -538,7 +515,7 @@ class Glados:
             except queue.Empty:
                 time.sleep(PAUSE_TIME)
 
-    def _process_sentence(self, current_sentence: List[str]):
+    def _process_sentence(self, current_sentence: list[str]) -> None:
         """
         Join text, remove inflections and actions, and send to the TTS queue.
 
@@ -549,16 +526,11 @@ class Glados:
         """
         sentence = "".join(current_sentence)
         sentence = re.sub(r"\*.*?\*|\(.*?\)", "", sentence)
-        sentence = (
-            sentence.replace("\n\n", ". ")
-            .replace("\n", ". ")
-            .replace("  ", " ")
-            .replace(":", " ")
-        )
+        sentence = sentence.replace("\n\n", ". ").replace("\n", ". ").replace("  ", " ").replace(":", " ")
         if sentence:
             self.tts_queue.put(sentence)
 
-    def _clean_raw_bytes(self, line):
+    def _clean_raw_bytes(self, line: bytes) -> dict[str, Any] | None:
         """
         Cleans the raw bytes from the server and converts to OpenAI format.
 
@@ -572,15 +544,19 @@ class Glados:
             # Handle OpenAI format
             if line.startswith(b"data: "):
                 json_str = line.decode("utf-8")[6:]  # Remove 'data: ' prefix
-                return json.loads(json_str)
+                parsed_json: dict[str, Any] = json.loads(json_str)
+                return parsed_json
             # Handle Ollama format
             else:
-                return json.loads(line.decode("utf-8"))
+                parsed_json = json.loads(line.decode("utf-8"))
+                if isinstance(parsed_json, dict):
+                    return parsed_json
+                return None
         except Exception as e:
             logger.warning(f"Failed to parse server response: {e}")
             return None
 
-    def _process_chunk(self, line):
+    def _process_chunk(self, line: dict[str, Any]) -> str | None:
         """
         Processes a single line of text from the LLM server.
 

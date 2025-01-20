@@ -1,6 +1,5 @@
-import numpy as np
 from numba import jit  # type: ignore
-
+import numpy as np
 
 # Constants
 SAMPLE_RATE = 16000
@@ -11,7 +10,13 @@ WIN_LENGTH = 400
 
 
 @jit(nopython=True)
-def _extract_windows(audio_padded, window, n_fft, hop_length, n_frames):
+def _extract_windows(
+    audio_padded: np.ndarray,
+    window: np.ndarray,
+    n_fft: int,
+    hop_length: int,
+    n_frames: int,
+) -> np.ndarray:
     """Extract and window frames efficiently"""
     # Pre-allocate output matrix
     frames = np.zeros((n_frames, n_fft), dtype=np.float32)
@@ -27,15 +32,15 @@ def _extract_windows(audio_padded, window, n_fft, hop_length, n_frames):
 class MelSpectrogramCalculator:
     def __init__(
         self,
-        sr=SAMPLE_RATE,
-        n_mels=N_MELS,
-        n_fft=N_FFT,
-        hop_length=HOP_LENGTH,
-        win_length=WIN_LENGTH,
-        fmin=0.0,
-        fmax=None,
-        top_db=80.0,
-    ):
+        sr: int = SAMPLE_RATE,
+        n_mels: int = N_MELS,
+        n_fft: int = N_FFT,
+        hop_length: int = HOP_LENGTH,
+        win_length: int = WIN_LENGTH,
+        fmin: float = 0.0,
+        fmax: float | None = None,
+        top_db: float = 80.0,
+    ) -> None:
         if fmax is None:
             fmax = float(sr) / 2
 
@@ -50,7 +55,7 @@ class MelSpectrogramCalculator:
         self.mel_filterbank = self._create_mel_filterbank(fmin, fmax)
         self.window = np.hanning(n_fft).astype(np.float32)
 
-    def _create_mel_filterbank(self, fmin, fmax):
+    def _create_mel_filterbank(self, fmin: float, fmax: float) -> np.ndarray:
         """Create mel filterbank matrix"""
         # Center frequencies of each FFT bin
         n_freqs = int(1 + self.n_fft // 2)
@@ -84,7 +89,7 @@ class MelSpectrogramCalculator:
 
         return weights.astype(np.float32)
 
-    def compute(self, audio):
+    def compute(self, audio: np.ndarray) -> np.ndarray:
         """Compute mel spectrogram efficiently"""
         # Ensure audio is float32
         audio = np.asarray(audio, dtype=np.float32)
@@ -97,9 +102,7 @@ class MelSpectrogramCalculator:
         n_frames = 1 + (len(audio_padded) - self.n_fft) // self.hop_length
 
         # Extract and window frames using Numba
-        frames = _extract_windows(
-            audio_padded, self.window, self.n_fft, self.hop_length, n_frames
-        )
+        frames = _extract_windows(audio_padded, self.window, self.n_fft, self.hop_length, n_frames)
 
         # Compute FFT (no Numba)
         stft = np.fft.rfft(frames, axis=1).T
