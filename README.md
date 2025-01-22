@@ -59,7 +59,7 @@ Note: You can use any OpenAI or Ollama compatible server, local or cloud based. 
 1. Open the Microsoft Store, search for `python` and install Python 3.12
 2. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
-   2. If you have Git set up, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+   2. If you have Git set up, `git clone` this repository using `https://git clone github.com/dnhkng/glados.git`
 3. In the repository folder, run the `install_windows.bat`, and wait until the installation in complete.
 4. Double click `start_windows.bat` to start GLaDOS!
 
@@ -69,7 +69,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
-   2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+   2. In a terminal, `git clone` this repository using `git clone https://github.com/dnhkng/glados.git`
 2. In a terminal, go to the repository folder and run these commands:
 
          chmod +x install_mac.command
@@ -88,7 +88,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
    
 2. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
-   2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+   2. In a terminal, `git clone` this repository using `git clone https://github.com/dnhkng/glados.git`
 3. In a terminal, go to the repository folder and run these commands:
    
          chmod +x install_ubuntu.sh
