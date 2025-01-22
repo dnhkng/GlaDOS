@@ -69,7 +69,7 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
-   2. In a terminal, `git clone` this repository using `git clone github.com/dnhkng/glados.git`
+   2. In a terminal, `git clone` this repository using `git clone https://github.com/dnhkng/glados.git`
 2. In a terminal, go to the repository folder and run these commands:
 
          chmod +x install_mac.command
