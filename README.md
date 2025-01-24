@@ -42,7 +42,7 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 # Installation Instruction
 Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
 
-## Install Drivers in necessary
+## Install Drivers if necessary
 If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
 https://developer.nvidia.com/cuda-toolkit
 
