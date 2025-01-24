@@ -46,7 +46,6 @@ class AudioTranscriber:
         Load and process audio file into mel spectrogram with improved normalization.
         """
 
-
         mel_spec = self.melspectrogram.compute(audio)
 
         # Normalize
@@ -118,6 +117,6 @@ class AudioTranscriber:
         """
 
         # Load audio
-        audio, sr = sf.read(audio_path, dtype='float32')
+        audio, sr = sf.read(audio_path, dtype="float32")
 
         return self.transcribe(audio)

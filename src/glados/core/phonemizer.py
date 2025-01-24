@@ -3,7 +3,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 from functools import cache
-from itertools import zip_longest
 from pathlib import Path
 from pickle import load
 import re
@@ -115,7 +114,7 @@ class Phonemizer:
         self.config = config
         self.phoneme_dict: dict[str, str] = self._load_pickle(self.config.PHONEME_DICT_PATH)
 
-        self.phoneme_dict['glados'] = 'ɡlˈɑːdɑːs' # Add GLaDOS to the phoneme dictionary!
+        self.phoneme_dict["glados"] = "ɡlˈɑːdɑːs"  # Add GLaDOS to the phoneme dictionary!
 
         self.token_to_idx = self._load_pickle(self.config.TOKEN_TO_IDX_PATH)
         self.idx_to_token = self._load_pickle(self.config.IDX_TO_TOKEN_PATH)
@@ -150,7 +149,7 @@ class Phonemizer:
         :param arr: Array to process.
         :return: Array with consecutive duplicates removed.
         """
-        
+
         result = []
         for row in arr:
             if len(row) == 0:
@@ -193,7 +192,7 @@ class Phonemizer:
         arr_processed: list[NDArray[np.int64]] = np.argmax(arr[0], axis=2)
         arr_processed = self._unique_consecutive(arr_processed)
         arr_processed = self._remove_padding(arr_processed)
-        arr_processed = self._trim_to_stop(arr_processed) 
+        arr_processed = self._trim_to_stop(arr_processed)
 
         return arr_processed
 
@@ -206,7 +205,7 @@ class Phonemizer:
         # Only split on hyphens if they exist
         if Punctuation.HYPHEN.value in word:
             return word
-        
+
         # For acronyms, just return as is - they're already preprocessed
         return word
 
@@ -238,7 +237,6 @@ class Phonemizer:
 
         result = "".join(d for d in decoded if d not in self.special_tokens)
         return result
-
 
     @staticmethod
     def pad_sequence_fixed(v: list[list[int]], target_length: int) -> NDArray[np.int64]:
@@ -320,7 +318,6 @@ class Phonemizer:
         """
         split_text: list[list[str]] = []
         cleaned_words = set[str]()
-
 
         punc_set = Punctuation.get_punc_set()
         punc_pattern = Punctuation.get_punc_pattern()

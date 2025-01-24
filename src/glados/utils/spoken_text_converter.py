@@ -30,7 +30,7 @@ class SpokenTextConverter:
     """
 
     CONTRACTIONS: ClassVar[dict[str, str]] = {
-        "I'm":  "I am",
+        "I'm": "I am",
         "I'll": "I will",
         "I've": "I have",
         "I'd": "I would",
@@ -236,7 +236,7 @@ class SpokenTextConverter:
                     h, m = [int(n) for n in time_str.split(":")]
                     if not (0 <= h <= 23 and 0 <= m <= 59):
                         return match_str
-                    
+
                     # Handle minutes based on whether we have AM/PM
                     if m == 0:
                         if am_pm:  # If we have AM/PM, just use the hour
@@ -247,7 +247,7 @@ class SpokenTextConverter:
                         time = f"{self._number_to_words(h)} oh {self._number_to_words(m)}"
                     else:
                         time = f"{self._number_to_words(h)} {self._number_to_words(m)}"
-                    
+
                     return f"{time}{am_pm}"
 
                 except ValueError:
@@ -255,7 +255,7 @@ class SpokenTextConverter:
 
             # Year handling
             try:
-                number = int(match_str.rstrip('s'))  # Remove 's' if present
+                number = int(match_str.rstrip("s"))  # Remove 's' if present
                 if len(match_str) == 4 or (len(match_str) == 5 and match_str.endswith("s")):
                     left, right = divmod(number, 100)
                     s = "s" if match_str.endswith("s") else ""
@@ -280,13 +280,12 @@ class SpokenTextConverter:
                                 decade_word += "s"
                             return f"{self._number_to_words(left)} {decade_word}"
                         return f"{self._number_to_words(left)} {self._number_to_words(right)}{s}"
-                        
+
                 return self._number_to_words(number)
             except ValueError:
                 return match_str
         except Exception:
             return num.group()
-
 
     def _flip_money(self, m: re.Match[str]) -> str:
         """
@@ -468,11 +467,9 @@ class SpokenTextConverter:
         :raises ValueError: If the input text contains invalid or unsupported formats.
         """
         # 1. First expand contractions (this part works correctly)
-        for contraction, expansion in sorted(self.CONTRACTIONS.items(), 
-                                        key=lambda x: len(x[0]), 
-                                        reverse=True):
+        for contraction, expansion in sorted(self.CONTRACTIONS.items(), key=lambda x: len(x[0]), reverse=True):
             text = text.replace(contraction, expansion)
-        
+
         # remove leading and trailing whitespace and empty lines
         text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
@@ -503,20 +500,18 @@ class SpokenTextConverter:
         text = re.sub(r"\betc\.(?! [A-Z])", "etc", text)
         text = re.sub(r"(?i)\b(y)eah?\b", r"\1e'a", text)
 
-
-
         # Convert mixed case words to lowercase unless they're acronyms
         def process_word(match: re.Match) -> str:
             word = match.group(0)
             # Keep uppercase if it's an acronym (all caps and length > 1)
             if word.isupper() and len(word) > 1:
-                return ' '.join(word)  # Split into individual letters
+                return " ".join(word)  # Split into individual letters
             # Special case: preserve "I" as uppercase
             if word == "I":
                 return word
             return word.lower()
-            
-        text = re.sub(r'\b[A-Za-z]+\b', process_word, text)
+
+        text = re.sub(r"\b[A-Za-z]+\b", process_word, text)
 
         # 6. Number formatting preparation
         # Remove commas in numbers but preserve them for later conversion
@@ -564,16 +559,11 @@ class SpokenTextConverter:
         )
 
         # c. Times
-        text = re.sub(
-            r'\b(\d{1,2}):(\d{2})(?:\s*(?:am|pm))?\b',
-            self._split_num,
-            text,
-            flags=re.IGNORECASE
-        )
+        text = re.sub(r"\b(\d{1,2}):(\d{2})(?:\s*(?:am|pm))?\b", self._split_num, text, flags=re.IGNORECASE)
 
         # d. Years - The key fix is to use lambda to return string directly
         text = re.sub(
-            r'\b\d{4}s?\b',
+            r"\b\d{4}s?\b",
             lambda m: self._split_num(m),
             text,
         )
