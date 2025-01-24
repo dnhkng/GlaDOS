@@ -25,7 +25,28 @@ MODEL_URLS = {
 
 
 def verify_checksums() -> dict[str, bool]:
-    """Verify checksums of model files."""
+    """
+    Verify the integrity of model files by comparing their SHA-256 checksums against expected values.
+    
+    This function checks each model file specified in MODEL_CHECKSUMS to ensure it exists 
+    and has the correct checksum. Files that are missing or have incorrect checksums are 
+    marked as invalid.
+    
+    Parameters:
+        None
+    
+    Returns:
+        dict[str, bool]: A dictionary where keys are model file paths and values are 
+                         boolean indicators of checksum validity (True if valid, False if 
+                         missing or checksum mismatch)
+    
+    Example:
+        >>> verify_checksums()
+        {
+            'models/tts_model.pth': True, 
+            'models/asr_model.bin': False
+        }
+    """
     results = {}
     for path, expected in MODEL_CHECKSUMS.items():
         model_path = Path(path)
@@ -41,7 +62,26 @@ def verify_checksums() -> dict[str, bool]:
 
 
 def download_models() -> None:
-    """Download and verify model files."""
+    """
+    Download and verify model files for the GLaDOS voice assistant.
+    
+    This function checks the integrity of model files using their checksums and downloads
+    any missing or invalid models from predefined URLs. It creates the necessary directory
+    structure for the model files and streams the downloaded content to disk.
+    
+    Behavior:
+        - Verifies existing model files using their SHA-256 checksums
+        - Downloads models that are missing or have invalid checksums
+        - Creates parent directories for model files if they do not exist
+        - Prints a download message for each model being downloaded
+    
+    Side Effects:
+        - Writes model files to the local filesystem
+        - Prints download progress messages to the console
+    
+    Raises:
+        requests.exceptions.RequestException: If there are network issues during download
+    """
     results = verify_checksums()
     for path, is_valid in results.items():
         if not is_valid and path in MODEL_URLS:
@@ -54,11 +94,22 @@ def download_models() -> None:
 
 
 def say(text: str, config_path: str | Path = "glados_config.yml") -> None:
-    """Use GLaDOS TTS to say the given text.
-
-    Args:
-        text: Text to speak
-        config_path: Path to the configuration YAML file
+    """
+    Converts text to speech using the GLaDOS text-to-speech system and plays the generated audio.
+    
+    Parameters:
+        text (str): The text to be spoken by the GLaDOS voice assistant.
+        config_path (str | Path, optional): Path to the configuration YAML file. 
+            Defaults to "glados_config.yml".
+    
+    Notes:
+        - Uses a text-to-speech synthesizer to generate audio
+        - Converts input text to a spoken format before synthesis
+        - Plays the generated audio using the system's default sound device
+        - Blocks execution until audio playback is complete
+    
+    Example:
+        say("Hello, world!")  # Speaks the text using GLaDOS voice
     """
     glados_tts = tts.Synthesizer()
     converter = stc.SpokenTextConverter()
@@ -72,10 +123,23 @@ def say(text: str, config_path: str | Path = "glados_config.yml") -> None:
 
 
 def start(config_path: str | Path = "glados_config.yml") -> None:
-    """Set up the LLM server and start GlaDOS.
-
-    Args:
-        config_path: Path to the configuration YAML file
+    """
+    Start the GLaDOS voice assistant and initialize its listening event loop.
+    
+    This function loads the GLaDOS configuration from a YAML file, creates a GLaDOS instance,
+    and begins the continuous listening process for voice interactions.
+    
+    Parameters:
+        config_path (str | Path, optional): Path to the configuration YAML file.
+            Defaults to "glados_config.yml" in the current directory.
+    
+    Raises:
+        FileNotFoundError: If the specified configuration file cannot be found.
+        ValueError: If the configuration file is invalid or cannot be parsed.
+    
+    Example:
+        start()  # Uses default configuration file
+        start("/path/to/custom/config.yml")  # Uses a custom configuration file
     """
     glados_config = GladosConfig.from_yaml(str(config_path))
     glados = Glados.from_config(glados_config)
@@ -83,6 +147,15 @@ def start(config_path: str | Path = "glados_config.yml") -> None:
 
 
 def models_valid() -> bool:
+    """
+    Check the validity of all model files for the GLaDOS voice assistant.
+    
+    Verifies the integrity of model files by computing their checksums and comparing them against expected values.
+    
+    Returns:
+        bool: True if all model files are valid and present, False otherwise. When False, prints a message 
+              instructing the user to download the required model files.
+    """
     results = verify_checksums()
     if not all(results.values()):
         print("Some model files are missing or invalid. Please run 'uv glados download'")
@@ -91,7 +164,24 @@ def models_valid() -> bool:
 
 
 def main() -> None:
-    """CLI entry point for GLaDOS."""
+    """
+    Command-line interface (CLI) entry point for the GLaDOS voice assistant.
+    
+    Provides three primary commands:
+    - 'download': Download required model files
+    - 'start': Launch the GLaDOS voice assistant
+    - 'say': Generate speech from input text
+    
+    The function sets up argument parsing with optional configuration file paths and handles
+    command execution based on user input. If no command is specified, it defaults to starting
+    the assistant.
+    
+    Optional Arguments:
+        --config (str): Path to configuration file, defaults to 'glados_config.yml'
+    
+    Raises:
+        SystemExit: If invalid arguments are provided
+    """
     parser = argparse.ArgumentParser(description="GLaDOS Voice Assistant")
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 

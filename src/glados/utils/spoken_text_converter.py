@@ -50,6 +50,22 @@ class SpokenTextConverter:
 
         # Precompile quick check pattern
         # Note: Only check for mathematical operators that aren't commonly used in regular text
+        """
+        Initialize the SpokenTextConverter with regex patterns for identifying convertible text content.
+        
+        This method sets up a compiled regular expression pattern to quickly identify text
+        that may require conversion, such as numbers, currency symbols, mathematical operators,
+        common abbreviations, and ellipses.
+        
+        The pattern checks for:
+        - Digits
+        - Currency symbols ($ and £)
+        - Specific mathematical operators (multiplication, division, exponentiation, roots)
+        - Common title abbreviations
+        - Ellipses (three or more dots, including spaced versions)
+        
+        The regex is compiled with verbose mode (re.VERBOSE) to allow more readable pattern construction.
+        """
         self.convertible_pattern = re.compile(
             r"""(?x)
             \d                        # Any digit
@@ -65,15 +81,31 @@ class SpokenTextConverter:
     def _number_to_words(self, num: float | str) -> str:
         """
         Convert a number into its spoken-word equivalent.
-
-        This method handles both integers and floating-point numbers, including
-        negative numbers and large numbers (e.g., "1000000" → "one million").
-
-        :param num: The number to convert. Can be an integer, float, or string.
-        :type num: int, float, or str
-        :return: The spoken-word equivalent of the number.
-        :rtype: str
-        :raises ValueError: If the input is not a valid number.
+        
+        Handles integers, floating-point numbers, and numeric strings, including:
+        - Negative numbers
+        - Large numbers (e.g., millions, billions)
+        - Decimal numbers
+        - Zero and whole numbers
+        
+        Parameters:
+            num (float | str): The number to convert. Can be an integer, float, or numeric string.
+        
+        Returns:
+            str: The spoken-word representation of the number.
+        
+        Raises:
+            ValueError: If the input cannot be converted to a valid number.
+        
+        Examples:
+            >>> converter._number_to_words(42)
+            'forty-two'
+            >>> converter._number_to_words(-17)
+            'negative seventeen'
+            >>> converter._number_to_words(1234567)
+            'one million two hundred thirty-four thousand five hundred sixty-seven'
+            >>> converter._number_to_words(3.14)
+            'three point one four'
         """
         try:
             if isinstance(num, str):
@@ -127,6 +159,22 @@ class SpokenTextConverter:
             scales = ["", "thousand", "million", "billion"]
 
             def process_chunk(n: int, scale: int) -> str:
+                """
+                Convert a chunk of a number into its spoken word representation.
+                
+                This method handles converting a three-digit number chunk into words, including handling hundreds, tens, and ones places. It supports numbers from 0 to 999 and can append scale words (thousand, million, etc.) when appropriate.
+                
+                Parameters:
+                    n (int): The number chunk to convert (0-999)
+                    scale (int): The scale index representing the magnitude (0 for ones, 1 for thousands, 2 for millions, etc.)
+                
+                Returns:
+                    str: The spoken word representation of the number chunk, including optional scale word
+                
+                Example:
+                    process_chunk(123, 1) returns "one hundred twenty-three thousand"
+                    process_chunk(45, 0) returns "forty-five"
+                """
                 if n == 0:
                     return ""
 
@@ -210,14 +258,26 @@ class SpokenTextConverter:
     def _split_num(self, num: re.Match) -> str:
         """
         Convert numbers, times, and years into their spoken-word equivalents.
-
-        This method handles:
-        - Times (e.g., "3:00" → "three o'clock")
-        - Years (e.g., "1999" → "nineteen ninety-nine")
-        - Regular numbers (e.g., "1000" → "one thousand")
-
-        :param num: The match object from regex containing the number/time/year.
-        :return: The spoken-word equivalent of the input.
+        
+        This method handles complex conversions for:
+        - Time formats (12-hour and 24-hour)
+            - With or without AM/PM
+            - Handles "o'clock" for zero minutes
+            - Converts minutes less than 10 with "oh"
+        - Year formats
+            - Single years (e.g., 1999)
+            - Decades (e.g., 1950s)
+            - Special handling for 2000 and 2000s
+            - Supports plural forms for decades
+        
+        Parameters:
+            num (re.Match): A regex match object containing a time, year, or number string.
+        
+        Returns:
+            str: The spoken-word equivalent of the input time, year, or number.
+        
+        Raises:
+            ValueError: If the input cannot be parsed as a valid time or number.
         """
         try:
             match_str = num.group()
@@ -290,14 +350,23 @@ class SpokenTextConverter:
     def _flip_money(self, m: re.Match[str]) -> str:
         """
         Convert currency expressions into their spoken-word equivalents.
-
-        This method handles both dollars and pounds, including cents and pence.
-
-        :param m: The input currency expression (e.g., "$50.00").
-        :type m: str
-        :return: The spoken-word equivalent of the currency expression.
-        :rtype: str
-        :raises ValueError: If the currency format is invalid.
+        
+        Handles currency conversions for dollars and pounds, including whole numbers and decimal amounts. Supports singular and plural forms, and manages edge cases like zero cents/pence.
+        
+        Parameters:
+            m (re.Match[str]): A regex match object containing a currency expression (e.g., "$50.00")
+        
+        Returns:
+            str: The spoken-word representation of the currency amount
+        
+        Raises:
+            ValueError: If the currency format is invalid or cannot be parsed
+        
+        Examples:
+            "$5.00" → "five dollars"
+            "$1.50" → "one dollar and fifty cents"
+            "£10.00" → "ten pounds"
+            "£1.01" → "one pound and one penny"
         """
         try:
             m = m.group()
@@ -334,26 +403,52 @@ class SpokenTextConverter:
 
     def _point_num(self, num: re.Match[str]) -> str:
         """
-        Convert decimal numbers into their spoken-word equivalents.
-
-        :param num: The input decimal number (e.g., "3.14").
-        :type num: str
-        :return: The spoken-word equivalent of the decimal number.
-        :rtype: str
+        Convert a decimal number to its spoken-word representation.
+        
+        Parameters:
+            num (re.Match[str]): A regex match object containing a decimal number.
+        
+        Returns:
+            str: The spoken-word equivalent of the decimal number.
+        
+        Converts the matched decimal number to a float and uses the _number_to_words method
+        to generate its spoken representation.
         """
         return self._number_to_words(float(num.group()))
 
     def _convert_percentages(self, text: str) -> str:
         """
         Convert percentage expressions in the text to their spoken-word equivalents.
-
-        :param text: The input text containing percentage expressions (e.g., "50%").
-        :type text: str
-        :return: The input text with percentages converted to spoken words.
-        :rtype: str
+        
+        This method uses regular expressions to identify percentage values and converts them to their spoken form. It handles both whole numbers and decimal percentages, converting the numeric value to words followed by the word "percent".
+        
+        Parameters:
+            text (str): The input text containing percentage expressions (e.g., "50%").
+        
+        Returns:
+            str: The input text with percentages converted to spoken words.
+        
+        Examples:
+            >>> converter = SpokenTextConverter()
+            >>> converter._convert_percentages("The stock rose 25%")
+            'The stock rose twenty-five percent'
+            >>> converter._convert_percentages("Accuracy is 99.5%")
+            'Accuracy is ninety-nine point five percent'
         """
 
         def replace_match(match: re.Match) -> str:
+            """
+            Convert a regex match of a percentage to its spoken word representation.
+            
+            Parameters:
+                match (re.Match): A regex match object containing a percentage value.
+            
+            Returns:
+                str: The spoken word representation of the percentage, including the word "percent".
+            
+            Raises:
+                ValueError: If the matched number cannot be converted to a numeric type.
+            """
             number = match.group(1)
             # Handle whole numbers without decimal point
             if "." not in number:
@@ -372,18 +467,29 @@ class SpokenTextConverter:
     def _convert_mathematical_notation(self, text: str) -> str:
         """
         Convert mathematical notation to spoken form.
-
-        Handles:
-        - Exponents (e.g., "8^2" → "eight to the power of two")
-        - Square/cube roots (e.g., "√9" → "square root of nine")
-        - Basic operations (e.g., "5 + 3" → "five plus three")
-        - Fractions (e.g., "1/2" → "one over two")
-        - Equals signs (e.g., "=" → "equals")
-        - Division signs (e.g., "÷" → "divided by")
-        - Multiplication signs (e.g., "×" → "times")
-
-        :param text: Text containing mathematical notation
-        :return: Text with mathematical notation converted to spoken form
+        
+        Converts various mathematical symbols and notations into their spoken word equivalents. Handles exponents, roots, arithmetic operations, fractions, and comparison symbols.
+        
+        Parameters:
+            text (str): Text containing mathematical notation to be converted
+        
+        Returns:
+            str: Text with mathematical notation transformed into spoken language
+        
+        Handles conversions such as:
+            - Exponents: "8^2" → "eight to the power of two"
+            - Square roots: "√9" → "square root of nine"
+            - Cube roots: "∛8" → "cube root of eight"
+            - Basic operations: "5 + 3" → "five plus three"
+            - Fractions: "1/2" → "one over two"
+            - Equals signs: "=" → "equals"
+            - Multiplication: "×" → "times"
+            - Division: "÷" → "divided by"
+        
+        Notes:
+            - Preserves date-like fractions (e.g., 1/1/2024)
+            - Handles both numeric and letter variable exponents
+            - Cleans up extra whitespace after conversion
         """
 
         # Fast fail if no convertible content
@@ -392,6 +498,21 @@ class SpokenTextConverter:
 
         # Helper function to convert numbers in matched patterns
         def convert_numbers_in_match(match: re.Match, pattern: str) -> str:
+            """
+            Convert numeric parts of a regex match to their spoken word representation.
+            
+            Parameters:
+                match (re.Match): A regex match object containing numeric groups
+                pattern (str): A formatting pattern to reconstruct the matched text with converted numbers
+            
+            Returns:
+                str: A string with numeric groups replaced by their spoken word equivalents
+            
+            Notes:
+                - Iterates through match groups and converts digit-only groups to words
+                - Uses the instance method `_number_to_words` for number conversion
+                - Preserves non-numeric groups in their original form
+            """
             parts = list(match.groups())
             for i, part in enumerate(parts):
                 if part and part.isdigit():
@@ -440,6 +561,26 @@ class SpokenTextConverter:
         # Convert mathematical fractions (only if not part of a date)
         def convert_fraction(match: re.Match) -> str:
             # Skip if it looks like a date (e.g., 1/1/2024)
+            """
+            Convert a fraction match to its spoken word representation.
+            
+            This method handles fraction conversion, avoiding date-like patterns and converting
+            the numerator and denominator to their word equivalents.
+            
+            Parameters:
+                match (re.Match): A regex match object representing a fraction.
+            
+            Returns:
+                str: A spoken word representation of the fraction, in the format "numerator over denominator".
+            
+            Example:
+                "3/4" becomes "three over four"
+                "1/2" becomes "one over two"
+            
+            Notes:
+                - Skips conversion for patterns that look like dates (e.g., 1/1/2024)
+                - Uses _number_to_words method to convert numeric parts to words
+            """
             if re.match(r"\d{1,2}/\d{1,2}/\d{2,4}", match.group(0)):
                 return match.group(0)
             num = self._number_to_words(int(match.group(1)))
@@ -456,15 +597,30 @@ class SpokenTextConverter:
     def text_to_spoken(self, text: str) -> str:
         """
         Convert a given text into its spoken-word equivalent.
-
-        This method processes the input text, identifying and converting numbers, dates,
-        times, currency, and percentages into their spoken-word forms.
-
-        :param text: The input text to convert.
-        :type text: str
-        :return: The input text with numbers, dates, times, and currency converted to spoken words.
-        :rtype: str
-        :raises ValueError: If the input text contains invalid or unsupported formats.
+        
+        This method processes the input text through multiple stages of transformation, including:
+        1. Expanding contractions
+        2. Normalizing quotes and punctuation
+        3. Converting titles and abbreviations
+        4. Preparing number formatting
+        5. Converting dates, mathematical notation, percentages, currency, times, years, and numbers
+        
+        The conversion handles various text elements like numbers, dates, times, currency, and percentages,
+        transforming them into their spoken-word representations.
+        
+        Args:
+            text (str): The input text to convert.
+        
+        Returns:
+            str: The input text with numbers, dates, times, and currency converted to spoken words.
+        
+        Raises:
+            ValueError: If the input text contains invalid or unsupported formats during conversion.
+        
+        Notes:
+            - Preserves acronyms and special cases like "I"
+            - Handles complex number formats including large numbers and decimals
+            - Supports multiple currency symbols and percentage conversions
         """
         # 1. First expand contractions (this part works correctly)
         for contraction, expansion in sorted(self.CONTRACTIONS.items(), key=lambda x: len(x[0]), reverse=True):
@@ -502,6 +658,20 @@ class SpokenTextConverter:
 
         # Convert mixed case words to lowercase unless they're acronyms
         def process_word(match: re.Match) -> str:
+            """
+            Converts a matched word to its spoken form while preserving specific capitalization rules.
+            
+            This method handles word conversion with special considerations:
+            - Acronyms (all uppercase words with length > 1) are split into individual letters
+            - The word "I" is preserved in its uppercase form
+            - Other words are converted to lowercase
+            
+            Parameters:
+                match (re.Match): A regex match object containing the word to be processed
+            
+            Returns:
+                str: The processed word according to the specified capitalization rules
+            """
             word = match.group(0)
             # Keep uppercase if it's an acronym (all caps and length > 1)
             if word.isupper() and len(word) > 1:
@@ -516,6 +686,20 @@ class SpokenTextConverter:
         # 6. Number formatting preparation
         # Remove commas in numbers but preserve them for later conversion
         def preserve_large_numbers(match: re.Match) -> str:
+            """
+            Convert a matched large number (with commas) to its spoken word representation.
+            
+            Parameters:
+                match (re.Match): A regex match object containing a large number with comma separators.
+            
+            Returns:
+                str: The spoken word representation of the number.
+            
+            Notes:
+                - Removes commas from the matched number before conversion
+                - Uses the class's _number_to_words method to convert the number
+                - Handles large numbers by converting them to integers first
+            """
             num = int(match.group().replace(",", ""))
             return self._number_to_words(num)
 
@@ -527,6 +711,26 @@ class SpokenTextConverter:
 
         # 8. Date conversion (before other number conversions)
         def convert_date(match: re.Match) -> str:
+            """
+            Convert a date match object into its spoken-word representation.
+            
+            This method handles date formatting by converting numeric date components 
+            (month, day, year) into their spoken-word equivalents. It supports two primary 
+            formats:
+            - Standard date format with a 4-digit year (MM/DD/YYYY)
+            - Shorter date formats with 2-digit components
+            
+            Parameters:
+                match (re.Match): A regex match object containing a date string
+            
+            Returns:
+                str: A spoken-word representation of the date, with numeric components 
+                     converted to words
+            
+            Examples:
+                - "12/25/2000" → "twelve/twenty-five/two thousand"
+                - "1/1/23" → "one/one/twenty-three"
+            """
             parts = match.group().split("/")
             if len(parts) == 3 and len(parts[2]) == 4:
                 # Convert the year part separately
