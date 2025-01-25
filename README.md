@@ -42,66 +42,76 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 # Installation Instruction
 Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
 
-## Install Drivers in necessary
+## Install Drivers if necessary
 If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
-https://onnxruntime.ai/docs/install/
+https://developer.nvidia.com/cuda-toolkit
 
 If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
 
 ## Set up a local LLM server:
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
-2. Once installed, download a small 2B model for testing, at a terminal or command prompt use: `ollama pull llama3.2`
+2. Once installed, download a small 3B model for testing - at a terminal or command prompt use: `ollama pull llama3.2`
 
 Note: You can use any OpenAI or Ollama compatible server, local or cloud based. Just edit the glados_config.yaml and update the completion_url, model and the api_key if necessary.
 
-
-## Windows Installation Process
+## Operating specific instruction
+#### Windows Installation Process
 1. Open the Microsoft Store, search for `python` and install Python 3.12
-2. Download this repository, either:
-   1. Download and unzip this repository somewhere in your home folder, or
-   2. If you have Git set up, `git clone` this repository using `https://git clone github.com/dnhkng/glados.git`
-3. In the repository folder, run the `install_windows.bat`, and wait until the installation in complete.
-4. Double click `start_windows.bat` to start GLaDOS!
 
-## macOS Installation Process
+#### macOS Installation Process
 This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  Note: I was getting Segfaults!  Please leave feedback!
 
-
-1. Download this repository, either:
-   1. Download and unzip this repository somewhere in your home folder, or
-   2. In a terminal, `git clone` this repository using `git clone https://github.com/dnhkng/glados.git`
-2. In a terminal, go to the repository folder and run these commands:
-
-         chmod +x install_mac.command
-         chmod +x start_mac.command
-
-3. In the Finder, double click `install_mac.command`, and wait until the installation in complete.
-4. Double click `start_mac.command` to start GLaDOS!
-
-## Linux Installation Process
-This is still experimental. Any issues can be addressed in the Discord server. If you create an issue related to this, you will be referred to the Discord server.  This has been tested on Ubuntu 24.04.1 LTS
-
-1. Install the PortAudio library, if you don't yet have it installed:
+#### Linux Installation Process
+Install the PortAudio library, if you don't yet have it installed:
    
          sudo apt update
          sudo apt install libportaudio2
-   
-2. Download this repository, either:
-   1. Download and unzip this repository somewhere in your home folder, or
-   2. In a terminal, `git clone` this repository using `git clone https://github.com/dnhkng/glados.git`
-3. In a terminal, go to the repository folder and run these commands:
-   
-         chmod +x install_ubuntu.sh
-         chmod +x start_ubuntu.sh
 
-4. In the a terminal in the GLaODS folder, run `./install_ubuntu.sh`, and wait until the installation in complete.
-5. Run  `./start_ubuntu.sh` to start GLaDOS!
+## Installing GLaDOS
+1. Download this repository, either:
+   1. Download and unzip this repository somewhere in your home folder, or
+
+   2. At a terminal, git clone this repository using `git clone https://github.com/dnhkng/GLaDOS.git`
+
+2. In a terminal, go to the repository folder and run these commands:
+   
+   Mac/Linux:
+
+         python scripts/install.py
+   Windows:
+
+         python scripts\install.py
+   This will install Glados and download the needed AI models 
+3. To start GLaDOS run:
+         
+         uv run glados
+
+## Speech Generation
+You can also get her to say something with:
+
+         uv run glados say "The cake is real"
 
 ## Changing the LLM Model
 
 To use other models, use the command:
 ```ollama pull {modelname}```
-and then add {modelname} to glados_config.yaml as the model. You can find [more models here!](https://ollama.com/library)
+and then add it to glados_config.yaml as the model. 
+
+         model: "{modelname}"
+You can find [more models here!](https://ollama.com/library)
+
+## More Personalities or LLM's
+Make a copy of the file 'glados_config.yml' and give it a new name, then edit the parameters:
+
+      model:  # the LLM model you want to use, see "Changing the LLM Model"
+      personality_preprompt:
+      system:  # A description of who the character should be
+          - user:  # An example of a question you might ask
+          - assistant:  # An example of how the AI should respond
+  
+To use these new settings, use the command:
+      
+      uv run glados start --config new_config.yml
 
 ## Common Issues
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
@@ -111,7 +121,7 @@ and then add {modelname} to glados_config.yaml as the model. You can find [more 
 
 
 ## Testing the submodules
-You can test the systems by exploring the 'demo.ipynb'.
+Want to mess around with the AI models? You can test the systems by exploring the 'demo.ipynb'.
 
 
 ## Star History

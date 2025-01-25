@@ -1,4 +1,5 @@
-""""Long text resources, to avoid cluttering up the main file."""
+# ruff: noqa: RUF001
+""" "Long text resources, to avoid cluttering up the main file."""
 
 aperture = r"""
    ___   ___  _______  ________  _____  ____
@@ -47,7 +48,7 @@ help_text = (
     "your workstation. A Crisis Response Team has already been mobilized to "
     "deliberate on a response to your crisis.\n\n"
     "If you need help accessing the system, please refer to your User Handbook."
-    )
+)
 
 
 # Why yes, since you ask, someone *did* bother to transcrbe this:
