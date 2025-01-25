@@ -101,7 +101,7 @@ and then add it to glados_config.yaml as the model.
 You can find [more models here!](https://ollama.com/library)
 
 ## More Personalities or LLM's
-Make a copy of the file 'glados_config.yml' and give it a new name, then edit the parameters:
+Make a copy of the file 'glados_config.yaml' and give it a new name, then edit the parameters:
 
       model:  # the LLM model you want to use, see "Changing the LLM Model"
       personality_preprompt:
@@ -111,7 +111,7 @@ Make a copy of the file 'glados_config.yml' and give it a new name, then edit th
   
 To use these new settings, use the command:
       
-      uv run glados start --config new_config.yml
+      uv run glados start --config new_config.yaml
 
 ## Common Issues
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:

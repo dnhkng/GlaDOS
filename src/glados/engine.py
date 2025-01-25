@@ -816,7 +816,7 @@ class Glados:
 
 def start() -> None:
     """Set up the LLM server and start GlaDOS."""
-    glados_config = GladosConfig.from_yaml("glados_config.yml")
+    glados_config = GladosConfig.from_yaml("glados_config.yaml")
     glados = Glados.from_config(glados_config)
     glados.start_listen_event_loop()
 

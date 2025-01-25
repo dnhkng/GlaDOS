@@ -177,14 +177,14 @@ def download_models() -> None:
                 sys.exit(1)
 
 
-def say(text: str, config_path: str | Path = "glados_config.yml") -> None:
+def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
     """
     Converts text to speech using the GLaDOS text-to-speech system and plays the generated audio.
     
     Parameters:
         text (str): The text to be spoken by the GLaDOS voice assistant.
         config_path (str | Path, optional): Path to the configuration YAML file. 
-            Defaults to "glados_config.yml".
+            Defaults to "glados_config.yaml".
     
     Notes:
         - Uses a text-to-speech synthesizer to generate audio
@@ -206,7 +206,7 @@ def say(text: str, config_path: str | Path = "glados_config.yml") -> None:
     sd.wait()
 
 
-def start(config_path: str | Path = "glados_config.yml") -> None:
+def start(config_path: str | Path = "glados_config.yaml") -> None:
     """
     Start the GLaDOS voice assistant and initialize its listening event loop.
     
@@ -215,7 +215,7 @@ def start(config_path: str | Path = "glados_config.yml") -> None:
     
     Parameters:
         config_path (str | Path, optional): Path to the configuration YAML file.
-            Defaults to "glados_config.yml" in the current directory.
+            Defaults to "glados_config.yaml" in the current directory.
     
     Raises:
         FileNotFoundError: If the specified configuration file cannot be found.
@@ -223,7 +223,7 @@ def start(config_path: str | Path = "glados_config.yml") -> None:
     
     Example:
         start()  # Uses default configuration file
-        start("/path/to/custom/config.yml")  # Uses a custom configuration file
+        start("/path/to/custom/config.yaml")  # Uses a custom configuration file
     """
     glados_config = GladosConfig.from_yaml(str(config_path))
     glados = Glados.from_config(glados_config)
@@ -261,7 +261,7 @@ def main() -> None:
     the assistant.
     
     Optional Arguments:
-        --config (str): Path to configuration file, defaults to 'glados_config.yml'
+        --config (str): Path to configuration file, defaults to 'glados_config.yaml'
     
     Raises:
         SystemExit: If invalid arguments are provided
@@ -277,8 +277,8 @@ def main() -> None:
     start_parser.add_argument(
         "--config",
         type=str,
-        default="glados_config.yml",
-        help="Path to configuration file (default: glados_config.yml)",
+        default="glados_config.yaml",
+        help="Path to configuration file (default: glados_config.yaml)",
     )
 
     # Say command
@@ -287,8 +287,8 @@ def main() -> None:
     say_parser.add_argument(
         "--config",
         type=str,
-        default="glados_config.yml",
-        help="Path to configuration file (default: glados_config.yml)",
+        default="glados_config.yaml",
+        help="Path to configuration file (default: glados_config.yaml)",
     )
 
     args = parser.parse_args()
@@ -304,7 +304,7 @@ def main() -> None:
             start(args.config)
         else:
             # Default to start if no command specified
-            start("glados_config.yml")
+            start("glados_config.yaml")
 
 
 if __name__ == "__main__":
