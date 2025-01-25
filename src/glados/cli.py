@@ -13,15 +13,18 @@ MODEL_CHECKSUMS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "313705ff6f897696ddbe0d92b5ffadad7429a47d2ddeef370e6f59248b1e8fb5",
     "models/ASR/silero_vad.onnx": "a35ebf52fd3ce5f1469b2a36158dba761bc47b973ea3382b3186ca15b1f5af28",
     "models/TTS/glados.onnx": "17ea16dd18e1bac343090b8589042b4052f1e5456d42cad8842a4f110de25095",
-    "models/phomenizer_en.onnx": "b64dbbeca8b350927a0b6ca5c4642e0230173034abd0b5bb72c07680d700c5a0",
+    "models/TTS/phomenizer_en.onnx": "b64dbbeca8b350927a0b6ca5c4642e0230173034abd0b5bb72c07680d700c5a0",
 }
 
 MODEL_URLS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx",
     "models/ASR/silero_vad.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx",
     "models/TTS/glados.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx",
-    "models/phomenizer_en.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx",
+    "models/TTS/phomenizer_en.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx",
 }
+
+
+assert MODEL_CHECKSUMS.keys() == MODEL_URLS.keys()
 
 
 def verify_checksums() -> dict[str, bool]:
@@ -62,35 +65,116 @@ def verify_checksums() -> dict[str, bool]:
 
 
 def download_models() -> None:
-    """
-    Download and verify model files for the GLaDOS voice assistant.
-    
-    This function checks the integrity of model files using their checksums and downloads
-    any missing or invalid models from predefined URLs. It creates the necessary directory
-    structure for the model files and streams the downloaded content to disk.
-    
-    Behavior:
-        - Verifies existing model files using their SHA-256 checksums
-        - Downloads models that are missing or have invalid checksums
-        - Creates parent directories for model files if they do not exist
-        - Prints a download message for each model being downloaded
-    
-    Side Effects:
-        - Writes model files to the local filesystem
-        - Prints download progress messages to the console
-    
+    """Download model files required for GLaDOS with robust error handling and progress tracking.
+
+    This function downloads the required model files from predefined URLs if they are missing
+    or have invalid checksums. It includes several reliability features:
+
+    Features:
+        - Progress tracking with percentage display
+        - Temporary file usage to prevent partial downloads
+        - SHA256 checksum verification during download
+        - Retry logic with exponential backoff (max 3 retries)
+        - Network timeout handling (30 seconds)
+        - Automatic cleanup of temporary files on failure
+        - Creation of parent directories if they don't exist
+
+    The function downloads the following models:
+        - ASR model: nemo-parakeet_tdt_ctc_110m.onnx
+        - VAD model: silero_vad.onnx
+        - TTS model: glados.onnx
+        - Phonemizer model: phomenizer_en.onnx
+
     Raises:
-        requests.exceptions.RequestException: If there are network issues during download
+        requests.RequestException: If network errors occur during download
+        IOError: If file system operations fail
+        ValueError: If downloaded file has incorrect checksum
+        SystemExit: If any model download fails after max retries
+
+    Example:
+        >>> from glados.cli import download_models
+        >>> download_models()  # Downloads all required models with progress tracking
     """
-    results = verify_checksums()
-    for path, is_valid in results.items():
-        if not is_valid and path in MODEL_URLS:
-            print(f"Downloading {path}...")
-            Path(path).parent.mkdir(parents=True, exist_ok=True)
-            response = requests.get(MODEL_URLS[path], stream=True)
-            with open(path, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+    from time import sleep
+    import sys
+    from typing import BinaryIO
+
+    def calculate_sha256(file: BinaryIO) -> str:
+        """Calculate SHA256 hash of a file-like object."""
+        sha = hashlib.sha256()
+        file.seek(0)
+        for chunk in iter(lambda: file.read(8192), b""):
+            sha.update(chunk)
+        file.seek(0)
+        return sha.hexdigest()
+
+    def download_with_progress(url: str, path: Path, expected_hash: str, max_retries: int = 3) -> None:
+        """Download a file with progress tracking and retry logic."""
+        retry_count = 0
+        temp_path = path.with_suffix(path.suffix + ".tmp")
+
+        while retry_count < max_retries:
+            try:
+                # Create parent directories if they don't exist
+                path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Start download with stream enabled
+                response = requests.get(url, stream=True, timeout=30)
+                response.raise_for_status()
+                total_size = int(response.headers.get("content-length", 0))
+
+                # Open temporary file for writing
+                with open(temp_path, "wb") as f:
+                    if total_size == 0:
+                        print(f"\nDownloading {path.name} (size unknown)")
+                    else:
+                        print(f"\nDownloading {path.name} ({total_size / 1024 / 1024:.1f} MB)")
+
+                    downloaded_size = 0
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                            if total_size > 0:
+                                progress = (downloaded_size / total_size) * 100
+                                sys.stdout.write(f"\rProgress: {progress:.1f}%")
+                                sys.stdout.flush()
+
+                # Verify checksum
+                with open(temp_path, "rb") as f:
+                    if calculate_sha256(f) != expected_hash:
+                        raise ValueError("Downloaded file has incorrect checksum")
+
+                # Rename temporary file to final path
+                if path.exists():
+                    path.unlink()
+                temp_path.rename(path)
+                print(f"\nSuccessfully downloaded {path.name}")
+                return
+
+            except (requests.RequestException, IOError, ValueError) as e:
+                retry_count += 1
+                if temp_path.exists():
+                    temp_path.unlink()
+                
+                if retry_count < max_retries:
+                    wait_time = 2 ** retry_count  # Exponential backoff
+                    print(f"\nError downloading {path.name}: {str(e)}")
+                    print(f"Retrying in {wait_time} seconds... (Attempt {retry_count + 1}/{max_retries})")
+                    sleep(wait_time)
+                else:
+                    print(f"\nFailed to download {path.name} after {max_retries} attempts: {str(e)}")
+                    raise
+
+    # Download each model file
+    checksums = verify_checksums()
+    for path, is_valid in checksums.items():
+        if not is_valid:
+            try:
+                download_with_progress(MODEL_URLS[path], Path(path), MODEL_CHECKSUMS[path])
+            except Exception as e:
+                print(f"Error: Failed to download {path}: {str(e)}")
+                sys.exit(1)
 
 
 def say(text: str, config_path: str | Path = "glados_config.yml") -> None:
