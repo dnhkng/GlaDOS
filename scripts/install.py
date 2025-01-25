@@ -74,7 +74,11 @@ def main() -> None:
         venv_python = ".venv/bin/python"
         os.environ["PATH"] = f"{os.path.dirname(venv_python)}:{os.environ['PATH']}"
 
-    has_cuda = subprocess.run(["nvcc", "--version"], capture_output=True).returncode == 0
+    try:
+        has_cuda = subprocess.run(["nvcc", "--version"], capture_output=True, check=False).returncode == 0
+    except FileNotFoundError:
+        has_cuda = False
+    
     extras = "[cuda]" if has_cuda else "[cpu]"
 
     # Install project in editable mode
