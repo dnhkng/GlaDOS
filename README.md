@@ -70,7 +70,9 @@ Install the PortAudio library, if you don't yet have it installed:
 ## Installing GLaDOS
 1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
+
    2. At a terminal, git clone this repository using `git clone https://github.com/dnhkng/GLaDOS.git`
+
 2. In a terminal, go to the repository folder and run these commands:
    
    Mac/Linux:
@@ -83,8 +85,6 @@ Install the PortAudio library, if you don't yet have it installed:
 3. To start GLaDOS run:
          
          uv run glados
-         
-   
 
 ## Speech Generation
 You can also get her to say something with:
