@@ -18,14 +18,12 @@ import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
 import yaml
 
-from .core import asr, tts, vad
+from .core import asr, vad, tts_glados, tts_kokoro
 from .utils import spoken_text_converter as stc
 
 logger.remove(0)
 logger.add(sys.stderr, level="SUCCESS")
 
-VAD_MODEL = str(Path("models/ASR/silero_vad.onnx"))
-VOICE_MODEL = str(Path("models/TTS/glados.onnx"))
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
 VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
@@ -48,12 +46,11 @@ class GladosConfig:
     completion_url: str
     model: str
     api_key: str | None
+    interruptible: bool
     wake_word: str | None
+    voice: str
     announcement: str | None
     personality_preprompt: list[dict[str, str]]
-    interruptible: bool
-    voice_model: str = VOICE_MODEL
-    speaker_id: int | None = None
 
     @classmethod
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)) -> "GladosConfig":
@@ -101,15 +98,14 @@ class GladosConfig:
 class Glados:
     def __init__(
         self,
-        voice_model: str,
-        speaker_id: int | None,
         completion_url: str,
         model: str,
         api_key: str | None = None,
+        interruptible: bool = True,
         wake_word: str | None = None,
+        voice: str | None = "glados",
         personality_preprompt: list[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
-        interruptible: bool = True,
     ) -> None:
         """
         Initialize the Glados voice assistant with configuration parameters.
@@ -138,11 +134,15 @@ class Glados:
         self.wake_word = wake_word
         self._vad_model = vad.VAD()
         self._asr_model = asr.AudioTranscriber()
-        self._tts = tts.Synthesizer(
-            # model_path=str(Path.cwd() / "models" / voice_model),
-            # speaker_id=speaker_id,
-        )
         self._stc = stc.SpokenTextConverter()
+        
+        # Initialize the TTS system with the specified voice
+        if voice == "glados":
+            self._tts = tts_glados.Synthesizer()
+        else:
+            assert voice in tts_kokoro.get_voices(), f"Voice '{voice}' not available"
+            self._tts = tts_kokoro.Synthesizer(voice=voice)
+
 
         # warm up onnx ASR model
         self._asr_model.transcribe_file("data/0.wav")
@@ -245,15 +245,14 @@ class Glados:
             personality_preprompt.append({"role": next(iter(line.keys())), "content": next(iter(line.values()))})
 
         return cls(
-            voice_model=config.voice_model,
-            speaker_id=config.speaker_id,
             completion_url=config.completion_url,
             model=config.model,
             api_key=config.api_key,
-            wake_word=config.wake_word,
-            personality_preprompt=personality_preprompt,
-            announcement=config.announcement,
             interruptible=config.interruptible,
+            wake_word=config.wake_word,
+            voice=config.voice,
+            announcement=config.announcement,
+            personality_preprompt=personality_preprompt,
         )
 
     @classmethod
