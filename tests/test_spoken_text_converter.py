@@ -1,13 +1,25 @@
+"""
+Unit tests for the SpokenTextConverter class.
+
+This test suite validates the text-to-speech conversion functionality,
+covering various text formats including percentages, times, currency,
+years, decimal numbers, mixed text, special cases, and mathematical notation.
+Each test function uses parameterized test cases to verify the accurate
+conversion of text into its spoken form.
+"""
 # ruff: noqa: RUF001
 import pytest
+from typing import Generator
 
 from glados.utils.spoken_text_converter import SpokenTextConverter
 
-# Create an instance of SpokenTextConverter for testing
-converter = SpokenTextConverter()
+
+@pytest.fixture
+def converter() -> Generator[SpokenTextConverter, None, None]:
+    """Provide a fresh SpokenTextConverter instance for each test."""
+    yield SpokenTextConverter()
 
 
-# Test percentages
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -19,7 +31,7 @@ converter = SpokenTextConverter()
         ("12.00%", "twelve percent"),
     ],
 )
-def test_convert_percentages(input_text: str, expected: str) -> None:
+def test_convert_percentages(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of percentage strings to their spoken equivalents.
     
@@ -37,7 +49,6 @@ def test_convert_percentages(input_text: str, expected: str) -> None:
     assert result.lower() == expected
 
 
-# Test times
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -52,7 +63,7 @@ def test_convert_percentages(input_text: str, expected: str) -> None:
         ("8:05 pm", "eight oh five p m"),
     ],
 )
-def test_convert_times(input_text: str, expected: str) -> None:
+def test_convert_times(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of time strings to their spoken equivalents.
     
@@ -70,7 +81,6 @@ def test_convert_times(input_text: str, expected: str) -> None:
     assert result.lower() == expected.lower()
 
 
-# Test currency
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -88,7 +98,7 @@ def test_convert_times(input_text: str, expected: str) -> None:
         ("£99.99", "ninety-nine pounds and ninety-nine pence"),
     ],
 )
-def test_convert_currency(input_text: str, expected: str) -> None:
+def test_convert_currency(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of currency strings to their spoken text representation.
     
@@ -107,7 +117,6 @@ def test_convert_currency(input_text: str, expected: str) -> None:
     assert result.lower() == expected.lower()
 
 
-# Test years
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -123,7 +132,7 @@ def test_convert_currency(input_text: str, expected: str) -> None:
         ("1950s", "nineteen fifties"),
     ],
 )
-def test_convert_years(input_text: str, expected: str) -> None:
+def test_convert_years(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of year strings to their spoken text representation.
     
@@ -141,7 +150,6 @@ def test_convert_years(input_text: str, expected: str) -> None:
     assert result.lower() == expected.lower()
 
 
-# Test decimal numbers
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -153,7 +161,7 @@ def test_convert_years(input_text: str, expected: str) -> None:
         ("0.333", "zero point three three three"),
     ],
 )
-def test_convert_decimal_numbers(input_text: str, expected: str) -> None:
+def test_convert_decimal_numbers(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of decimal numbers to their spoken text representation.
     
@@ -171,7 +179,6 @@ def test_convert_decimal_numbers(input_text: str, expected: str) -> None:
     assert result.lower() == expected.lower()
 
 
-# Test mixed text
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -195,7 +202,7 @@ def test_convert_decimal_numbers(input_text: str, expected: str) -> None:
         ("8^2 = 64", "eight to the power of two equals sixty-four"),
     ],
 )
-def test_convert_mixed_text(input_text: str, expected: str) -> None:
+def test_convert_mixed_text(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of mixed text containing various elements into spoken language.
     
@@ -214,7 +221,6 @@ def test_convert_mixed_text(input_text: str, expected: str) -> None:
     assert result.lower() == expected.lower()
 
 
-# Test special cases
 @pytest.mark.parametrize(
     "input_text, expected",
     [
@@ -227,7 +233,7 @@ def test_convert_mixed_text(input_text: str, expected: str) -> None:
         ("yeah", "ye'a"),
     ],
 )
-def test_convert_special_cases(input_text: str, expected: str) -> None:
+def test_convert_special_cases(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of special text cases to spoken language.
     
@@ -261,7 +267,7 @@ def test_convert_special_cases(input_text: str, expected: str) -> None:
         ("15/3 = 5", "fifteen over three equals five"),
     ],
 )
-def test_convert_mathematical_notation(input_text: str, expected: str) -> None:
+def test_convert_mathematical_notation(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of mathematical notation to spoken text.
     
