@@ -57,17 +57,17 @@ class ScrollingBlocks(Log):
         # for border and padding
         """
         Generates and writes a line of random block characters to the log.
-        
-        This method creates a string of random block characters with a length adjusted 
-        to fit the current widget width, accounting for border and padding. Each block 
+
+        This method creates a string of random block characters with a length adjusted
+        to fit the current widget width, accounting for border and padding. Each block
         is randomly selected from the predefined `BLOCKS` attribute.
-        
-        The generated line is written to the log using `write_line()`, creating a 
+
+        The generated line is written to the log using `write_line()`, creating a
         visually dynamic scrolling effect of random block characters.
-        
+
         Parameters:
             None
-        
+
         Returns:
             None
         """
@@ -77,10 +77,10 @@ class ScrollingBlocks(Log):
     def on_show(self) -> None:
         """
         Set up an interval timer to periodically animate scrolling blocks.
-        
+
         This method is called when the widget becomes visible, initiating a recurring animation
         that calls the `_animate_blocks` method at a fixed time interval of 0.18 seconds.
-        
+
         The interval timer ensures continuous block animation while the widget is displayed.
         """
         self.set_interval(0.18, self._animate_blocks)
@@ -139,9 +139,9 @@ class SplashScreen(Screen):
     def compose(self) -> ComposeResult:
         """
         Compose the layout for the splash screen.
-        
+
         This method defines the visual composition of the SplashScreen, creating a container with a logo, a banner, and a typewriter-style login text.
-        
+
         Returns:
             ComposeResult: A generator yielding the screen's UI components, including:
                 - A container with a static ANSI logo
@@ -156,12 +156,14 @@ class SplashScreen(Screen):
     def on_mount(self) -> None:
         """
         Automatically scroll the widget to its bottom at regular intervals.
-        
-        This method sets up a periodic timer to ensure the widget always displays the most recent content by scrolling to the end. The scrolling occurs every 0.5 seconds, providing a smooth and continuous view of the latest information.
-        
+
+        This method sets up a periodic timer to ensure the widget always displays
+        the most recent content by scrolling to the end. The scrolling occurs
+        every 0.5 seconds, providing a smooth and continuous view of the latest information.
+
         Args:
             None
-        
+
         Returns:
             None
         """
@@ -170,12 +172,12 @@ class SplashScreen(Screen):
     def on_key(self, event: events.Key) -> None:
         """
         Handle key press events on the splash screen.
-        
+
         This method is triggered when a key is pressed during the splash screen display.
-        If the 'q' key is pressed, it triggers the application quit action. 
-        Regardless of the key pressed, it dismisses the current splash screen 
+        If the 'q' key is pressed, it triggers the application quit action.
+        Regardless of the key pressed, it dismisses the current splash screen
         and starts the main GLADOS application.
-        
+
         Args:
             event (events.Key): The key event that was triggered.
         """
@@ -198,10 +200,10 @@ class HelpScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         """
         Compose the help screen's layout by creating a container with a typewriter widget.
-        
+
         This method generates the visual composition of the help screen, wrapping the help text
         in a Typewriter widget for an animated text display within a Container.
-        
+
         Returns:
             ComposeResult: A generator yielding the composed help screen container with animated text.
         """
@@ -242,7 +244,7 @@ class GladosUI(App):
     def compose(self) -> ComposeResult:
         """
         Compose the user interface layout for the GladosUI application.
-        
+
         This method generates the primary UI components, including a header, body with log and utility areas,
         a footer, and additional decorative blocks. The layout is structured to display:
         - A header with a clock
@@ -251,7 +253,7 @@ class GladosUI(App):
           - A utility area with a typewriter displaying a recipe
         - A footer
         - Additional decorative elements like scrolling blocks, text digits, and a logo
-        
+
         Returns:
             ComposeResult: A generator yielding Textual UI components for rendering
         """
@@ -280,14 +282,16 @@ class GladosUI(App):
     def on_load(self) -> None:
         """
         Configure logging settings when the application starts.
-        
-        This method is called during the application initialization, before the terminal enters app mode. It sets up a custom logging format and ensures that all log messages are printed.
-        
+
+        This method is called during the application initialization, before the
+        terminal enters app mode. It sets up a custom logging format and ensures
+        that all log messages are printed.
+
         Key actions:
             - Removes any existing log handlers
             - Adds a new log handler that prints messages with a detailed, formatted output
             - Enables capturing of log text by the main log widget
-        
+
         The log format includes:
             - Timestamp (YYYY-MM-DD HH:mm:ss.SSS)
             - Log level (padded to 8 characters)
@@ -305,11 +309,11 @@ class GladosUI(App):
     def on_mount(self) -> None:
         """
         Mount the application and display the initial splash screen.
-        
-        This method is called when the application is first mounted, pushing the SplashScreen 
-        onto the screen stack to provide a welcome or loading experience for the user before 
+
+        This method is called when the application is first mounted, pushing the SplashScreen
+        onto the screen stack to provide a welcome or loading experience for the user before
         transitioning to the main application interface.
-        
+
         Returns:
             None: Does not return any value, simply initializes the splash screen.
         """
@@ -328,13 +332,13 @@ class GladosUI(App):
     def action_quit(self) -> None:  # type: ignore
         """
         Quit the application and exit with a status code of 0.
-        
-        This method terminates the current Textual application instance, effectively closing the terminal user interface. 
-        
+
+        This method terminates the current Textual application instance, effectively closing the terminal user interface.
+
         Note:
             - The commented-out `self.glados.cancel()` suggests a potential future implementation for cancelling background tasks before exiting.
             - Uses `exit(0)` to indicate a successful, intentional application termination.
-        
+
         Raises:
             SystemExit: Exits the application with a zero status code.
         """
@@ -344,10 +348,10 @@ class GladosUI(App):
     def start_glados(self) -> None:
         """
         Start the GLaDOS worker thread in the background.
-        
-        This method initializes a worker thread to run the GLaDOS module's start function. 
+
+        This method initializes a worker thread to run the GLaDOS module's start function.
         The worker is run exclusively and in a separate thread to prevent blocking the main application.
-        
+
         Notes:
             - Uses `run_worker` to create a non-blocking background task
             - Sets the worker as an instance attribute for potential later reference

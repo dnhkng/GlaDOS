@@ -19,16 +19,16 @@ def _extract_windows(
 ) -> np.ndarray:
     """
     Extract overlapping, windowed frames from a padded audio signal.
-    
+
     Efficiently pre-allocates a matrix and applies a windowing function to each frame of the audio signal.
-    
+
     Parameters:
         audio_padded (np.ndarray): Padded input audio signal
         window (np.ndarray): Window function to apply to each frame
         n_fft (int): Number of FFT points defining the frame size
         hop_length (int): Number of samples between successive frames
         n_frames (int): Total number of frames to extract
-    
+
     Returns:
         np.ndarray: 2D array of shape (n_frames, n_fft) containing windowed audio frames
     """
@@ -57,7 +57,7 @@ class MelSpectrogramCalculator:
     ) -> None:
         """
         Initialize a Mel spectrogram calculator with configurable audio processing parameters.
-        
+
         Parameters:
             sr (int, optional): Sampling rate of the audio signal. Defaults to SAMPLE_RATE.
             n_mels (int, optional): Number of Mel frequency bands. Defaults to N_MELS.
@@ -67,7 +67,7 @@ class MelSpectrogramCalculator:
             fmin (float, optional): Minimum frequency for Mel filterbank. Defaults to 0.0 Hz.
             fmax (float | None, optional): Maximum frequency for Mel filterbank. Defaults to half the sampling rate.
             top_db (float, optional): Decibel threshold for limiting spectrogram dynamic range. Defaults to 80.0 dB.
-        
+
         Attributes:
             sr (int): Sampling rate of the audio signal.
             n_mels (int): Number of Mel frequency bands.
@@ -95,17 +95,19 @@ class MelSpectrogramCalculator:
     def _create_mel_filterbank(self, fmin: float, fmax: float) -> np.ndarray:
         """
         Create a Mel filterbank matrix for converting linear frequency spectra to Mel scale.
-        
-        This method generates a matrix of triangular filters that map linear frequency bins to Mel-scale bands. Each filter is a triangular window centered at a specific Mel frequency point, with weights that smoothly transition from zero to peak and back to zero.
-        
+
+        This method generates a matrix of triangular filters that map linear frequency bins to Mel-scale bands.
+        Each filter is a triangular window centered at a specific Mel frequency point, with weights that
+        smoothly transition from zero to peak and back to zero.
+
         Parameters:
             fmin (float): Minimum frequency in Hz for the Mel filterbank
             fmax (float): Maximum frequency in Hz for the Mel filterbank
-        
+
         Returns:
-            np.ndarray: A 2D matrix of shape (n_mels, n_fft//2 + 1) representing Mel filterbank weights, 
+            np.ndarray: A 2D matrix of shape (n_mels, n_fft//2 + 1) representing Mel filterbank weights,
                         where each row corresponds to a Mel band and each column represents a linear frequency bin.
-        
+
         Notes:
             - Converts linear frequencies to Mel scale using the formula: mel = 2595 * log10(1 + f/700)
             - Creates triangular filters with normalized weights
@@ -146,7 +148,7 @@ class MelSpectrogramCalculator:
     def compute(self, audio: np.ndarray) -> np.ndarray:
         """
         Compute the Mel spectrogram from an input audio signal.
-        
+
         This method efficiently transforms the input audio into a Mel spectrogram by performing
         the following steps:
         - Convert input to float32
@@ -156,14 +158,14 @@ class MelSpectrogramCalculator:
         - Calculate power spectrum
         - Apply Mel filterbank
         - Convert to decibel scale
-        
+
         Parameters:
             audio (np.ndarray): Input audio signal as a NumPy array
-        
+
         Returns:
-            np.ndarray: Mel spectrogram with values in decibel scale, 
+            np.ndarray: Mel spectrogram with values in decibel scale,
                         limited to a maximum of `top_db` below the peak
-        
+
         Notes:
             - Uses Numba-optimized window extraction
             - Applies reflection padding

@@ -8,7 +8,7 @@ import subprocess
 def is_uv_installed() -> bool:
     """
     Check if the UV tool is installed on the system.
-    
+
     Returns:
         bool: True if the 'uv' command is available in the system path, False otherwise.
     """
@@ -18,11 +18,11 @@ def is_uv_installed() -> bool:
 def install_uv() -> None:
     """
     Install the UV package management tool across different platforms.
-    
+
     This function checks if UV is already installed. If not, it performs the installation:
     - On Windows, it uses pip to install UV and then updates it
     - On other platforms, it uses a curl-based installation script from Astral.sh
-    
+
     Raises:
         subprocess.CalledProcessError: If the installation or update commands fail
     """
@@ -42,7 +42,7 @@ def install_uv() -> None:
 def main() -> None:
     """
     Set up the project development environment by installing UV, creating a virtual environment, and preparing the project for development.
-    
+
     This function performs the following steps:
     1. Changes the current working directory to the project root
     2. Installs the UV package management tool
@@ -50,9 +50,9 @@ def main() -> None:
     4. Detects CUDA availability
     5. Installs the project in editable mode with appropriate dependencies
     6. Downloads and verifies project model files
-    
+
     The function handles different platform-specific configurations and supports both CUDA and CPU-only installations.
-    
+
     Notes:
         - Requires UV package manager to be available
         - Assumes project is structured with a standard Python project layout
@@ -78,7 +78,7 @@ def main() -> None:
         has_cuda = subprocess.run(["nvcc", "--version"], capture_output=True, check=False).returncode == 0
     except FileNotFoundError:
         has_cuda = False
-    
+
     extras = "[cuda]" if has_cuda else "[cpu]"
 
     # Install project in editable mode

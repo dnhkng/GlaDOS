@@ -57,9 +57,10 @@ class PiperConfig:
     def from_dict(config: dict[str, Any]) -> "PiperConfig":
         """
         Create a PiperConfig instance from a configuration dictionary.
-        
-        This class method parses a configuration dictionary and constructs a PiperConfig object with specified parameters. It allows flexible configuration by providing default values for optional inference settings.
-        
+
+        This class method parses a configuration dictionary and constructs a PiperConfig object with specified
+        parameters. It allows flexible configuration by providing default values for optional inference settings.
+
         Parameters:
             config (dict[str, Any]): A dictionary containing configuration parameters for the text-to-speech model.
                 Required keys:
@@ -68,17 +69,17 @@ class PiperConfig:
                     - "audio": Dictionary containing "sample_rate"
                     - "espeak": Dictionary containing "voice"
                     - "phoneme_id_map": Mapping of phonemes to their corresponding IDs
-        
+
                 Optional keys:
                     - "inference": Dictionary with optional scaling parameters
                         - "noise_scale": Controls audio noise (default: 0.667)
                         - "length_scale": Controls speech duration (default: 1.0)
                         - "noise_w": Additional noise parameter (default: 0.8)
                     - "speaker_id_map": Mapping of speaker names to IDs (default: empty dictionary)
-        
+
         Returns:
             PiperConfig: A configured PiperConfig instance with the specified parameters.
-        
+
         Example:
             config = {
                 "num_symbols": 100,
@@ -144,16 +145,16 @@ class Synthesizer:
     def __init__(self, model_path: str = MODEL_PATH, speaker_id: int | None = None) -> None:
         """
         Initialize the text-to-speech synthesizer with a specified model and optional speaker configuration.
-        
+
         Parameters:
             model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
             speaker_id (int | None, optional): Identifier for the desired speaker voice. Defaults to None.
-        
+
         Raises:
             FileNotFoundError: If the configuration file cannot be found.
             ValueError: If the configuration file contains invalid JSON.
             RuntimeError: If an unexpected error occurs while reading the configuration file.
-        
+
         Notes:
             - Removes TensorRT execution provider from available providers to prevent potential compatibility issues.
             - Loads the ONNX model using the specified providers.
@@ -200,13 +201,13 @@ class Synthesizer:
     def _load_pickle(path: Path) -> dict[str, Any]:
         """
         Load a pickled dictionary from the specified file path.
-        
+
         Args:
             path (Path): The file path to the pickle file containing the dictionary.
-        
+
         Returns:
             dict[str, Any]: A dictionary loaded from the pickle file, ensuring type consistency.
-        
+
         Raises:
             FileNotFoundError: If the specified pickle file does not exist.
             PickleError: If there are issues during pickle deserialization.
@@ -217,13 +218,13 @@ class Synthesizer:
     def generate_speech_audio(self, text: str) -> NDArray[np.float32]:
         """
         Convert input text to synthesized speech audio.
-        
-        Converts the input text to phonemes using the internal phonemizer, then generates audio from those phonemes. 
+
+        Converts the input text to phonemes using the internal phonemizer, then generates audio from those phonemes.
         The result is returned as a NumPy array of 32-bit floating point audio samples.
-        
+
         Parameters:
             text (str): The text to be converted to speech
-        
+
         Returns:
             NDArray[np.float32]: An array of audio samples representing the synthesized speech
         """
@@ -234,16 +235,16 @@ class Synthesizer:
     def say_phonemes(self, phonemes: list[str]) -> NDArray[np.float32]:
         """
         Convert a list of phoneme sentences to synthesized audio.
-        
+
         Generates audio for each phoneme sentence and concatenates the results into a single audio array.
-        
+
         Parameters:
             phonemes (list[str]): A list of phoneme sentences to convert to speech.
-        
+
         Returns:
             NDArray[np.float32]: A numpy array containing the synthesized audio, with each sentence concatenated.
             Returns an empty float32 numpy array if no audio could be generated.
-        
+
         Notes:
             - Processes each phoneme sentence individually using _say_phonemes()
             - Concatenates audio chunks along the time axis
@@ -261,17 +262,17 @@ class Synthesizer:
     def _phonemizer(self, input_text: str) -> list[str]:
         """
         Convert input text to phonemes using espeak-ng phonemization.
-        
+
         This method transforms plain text into a sequence of phonetic representations
         using the English (US) phoneme set. It leverages the pre-configured phonemizer
         to break down text into its constituent phonetic components.
-        
+
         Parameters:
             input_text (str): The text to be converted into phonemes.
-        
+
         Returns:
             list[str]: A list of phoneme strings representing the input text's pronunciation.
-        
+
         Example:
             phonemes = synthesizer._phonemizer("Hello world")
             # Might return something like ['hh', 'AH0', 'l', 'oW1', 'r', 'AO1', 'l', 'd']
@@ -283,19 +284,19 @@ class Synthesizer:
     def _phonemes_to_ids(self, phonemes: str) -> list[int]:
         """
         Convert a sequence of phonemes to their corresponding integer IDs.
-        
+
         This method transforms phonemes into a list of integer identifiers used by the text-to-speech model. It handles the conversion by:
         - Starting with the beginning-of-sentence (BOS) marker
         - Mapping each valid phoneme to its corresponding ID
         - Adding padding between phonemes
         - Appending the end-of-sentence (EOS) marker
-        
+
         Parameters:
             phonemes (str): A string of phonemes to convert
-        
+
         Returns:
             list[int]: A list of integer IDs representing the input phonemes, including sentence boundary markers and padding
-        
+
         Notes:
             - Skips phonemes not found in the ID mapping
             - Adds padding between each valid phoneme
@@ -323,21 +324,21 @@ class Synthesizer:
     ) -> NDArray[np.float32]:
         """
         Synthesize raw audio from phoneme IDs using the VITS model.
-        
+
         Converts a sequence of phoneme IDs into audio using the pre-trained ONNX model, with optional control over audio generation parameters.
-        
+
         Parameters:
             phoneme_ids (list[int]): A list of integer phoneme identifiers to be converted to audio.
-            length_scale (float, optional): Controls the duration of generated audio. 
+            length_scale (float, optional): Controls the duration of generated audio.
                 Defaults to the configuration's default length scale.
-            noise_scale (float, optional): Controls the randomness of audio generation. 
+            noise_scale (float, optional): Controls the randomness of audio generation.
                 Defaults to the configuration's default noise scale.
-            noise_w (float, optional): Controls the variance of audio generation. 
+            noise_w (float, optional): Controls the variance of audio generation.
                 Defaults to the configuration's default noise width.
-        
+
         Returns:
             NDArray[np.float32]: A numpy array containing the synthesized audio waveform.
-        
+
         Notes:
             - Uses ONNX runtime for efficient audio synthesis
             - Supports optional speaker ID for voice-specific generation
@@ -381,15 +382,15 @@ class Synthesizer:
     def _say_phonemes(self, phonemes: str) -> NDArray[np.float32]:
         """
         Convert a string of phonemes to synthesized audio.
-        
+
         This method transforms phonemes into their corresponding numeric IDs and then generates raw audio using the VITS model.
-        
+
         Parameters:
             phonemes (str): A string containing phonemes to be synthesized into speech.
-        
+
         Returns:
             NDArray[np.float32]: A NumPy array representing the synthesized audio waveform.
-        
+
         Example:
             synthesizer = Synthesizer()
             audio = synthesizer._say_phonemes("h ɛ l oʊ")  # Generates audio for "hello"

@@ -50,10 +50,10 @@ class Punctuation(Enum):
     def get_punc_pattern(cls) -> re.Pattern[str]:
         """
         Compile a regular expression pattern to match punctuation and space characters.
-        
+
         Returns:
             re.Pattern[str]: A compiled regex pattern that matches any punctuation or space character.
-        
+
         Example:
             pattern = Punctuation.get_punc_pattern()
             # Matches single punctuation or space characters
@@ -122,11 +122,11 @@ class Phonemizer:
     def __init__(self, config: ModelConfig | None = None) -> None:
         """
         Initialize a Phonemizer instance with optional configuration.
-        
+
         Parameters:
-            config (ModelConfig, optional): Configuration settings for the phonemizer. 
+            config (ModelConfig, optional): Configuration settings for the phonemizer.
                 If not provided, a default ModelConfig will be used.
-        
+
         Attributes:
             config (ModelConfig): Configuration for the phonemizer.
             phoneme_dict (dict[str, str]): Dictionary mapping words to their phonetic representations.
@@ -134,7 +134,7 @@ class Phonemizer:
             idx_to_token (dict): Mapping of indices back to tokens.
             ort_session (InferenceSession): ONNX runtime session for model inference.
             special_tokens (set[str]): Set of special tokens used in phonemization.
-        
+
         Notes:
             - Adds a special phoneme entry for "glados"
             - Configures ONNX runtime session with available providers, excluding TensorRT
@@ -169,13 +169,13 @@ class Phonemizer:
     def _load_pickle(path: Path) -> dict[str, Any]:
         """
         Load a pickled dictionary from the specified file path.
-        
+
         Parameters:
             path (Path): The file path to the pickled dictionary file.
-        
+
         Returns:
             dict[str, Any]: The loaded dictionary containing key-value pairs.
-        
+
         Raises:
             FileNotFoundError: If the specified file path does not exist.
             pickle.UnpicklingError: If there are issues unpickling the file.
@@ -187,15 +187,16 @@ class Phonemizer:
     def _unique_consecutive(arr: list[NDArray[np.int64]]) -> list[NDArray[np.int64]]:
         """
         Remove consecutive duplicate elements from each array in the input list.
-        
-        This method is analogous to PyTorch's `unique_consecutive` function, but implemented for NumPy arrays. It filters out repeated adjacent elements, keeping only the first occurrence of consecutive duplicates.
-        
+
+        This method is analogous to PyTorch's `unique_consecutive` function, but implemented for NumPy arrays.
+        It filters out repeated adjacent elements, keeping only the first occurrence of consecutive duplicates.
+
         Args:
             arr (list[NDArray[np.int64]]): A list of NumPy integer arrays to process.
-        
+
         Returns:
             list[NDArray[np.int64]]: A list of arrays with consecutive duplicates removed.
-        
+
         Example:
             Input: [[1, 1, 2, 2, 3, 3, 3]]
             Output: [[1, 2, 3]]
@@ -215,11 +216,11 @@ class Phonemizer:
     def _remove_padding(arr: list[NDArray[np.int64]], padding_value: int = 0) -> list[NDArray[np.int64]]:
         """
         Remove padding values from input arrays.
-        
+
         Parameters:
             arr (list[NDArray[np.int64]]): A list of numpy arrays containing integer values
             padding_value (int, optional): The value to be considered as padding. Defaults to 0.
-        
+
         Returns:
             list[NDArray[np.int64]]: A list of numpy arrays with padding values removed
         """
@@ -229,19 +230,19 @@ class Phonemizer:
     def _trim_to_stop(arr: list[NDArray[np.int64]], end_index: int = 2) -> list[NDArray[np.int64]]:
         """
         Trims each input array to the first occurrence of a specified stop index.
-        
+
         This method searches for the first occurrence of the specified end index in each input array
         and truncates the array up to and including that index. If no such index is found, the original
         array is returned unchanged.
-        
+
         Parameters:
             arr (list[NDArray[np.int64]]): List of numpy integer arrays to be trimmed.
             end_index (int, optional): The index value used as a stopping point. Defaults to 2.
-        
+
         Returns:
             list[NDArray[np.int64]]: A list of trimmed numpy arrays, where each array is cut off
             at the first occurrence of the end_index (inclusive).
-        
+
         Example:
             Input: [[1, 2, 3, 4], [5, 2, 6, 7]]
             With end_index=2
@@ -259,16 +260,16 @@ class Phonemizer:
     def _process_model_output(self, arr: list[NDArray[np.int64]]) -> list[NDArray[np.int64]]:
         """
         Process the ONNX model's output to extract phoneme indices with post-processing.
-        
+
         This method transforms raw model output into a clean sequence of phoneme indices by applying several filtering techniques:
         1. Converts model probabilities to index selections using argmax
         2. Removes consecutive duplicate indices
         3. Removes padding tokens
         4. Trims the sequence to the stop token
-        
+
         Args:
             arr (list[NDArray[np.int64]]): Raw model output containing phoneme probability distributions.
-        
+
         Returns:
             list[NDArray[np.int64]]: Processed phoneme indices with duplicates, padding, and excess tokens removed.
         """
@@ -284,17 +285,17 @@ class Phonemizer:
     def _expand_acronym(word: str) -> str:
         """
         Expands an acronym into its subwords, with current implementation preserving the original acronym.
-        
+
         This method handles acronyms by maintaining their original form. Currently, it performs two key checks:
         - If the word contains a hyphen, it returns the word unchanged
         - For other acronyms, it returns the word as-is
-        
+
         Parameters:
             word (str): The input word potentially representing an acronym
-        
+
         Returns:
             str: The processed word, which remains unchanged for acronyms
-        
+
         Notes:
             - Designed to work with true acronyms
             - Mixed case acronym handling is delegated to SpokenTextConverter
@@ -309,19 +310,19 @@ class Phonemizer:
     def encode(self, sentence: Iterable[str]) -> list[int]:
         """
         Converts a sequence of symbols into a sequence of token indices with special start and end tokens.
-        
+
         This method prepares input for phoneme conversion by:
         1. Repeating each input symbol based on the configured character repeat setting
         2. Converting symbols to lowercase
         3. Mapping symbols to their corresponding token indices
         4. Adding special start and end tokens to the sequence
-        
+
         Parameters:
             sentence (Iterable[str]): A sequence of symbols (characters or words) to be encoded.
-        
+
         Returns:
             list[int]: A sequence of token indices representing the input, including start and end special tokens.
-        
+
         Example:
             # Assuming token_to_idx maps 'h' to 10, 'i' to 15, with START at 1 and END at 2
             phonemizer.encode(['hi'])  # Returns [1, 10, 15, 2]
@@ -334,15 +335,16 @@ class Phonemizer:
     def decode(self, sequence: NDArray[np.int64]) -> str:
         """
         Converts a sequence of token indices back to a human-readable string of symbols.
-        
-        This method decodes a numpy array of integer indices into their corresponding token representations, filtering out special tokens to produce a clean output string.
-        
+
+        This method decodes a numpy array of integer indices into their corresponding token representations,
+        filtering out special tokens to produce a clean output string.
+
         Args:
             sequence (NDArray[np.int64]): A numpy array of integer indices representing encoded tokens.
-        
+
         Returns:
             str: A decoded string containing only meaningful tokens, with special tokens removed.
-        
+
         Example:
             # Assuming self.idx_to_token maps indices to tokens
             decoded_text = phonemizer.decode(np.array([5, 10, 3, 1]))  # Returns a string of decoded tokens
@@ -361,17 +363,17 @@ class Phonemizer:
     def pad_sequence_fixed(v: list[list[int]], target_length: int) -> NDArray[np.int64]:
         """
         Pad or truncate a list of integer sequences to a fixed length.
-        
+
         This method ensures all input sequences have a uniform length by either:
         - Truncating sequences longer than the target length
         - Padding sequences shorter than the target length with zeros
-        
+
         Parameters:
             v (list[list[int]]): A list of integer sequences to be padded/truncated
             target_length (int): The desired uniform length for all sequences
-        
+
         Returns:
-            NDArray[np.int64]: A 2D numpy array with sequences of uniform length, 
+            NDArray[np.int64]: A 2D numpy array with sequences of uniform length,
             where each row represents a padded/truncated sequence
         """
 
@@ -386,15 +388,17 @@ class Phonemizer:
     def _get_dict_entry(self, word: str, punc_set: set[str]) -> str | None:
         """
         Retrieves the phoneme entry for a given word from the phoneme dictionary.
-        
-        This method handles different word variations by checking the dictionary with original, lowercase, and title-cased versions of the word. It also handles punctuation and empty strings as special cases.
-        
+
+        This method handles different word variations by checking the dictionary with original, lowercase, and
+        title-cased versions of the word. It also handles punctuation and empty strings as special cases.
+
         Args:
             word (str): The word to look up in the phoneme dictionary.
             punc_set (set[str]): A set of punctuation characters.
-        
+
         Returns:
-            str | None: The phoneme entry for the word if found, the word itself if it's a punctuation or empty string, or None if no entry exists.
+            str | None: The phoneme entry for the word if found, the word itself if it's a punctuation or
+            empty string, or None if no entry exists.
         """
         if word in punc_set or len(word) == 0:
             return word
@@ -417,16 +421,16 @@ class Phonemizer:
     ) -> str:
         """
         Get the phonemes for a given word, handling dictionary lookup and subword processing.
-        
+
         Parameters:
             word (str): The word to retrieve phonemes for.
             word_phonemes (dict[str, str | None]): A dictionary mapping words to their phoneme representations.
             word_splits (dict[str, list[str]]): A dictionary mapping words to their subword splits.
-        
+
         Returns:
             str: The phoneme representation of the word. If the word is not directly in the dictionary,
                  it attempts to construct phonemes from its subwords, filtering out any None values.
-        
+
         Raises:
             KeyError: If the word is not found in either the word_phonemes or word_splits dictionaries.
         """
@@ -442,15 +446,15 @@ class Phonemizer:
     ) -> tuple[list[list[str]], set[str]]:
         """
         Clean and split input texts into words while preserving specified punctuation.
-        
+
         This method performs text preprocessing by removing non-alphanumeric characters (except specified punctuation),
         splitting the text into words, and collecting unique cleaned words.
-        
+
         Parameters:
             texts (list[str]): List of input text strings to be cleaned and split.
             punc_set (set[str]): Set of punctuation characters to preserve during cleaning.
             punc_pattern (re.Pattern[str]): Regular expression pattern for splitting text.
-        
+
         Returns:
             tuple[list[list[str]], set[str]]: A tuple containing:
                 - A list of lists, where each inner list represents words from a corresponding input text
@@ -467,27 +471,27 @@ class Phonemizer:
     def convert_to_phonemes(self, texts: list[str], lang: str = "en_us") -> list[str]:
         """
         Converts a list of texts to phonemes using a phonemizer.
-        
+
         This method processes input texts through several stages:
         1. Preprocess and clean input texts
         2. Collect phonemes from an existing dictionary
         3. Split words that are not in the dictionary
         4. Predict phonemes for missing words using an ONNX model
         5. Reconstruct phonemes for each input text
-        
+
         Parameters:
             texts (list[str]): A list of text strings to convert to phonemes.
             lang (str, optional): Language of the texts. Defaults to "en_us".
-        
+
         Returns:
             list[str]: A list of phoneme representations corresponding to the input texts.
-        
+
         Notes:
             - Handles punctuation and special characters
             - Supports acronym expansion
             - Uses a pre-trained ONNX model for phoneme prediction
             - Supports multiple input texts simultaneously
-        
+
         Example:
             phonemizer = Phonemizer()
             texts = ["Hello world", "OpenAI"]

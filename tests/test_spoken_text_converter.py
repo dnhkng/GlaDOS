@@ -7,9 +7,11 @@ years, decimal numbers, mixed text, special cases, and mathematical notation.
 Each test function uses parameterized test cases to verify the accurate
 conversion of text into its spoken form.
 """
+
 # ruff: noqa: RUF001
+from collections.abc import Generator
+
 import pytest
-from typing import Generator
 
 from glados.utils.spoken_text_converter import SpokenTextConverter
 
@@ -34,14 +36,14 @@ def converter() -> Generator[SpokenTextConverter, None, None]:
 def test_convert_percentages(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of percentage strings to their spoken equivalents.
-    
-    This test function verifies that the `_convert_percentages` method of the SpokenTextConverter 
+
+    This test function verifies that the `_convert_percentages` method of the SpokenTextConverter
     correctly transforms percentage representations into their spoken word format.
-    
+
     Parameters:
         input_text (str): The percentage string to be converted (e.g., '50%', '25.5%')
         expected (str): The expected spoken representation of the percentage
-    
+
     Raises:
         AssertionError: If the converted percentage does not match the expected spoken text
     """
@@ -66,14 +68,14 @@ def test_convert_percentages(converter: SpokenTextConverter, input_text: str, ex
 def test_convert_times(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of time strings to their spoken equivalents.
-    
+
     This test function verifies that the SpokenTextConverter correctly transforms
     various time representations into their spoken language format.
-    
+
     Parameters:
         input_text (str): A time string to be converted (e.g., '3:45 PM', '14:30')
         expected (str): The expected spoken representation of the time
-    
+
     Raises:
         AssertionError: If the converted time does not match the expected spoken text
     """
@@ -101,15 +103,15 @@ def test_convert_times(converter: SpokenTextConverter, input_text: str, expected
 def test_convert_currency(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of currency strings to their spoken text representation.
-    
+
     This test function verifies that the SpokenTextConverter correctly transforms
     currency strings into their spoken language equivalents. It uses parametrized
     inputs to cover various currency formats and symbols.
-    
+
     Parameters:
         input_text (str): A currency string to be converted (e.g., "$10.50", "€100")
         expected (str): The expected spoken text representation of the currency
-    
+
     Raises:
         AssertionError: If the converted text does not match the expected spoken form
     """
@@ -135,14 +137,14 @@ def test_convert_currency(converter: SpokenTextConverter, input_text: str, expec
 def test_convert_years(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of year strings to their spoken text representation.
-    
+
     This test function verifies that the SpokenTextConverter correctly transforms
     various year formats into their spoken language equivalents.
-    
+
     Parameters:
         input_text (str): The input year string to be converted
         expected (str): The expected spoken text representation of the year
-    
+
     Raises:
         AssertionError: If the converted text does not match the expected spoken form
     """
@@ -164,14 +166,14 @@ def test_convert_years(converter: SpokenTextConverter, input_text: str, expected
 def test_convert_decimal_numbers(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of decimal numbers to their spoken text representation.
-    
+
     This test function verifies that the SpokenTextConverter correctly transforms decimal number strings
     into their corresponding spoken language equivalents.
-    
+
     Parameters:
         input_text (str): The decimal number string to be converted
         expected (str): The expected spoken text representation of the decimal number
-    
+
     Raises:
         AssertionError: If the converted text does not match the expected spoken form
     """
@@ -205,15 +207,15 @@ def test_convert_decimal_numbers(converter: SpokenTextConverter, input_text: str
 def test_convert_mixed_text(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of mixed text containing various elements into spoken language.
-    
+
     This test function verifies that the SpokenTextConverter can correctly convert a text string
     containing multiple types of elements (such as times, dates, currency, numbers) into their
     spoken equivalents.
-    
+
     Parameters:
         input_text (str): The input text containing mixed elements to be converted
         expected (str): The expected spoken representation of the input text
-    
+
     Raises:
         AssertionError: If the converted text does not match the expected spoken representation
     """
@@ -236,15 +238,15 @@ def test_convert_mixed_text(converter: SpokenTextConverter, input_text: str, exp
 def test_convert_special_cases(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of special text cases to spoken language.
-    
-    This parameterized test function verifies the conversion of special text cases 
-    such as titles, formatted numbers, and other unique text patterns into their 
+
+    This parameterized test function verifies the conversion of special text cases
+    such as titles, formatted numbers, and other unique text patterns into their
     spoken equivalents using the SpokenTextConverter.
-    
+
     Parameters:
         input_text (str): The input text containing special cases to be converted
         expected (str): The expected spoken language representation of the input text
-    
+
     Raises:
         AssertionError: If the converted text does not match the expected spoken form
     """
@@ -270,16 +272,16 @@ def test_convert_special_cases(converter: SpokenTextConverter, input_text: str, 
 def test_convert_mathematical_notation(converter: SpokenTextConverter, input_text: str, expected: str) -> None:
     """
     Test the conversion of mathematical notation to spoken text.
-    
-    This parameterized test function verifies that mathematical expressions are correctly 
+
+    This parameterized test function verifies that mathematical expressions are correctly
     converted to their spoken equivalents using the SpokenTextConverter.
-    
+
     Parameters:
         input_text (str): A mathematical expression or notation to be converted
         expected (str): The expected spoken representation of the mathematical expression
-    
+
     Raises:
-        AssertionError: If the converted text does not match the expected spoken text 
+        AssertionError: If the converted text does not match the expected spoken text
         (case-insensitive comparison)
     """
     result = converter.text_to_spoken(input_text)

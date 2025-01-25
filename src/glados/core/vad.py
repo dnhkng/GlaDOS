@@ -16,12 +16,12 @@ class VAD:
     def __init__(self, model_path: str = VAD_MODEL, window_size_samples: int = int(SAMPLE_RATE / 10)) -> None:
         """
         Initialize a Voice Activity Detection (VAD) model with an ONNX runtime inference session.
-        
+
         Parameters:
             model_path (str, optional): Path to the ONNX VAD model. Defaults to VAD_MODEL.
-            window_size_samples (int, optional): Size of audio chunks to process. 
+            window_size_samples (int, optional): Size of audio chunks to process.
                 Defaults to 1/10th of the sample rate (1600 samples).
-        
+
         Notes:
             - Configures ONNX runtime providers, excluding TensorrtExecutionProvider
             - Sets up inference session with the specified model
@@ -44,8 +44,8 @@ class VAD:
     def reset(self) -> None:
         """
         Reset the hidden and cell states of the Voice Activity Detection (VAD) model to their initial values.
-        
-        This method restores the internal LSTM states to their original configuration, effectively clearing any previous 
+
+        This method restores the internal LSTM states to their original configuration, effectively clearing any previous
         processing context and preparing the model for a new audio sequence.
         """
         self._h = self._initial_h
@@ -54,15 +54,16 @@ class VAD:
     def process_chunk(self, chunk: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Process an audio chunk using the Voice Activity Detection (VAD) ONNX model.
-        
-        Prepares the input audio chunk for inference by expanding its dimensions and running the ONNX model with the current hidden and cell states. Updates the internal hidden and cell states after processing.
-        
+
+        Prepares the input audio chunk for inference by expanding its dimensions and running the ONNX model with
+        the current hidden and cell states. Updates the internal hidden and cell states after processing.
+
         Parameters:
             chunk (NDArray[np.float32]): A single audio chunk of float32 values to be processed by the VAD model.
-        
+
         Returns:
             NDArray[np.float32]: Processed output from the VAD model after removing singleton dimensions.
-        
+
         Notes:
             - The method modifies the internal hidden state (`_h`) and cell state (`_c`) of the VAD model.
             - Assumes the input chunk is a single-dimensional NumPy array of float32 values.
@@ -81,17 +82,17 @@ class VAD:
     def process_file(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Process an entire audio file for Voice Activity Detection (VAD) using sliding window inference.
-        
+
         This method processes the input audio in fixed-size chunks, running the ONNX model on each chunk
-        and tracking the hidden and cell states across the entire sequence. It breaks processing if a 
+        and tracking the hidden and cell states across the entire sequence. It breaks processing if a
         final incomplete chunk is encountered.
-        
+
         Parameters:
             audio (NDArray[np.float32]): Input audio time series data as a 1D NumPy float32 array.
-        
+
         Returns:
             NDArray[np.float32]: Processed VAD results for each audio chunk, stacked as a 2D array.
-        
+
         Notes:
             - Resets internal model states before processing
             - Uses a sliding window of size `window_size_samples`

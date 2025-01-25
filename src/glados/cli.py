@@ -30,23 +30,23 @@ assert MODEL_CHECKSUMS.keys() == MODEL_URLS.keys()
 def verify_checksums() -> dict[str, bool]:
     """
     Verify the integrity of model files by comparing their SHA-256 checksums against expected values.
-    
-    This function checks each model file specified in MODEL_CHECKSUMS to ensure it exists 
-    and has the correct checksum. Files that are missing or have incorrect checksums are 
+
+    This function checks each model file specified in MODEL_CHECKSUMS to ensure it exists
+    and has the correct checksum. Files that are missing or have incorrect checksums are
     marked as invalid.
-    
+
     Parameters:
         None
-    
+
     Returns:
-        dict[str, bool]: A dictionary where keys are model file paths and values are 
-                         boolean indicators of checksum validity (True if valid, False if 
+        dict[str, bool]: A dictionary where keys are model file paths and values are
+                         boolean indicators of checksum validity (True if valid, False if
                          missing or checksum mismatch)
-    
+
     Example:
         >>> verify_checksums()
         {
-            'models/tts_model.pth': True, 
+            'models/tts_model.pth': True,
             'models/asr_model.bin': False
         }
     """
@@ -95,8 +95,8 @@ def download_models() -> None:
         >>> from glados.cli import download_models
         >>> download_models()  # Downloads all required models with progress tracking
     """
-    from time import sleep
     import sys
+    from time import sleep
     from typing import BinaryIO
 
     def calculate_sha256(file: BinaryIO) -> str:
@@ -152,18 +152,18 @@ def download_models() -> None:
                 print(f"\nSuccessfully downloaded {path.name}")
                 return
 
-            except (requests.RequestException, IOError, ValueError) as e:
+            except (OSError, requests.RequestException, ValueError) as e:
                 retry_count += 1
                 if temp_path.exists():
                     temp_path.unlink()
-                
+
                 if retry_count < max_retries:
-                    wait_time = 2 ** retry_count  # Exponential backoff
-                    print(f"\nError downloading {path.name}: {str(e)}")
+                    wait_time = 2**retry_count  # Exponential backoff
+                    print(f"\nError downloading {path.name}: {e!s}")
                     print(f"Retrying in {wait_time} seconds... (Attempt {retry_count + 1}/{max_retries})")
                     sleep(wait_time)
                 else:
-                    print(f"\nFailed to download {path.name} after {max_retries} attempts: {str(e)}")
+                    print(f"\nFailed to download {path.name} after {max_retries} attempts: {e!s}")
                     raise
 
     # Download each model file
@@ -173,25 +173,25 @@ def download_models() -> None:
             try:
                 download_with_progress(MODEL_URLS[path], Path(path), MODEL_CHECKSUMS[path])
             except Exception as e:
-                print(f"Error: Failed to download {path}: {str(e)}")
+                print(f"Error: Failed to download {path}: {e!s}")
                 sys.exit(1)
 
 
 def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
     """
     Converts text to speech using the GLaDOS text-to-speech system and plays the generated audio.
-    
+
     Parameters:
         text (str): The text to be spoken by the GLaDOS voice assistant.
-        config_path (str | Path, optional): Path to the configuration YAML file. 
+        config_path (str | Path, optional): Path to the configuration YAML file.
             Defaults to "glados_config.yaml".
-    
+
     Notes:
         - Uses a text-to-speech synthesizer to generate audio
         - Converts input text to a spoken format before synthesis
         - Plays the generated audio using the system's default sound device
         - Blocks execution until audio playback is complete
-    
+
     Example:
         say("Hello, world!")  # Speaks the text using GLaDOS voice
     """
@@ -209,18 +209,18 @@ def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
 def start(config_path: str | Path = "glados_config.yaml") -> None:
     """
     Start the GLaDOS voice assistant and initialize its listening event loop.
-    
+
     This function loads the GLaDOS configuration from a YAML file, creates a GLaDOS instance,
     and begins the continuous listening process for voice interactions.
-    
+
     Parameters:
         config_path (str | Path, optional): Path to the configuration YAML file.
             Defaults to "glados_config.yaml" in the current directory.
-    
+
     Raises:
         FileNotFoundError: If the specified configuration file cannot be found.
         ValueError: If the configuration file is invalid or cannot be parsed.
-    
+
     Example:
         start()  # Uses default configuration file
         start("/path/to/custom/config.yaml")  # Uses a custom configuration file
@@ -233,11 +233,11 @@ def start(config_path: str | Path = "glados_config.yaml") -> None:
 def models_valid() -> bool:
     """
     Check the validity of all model files for the GLaDOS voice assistant.
-    
+
     Verifies the integrity of model files by computing their checksums and comparing them against expected values.
-    
+
     Returns:
-        bool: True if all model files are valid and present, False otherwise. When False, prints a message 
+        bool: True if all model files are valid and present, False otherwise. When False, prints a message
               instructing the user to download the required model files.
     """
     results = verify_checksums()
@@ -250,19 +250,19 @@ def models_valid() -> bool:
 def main() -> None:
     """
     Command-line interface (CLI) entry point for the GLaDOS voice assistant.
-    
+
     Provides three primary commands:
     - 'download': Download required model files
     - 'start': Launch the GLaDOS voice assistant
     - 'say': Generate speech from input text
-    
+
     The function sets up argument parsing with optional configuration file paths and handles
     command execution based on user input. If no command is specified, it defaults to starting
     the assistant.
-    
+
     Optional Arguments:
         --config (str): Path to configuration file, defaults to 'glados_config.yaml'
-    
+
     Raises:
         SystemExit: If invalid arguments are provided
     """

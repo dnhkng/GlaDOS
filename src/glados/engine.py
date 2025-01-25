@@ -59,22 +59,23 @@ class GladosConfig:
     def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)) -> "GladosConfig":
         """
         Load a GladosConfig instance from a YAML configuration file.
-        
-        This method reads a YAML configuration file and creates a GladosConfig object, with optional nested key traversal and robust encoding handling.
-        
+
+        This method reads a YAML configuration file and creates a GladosConfig object, with optional
+        nested key traversal and robust encoding handling.
+
         Parameters:
             path (str): Path to the YAML configuration file.
-            key_to_config (Sequence[str] | None, optional): Sequence of keys to navigate nested configuration. 
+            key_to_config (Sequence[str] | None, optional): Sequence of keys to navigate nested configuration.
                 Defaults to ("Glados",), which retrieves the configuration under the "Glados" key.
-        
+
         Returns:
             GladosConfig: A configuration object instantiated with settings from the YAML file.
-        
+
         Raises:
             KeyError: If the specified nested keys do not exist in the configuration.
             yaml.YAMLError: If the YAML file cannot be parsed.
             IOError: If the configuration file cannot be read.
-        
+
         Example:
             config = GladosConfig.from_yaml('config.yaml')
             config = GladosConfig.from_yaml('config.yaml', key_to_config=('Assistants', 'Glados'))
@@ -112,12 +113,12 @@ class Glados:
     ) -> None:
         """
         Initialize the Glados voice assistant with configuration parameters.
-        
+
         This method sets up the voice recognition system, including voice activity detection (VAD),
         automatic speech recognition (ASR), text-to-speech (TTS), and language model processing.
-        The initialization configures various components and starts background threads for 
+        The initialization configures various components and starts background threads for
         processing LLM responses and TTS output.
-        
+
         Args:
             voice_model (str): Path to the voice model for text-to-speech synthesis.
             speaker_id (int | None): Identifier for the specific speaker voice, if applicable.
@@ -125,11 +126,11 @@ class Glados:
             model (str): Identifier for the language model being used.
             api_key (str | None, optional): Authentication key for the language model API. Defaults to None.
             wake_word (str | None, optional): Activation word to trigger voice assistant. Defaults to None.
-            personality_preprompt (list[dict[str, str]], optional): Initial context or personality 
+            personality_preprompt (list[dict[str, str]], optional): Initial context or personality
                 configuration for the language model. Defaults to DEFAULT_PERSONALITY_PREPROMPT.
-            announcement (str | None, optional): Initial announcement to be spoken upon initialization. 
+            announcement (str | None, optional): Initial announcement to be spoken upon initialization.
                 Defaults to None.
-            interruptible (bool, optional): Whether the assistant's speech can be interrupted. 
+            interruptible (bool, optional): Whether the assistant's speech can be interrupted.
                 Defaults to True.
         """
         self.completion_url = completion_url
@@ -185,19 +186,19 @@ class Glados:
         ) -> None:
             """
             Callback function for processing audio input from a sounddevice input stream.
-            
+
             This method is responsible for handling incoming audio samples, performing voice activity detection (VAD),
             and queuing the processed audio data for further analysis.
-            
+
             Parameters:
                 indata (np.ndarray): Input audio data from the sounddevice stream
                 frames (int): Number of audio frames in the current chunk
                 time (sd.CallbackStop): Timing information for the audio callback
                 status (CallbackFlags): Status flags for the audio callback
-            
+
             Returns:
                 None
-            
+
             Notes:
                 - Copies and squeezes the input data to ensure single-channel processing
                 - Applies voice activity detection to determine speech presence
@@ -219,7 +220,7 @@ class Glados:
     def messages(self) -> list[dict[str, str]]:
         """
         Retrieve the current list of conversation messages.
-        
+
         Returns:
             list[dict[str, str]]: A list of message dictionaries representing the conversation history.
         """
@@ -229,12 +230,13 @@ class Glados:
     def from_config(cls, config: GladosConfig) -> "Glados":
         """
         Create a Glados instance from a GladosConfig configuration object.
-        
-        This class method transforms the configuration data from a GladosConfig object into the required format for initializing a Glados instance, specifically reformatting the personality preprompt.
-        
+
+        This class method transforms the configuration data from a GladosConfig object into therequired
+        format for initializing a Glados instance, specifically reformatting the personality preprompt.
+
         Parameters:
             config (GladosConfig): Configuration object containing Glados initialization parameters
-        
+
         Returns:
             Glados: A new Glados instance configured with the provided settings
         """
@@ -258,13 +260,13 @@ class Glados:
     def from_yaml(cls, path: str) -> "Glados":
         """
         Create a Glados instance from a configuration file.
-        
+
         Parameters:
             path (str): Path to the YAML configuration file containing Glados settings.
-        
+
         Returns:
             Glados: A new Glados instance configured with settings from the specified YAML file.
-        
+
         Example:
             glados = Glados.from_yaml('config/default.yaml')
         """
@@ -273,11 +275,11 @@ class Glados:
     def start_listen_event_loop(self) -> None:
         """
         Start the voice assistant's listening event loop, continuously processing audio input.
-        
-        This method initializes the audio input stream and enters an infinite loop to handle incoming audio samples. 
-        The loop retrieves audio samples and their voice activity detection (VAD) confidence from a queue and processes 
+
+        This method initializes the audio input stream and enters an infinite loop to handle incoming audio samples.
+        The loop retrieves audio samples and their voice activity detection (VAD) confidence from a queue and processes
         each sample using the `_handle_audio_sample` method.
-        
+
         Behavior:
         - Starts the audio input stream
         - Logs successful initialization of audio modules
@@ -285,7 +287,7 @@ class Glados:
         - Retrieves audio samples from a queue
         - Processes each audio sample with VAD confidence
         - Handles keyboard interrupts by stopping the input stream and setting a shutdown event
-        
+
         Raises:
             KeyboardInterrupt: Allows graceful termination of the listening loop
         """
@@ -322,15 +324,15 @@ class Glados:
     def _manage_pre_activation_buffer(self, sample: np.ndarray, vad_confidence: bool) -> None:
         """
         Manages the pre-activation audio buffer and handles voice activity detection.
-        
-        This method maintains a circular buffer of audio samples before voice activation, 
-        discarding the oldest sample when the buffer is full. When voice activity is detected, 
+
+        This method maintains a circular buffer of audio samples before voice activation,
+        discarding the oldest sample when the buffer is full. When voice activity is detected,
         it stops the audio stream and prepares for audio processing.
-        
+
         Args:
             sample (np.ndarray): The current audio sample to be added to the buffer.
             vad_confidence (bool): Indicates whether voice activity is detected in the sample.
-        
+
         Side Effects:
             - Modifies the internal circular buffer
             - Stops the audio stream when voice is detected
@@ -350,15 +352,15 @@ class Glados:
     def _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool) -> None:
         """
         Process audio samples after the wake word is detected, tracking speech pauses to capture complete utterances.
-        
+
         This method accumulates audio samples and monitors voice activity detection (VAD) confidence to determine
         when a complete speech segment has been captured. It appends incoming samples to the internal buffer and
         tracks silent gaps to trigger audio processing.
-        
+
         Parameters:
             sample (np.ndarray): A single audio sample from the input stream
             vad_confidence (bool): Indicates whether voice activity is currently detected
-        
+
         Side Effects:
             - Appends audio samples to self._samples
             - Increments or resets self._gap_counter
@@ -377,18 +379,20 @@ class Glados:
     def _wakeword_detected(self, text: str) -> bool:
         """
         Check if the detected text contains a close match to the wake word using Levenshtein distance.
-        
-        This method helps handle variations in wake word detection by calculating the minimum edit distance between detected words and the configured wake word. It accounts for potential misheard variations during speech recognition.
-        
+
+        This method helps handle variations in wake word detection by calculating the minimum edit distance
+        between detected words and the configured wake word. It accounts for potential misheard
+        variations during speech recognition.
+
         Parameters:
             text (str): The transcribed text to check for wake word similarity
-        
+
         Returns:
             bool: True if a word in the text is sufficiently similar to the wake word, False otherwise
-        
+
         Raises:
             AssertionError: If the wake word is not configured (None)
-        
+
         Notes:
             - Uses Levenshtein distance to measure text similarity
             - Compares each word in the text against the wake word
@@ -403,22 +407,23 @@ class Glados:
     def _process_detected_audio(self) -> None:
         """
         Process detected audio and generate a response after speech pause.
-        
-        Transcribes audio samples and handles wake word detection and LLM processing. Manages the audio input stream and processing state throughout the interaction.
-        
+
+        Transcribes audio samples and handles wake word detection and LLM processing. Manages the
+        audio input stream and processing state throughout the interaction.
+
         Args:
             None
-        
+
         Returns:
             None
-        
+
         Side Effects:
             - Stops the input audio stream
             - Performs automatic speech recognition (ASR)
             - Potentially sends text to LLM queue
             - Resets audio recording state
             - Restarts input audio stream
-        
+
         Raises:
             No explicit exceptions raised
         """
@@ -447,13 +452,13 @@ class Glados:
     def asr(self, samples: list[np.ndarray]) -> str:
         """
         Perform automatic speech recognition (ASR) on the provided audio samples.
-        
+
         Parameters:
             samples (list[np.ndarray]): A list of numpy arrays containing audio samples to be transcribed.
-        
+
         Returns:
             str: The transcribed text from the input audio samples.
-        
+
         Notes:
             - Concatenates multiple audio samples into a single continuous audio array
             - Uses the pre-configured ASR model to transcribe the audio
@@ -466,14 +471,14 @@ class Glados:
     def reset(self) -> None:
         """
         Reset the voice recording state and clear all audio buffers.
-        
+
         This method performs the following actions:
         - Logs a debug message indicating the reset process
         - Stops the current recording by setting `_recording_started` to False
         - Clears the collected audio samples
         - Resets the gap counter used for detecting speech pauses
         - Empties the thread-safe audio buffer queue
-        
+
         Note:
             Uses a mutex lock to safely clear the shared buffer queue to prevent
             potential race conditions in multi-threaded audio processing.
@@ -488,22 +493,24 @@ class Glados:
     def process_tts_thread(self) -> None:
         """
         Processes text-to-speech (TTS) generation and playback in a dedicated thread.
-        
-        This method continuously retrieves generated text from the TTS queue and converts it to spoken audio. It manages the lifecycle of TTS output, including handling interruptions, tracking playback progress, and updating conversation messages.
-        
+
+        This method continuously retrieves generated text from the TTS queue and converts it to spoken audio.
+        It manages the lifecycle of TTS output, including handling interruptions, tracking playback
+        progress, and updating conversation messages.
+
         The method runs until the shutdown event is triggered and handles several key scenarios:
         - Generating speech audio from text
         - Playing audio through the default sound device
         - Detecting and handling audio interruptions
         - Tracking and logging TTS performance metrics
         - Managing conversation message history
-        
+
         Attributes:
             assistant_text (list[str]): Accumulates text generated by the assistant for current response
             system_text (list[str]): Stores text logged when TTS is interrupted
             finished (bool): Indicates completion of TTS generation
             interrupted (bool): Signals whether TTS playback was interrupted
-        
+
         Raises:
             queue.Empty: When no text is available in the TTS queue within the specified timeout
         """
@@ -568,16 +575,16 @@ class Glados:
     def clip_interrupted_sentence(self, generated_text: str, percentage_played: float) -> str:
         """
         Clips the generated text based on the percentage of audio played before interruption.
-        
+
         Truncates the text proportionally to the percentage of audio played and appends an interruption marker if the text was cut short.
-        
+
         Args:
             generated_text (str): The complete text generated by the language model.
             percentage_played (float): Percentage of audio played before interruption (0-100).
-        
+
         Returns:
             str: Truncated text with an optional interruption marker.
-        
+
         Example:
             >>> assistant.clip_interrupted_sentence("Hello world how are you today", 50)
             "Hello world<INTERRUPTED>"
@@ -594,22 +601,22 @@ class Glados:
     def percentage_played(self, total_samples: int) -> tuple[bool, int]:
         """
         Determine the percentage of audio samples played and track potential interruptions during audio playback.
-        
+
         This method monitors an active audio stream, calculates the proportion of samples played,
         and checks for potential interruptions in the playback process.
-        
+
         Parameters:
             total_samples (int): Total number of audio samples expected to be played
-        
+
         Returns:
             tuple[bool, int]: A tuple containing:
                 - A boolean indicating whether the audio playback was interrupted (True if interrupted)
                 - An integer representing the percentage of audio samples played (0-100)
-        
+
         Raises:
             sd.PortAudioError: If there are issues with the audio stream
             RuntimeError: If there are runtime issues during stream management
-        
+
         Notes:
             - Uses a small time delay (0.12 seconds) to ensure accurate audio timing
             - Stops playback and clears the TTS queue if processing is set to False
@@ -650,10 +657,10 @@ class Glados:
     def process_llm(self) -> None:
         """
         Process text through the Language Model (LLM) and generate conversational responses.
-        
-        This method runs in a continuous loop, retrieving detected text from a queue and sending it to an LLM server. 
+
+        This method runs in a continuous loop, retrieving detected text from a queue and sending it to an LLM server.
         It streams the response, processes each chunk, and sends processed sentences to the text-to-speech (TTS) queue.
-        
+
         Key Behaviors:
         - Continuously polls the LLM queue for detected text
         - Sends text to LLM server with streaming enabled
@@ -661,17 +668,17 @@ class Glados:
         - Breaks sentences at punctuation marks
         - Handles interruptions and processing flags
         - Adds end-of-stream token to TTS queue after processing
-        
+
         Exceptions:
         - Handles empty queue timeouts
         - Catches and logs errors during line processing
         - Stops processing if shutdown event is set or processing flag is False
-        
+
         Side Effects:
         - Modifies `self.messages` by appending user messages
         - Puts processed sentences into `self.tts_queue`
         - Logs debug and error information
-        
+
         Note:
         - Uses a timeout mechanism to prevent blocking
         - Supports graceful interruption of LLM processing
@@ -736,13 +743,13 @@ class Glados:
     def _process_sentence(self, current_sentence: list[str]) -> None:
         """
         Process a sentence for text-to-speech by cleaning and formatting the input text.
-        
+
         This method handles text preprocessing for the TTS system, removing special formatting
         and cleaning up the text before adding it to the TTS queue.
-        
+
         Args:
             current_sentence (list[str]): A list of text fragments to be processed.
-        
+
         Notes:
             - Removes text enclosed in asterisks (*) and parentheses ()
             - Replaces newlines with periods
@@ -784,16 +791,16 @@ class Glados:
     def _process_chunk(self, line: dict[str, Any]) -> str | None:
         """
         Process a single chunk of text from the LLM server, extracting content from different response formats.
-        
+
         This method handles text chunks from two different LLM server response formats: OpenAI and Ollama.
         It safely extracts the text content, handling potential missing or malformed data.
-        
+
         Args:
             line (dict[str, Any]): A dictionary containing the LLM server response chunk.
-        
+
         Returns:
             str | None: The extracted text content, or None if no content is found or an error occurs.
-        
+
         Raises:
             No explicit exceptions are raised; errors are logged and result in returning None.
         """

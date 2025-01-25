@@ -21,17 +21,17 @@ class AudioTranscriber:
     ) -> None:
         """
         Initialize an AudioTranscriber with an ONNX speech recognition model.
-        
+
         Parameters:
             model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
             tokens_file (str, optional): Path to the file containing token mappings. Defaults to the predefined TOKEN_PATH.
-        
+
         Initializes the transcriber by:
             - Configuring ONNX Runtime providers, excluding TensorRT if available
             - Creating an inference session with the specified model
             - Loading the vocabulary from the tokens file
             - Preparing a mel spectrogram calculator for audio preprocessing
-        
+
         Note:
             - Removes TensorRT execution provider to ensure compatibility across different hardware
             - Uses default model and token paths if not explicitly specified
@@ -53,17 +53,17 @@ class AudioTranscriber:
     def _load_vocabulary(self, tokens_file: str) -> dict[int, str]:
         """
         Load token vocabulary from a file mapping token indices to their string representations.
-        
+
         Parameters:
             tokens_file (str): Path to the file containing token-to-index mappings.
-        
+
         Returns:
             dict[int, str]: A dictionary where keys are integer token indices and values are corresponding token strings.
-        
+
         Raises:
             FileNotFoundError: If the specified tokens file cannot be found.
             ValueError: If the tokens file is improperly formatted.
-        
+
         Example:
             vocab = self._load_vocabulary('./models/ASR/tokens.txt')
             # Resulting vocab might look like: {0: '<blank>', 1: 'a', 2: 'b', ...}
@@ -78,18 +78,19 @@ class AudioTranscriber:
     def process_audio(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Compute mel spectrogram from input audio with normalization and batch dimension preparation.
-        
-        This method transforms raw audio data into a normalized mel spectrogram suitable for machine learning model input. It performs the following key steps:
+
+        This method transforms raw audio data into a normalized mel spectrogram suitable for machine learning
+        model input. It performs the following key steps:
         - Converts audio to mel spectrogram using a pre-configured mel spectrogram calculator
         - Normalizes the spectrogram by centering and scaling using mean and standard deviation
         - Adds a batch dimension to make the tensor compatible with model inference requirements
-        
+
         Parameters:
             audio (NDArray[np.float32]): Input audio time series data as a numpy float32 array
-        
+
         Returns:
             NDArray[np.float32]: Processed mel spectrogram with shape [1, n_mels, time], normalized and batch-ready
-        
+
         Notes:
             - Uses a small epsilon (1e-5) to prevent division by zero during normalization
             - Assumes self.melspectrogram is a pre-configured MelSpectrogramCalculator instance
@@ -108,20 +109,20 @@ class AudioTranscriber:
     def decode_output(self, output_logits: NDArray[np.float32]) -> list[str]:
         """
         Decodes model output logits into human-readable text by processing predicted token indices.
-        
+
         This method transforms raw model predictions into coherent text by:
         - Filtering out blank tokens
         - Removing consecutive repeated tokens
         - Handling subword tokens with special prefix
         - Cleaning whitespace and formatting
-        
+
         Parameters:
             output_logits (NDArray[np.float32]): Model output logits representing token probabilities
                 with shape (batch_size, sequence_length, num_tokens)
-        
+
         Returns:
             list[str]: A list of decoded text transcriptions, one for each batch entry
-        
+
         Notes:
             - Uses argmax to select the most probable token at each timestep
             - Assumes tokens with '▁' prefix represent word starts
@@ -162,16 +163,16 @@ class AudioTranscriber:
     def transcribe(self, audio: NDArray[np.float32]) -> str:
         """
         Transcribes an audio signal to text using the pre-loaded ASR model.
-        
-        Converts the input audio into a mel spectrogram, runs inference through the ONNX Runtime session, 
+
+        Converts the input audio into a mel spectrogram, runs inference through the ONNX Runtime session,
         and decodes the output logits into a human-readable transcription.
-        
+
         Parameters:
             audio (NDArray[np.float32]): Input audio signal as a numpy float32 array.
-        
+
         Returns:
             str: Transcribed text representation of the input audio.
-        
+
         Notes:
             - Requires a pre-initialized ONNX Runtime session and loaded ASR model.
             - Assumes the input audio has been preprocessed to match model requirements.
@@ -197,13 +198,13 @@ class AudioTranscriber:
     def transcribe_file(self, audio_path: str) -> str:
         """
         Transcribe an audio file to text by reading the audio data and converting it to a textual representation.
-        
+
         Parameters:
             audio_path (str): Path to the audio file to be transcribed.
-        
+
         Returns:
             str: The transcribed text content of the audio file.
-        
+
         Raises:
             FileNotFoundError: If the specified audio file does not exist.
             ValueError: If the audio file cannot be read or processed.
