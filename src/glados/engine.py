@@ -302,9 +302,18 @@ class Glados:
             self.input_stream.stop()
 
     def _handle_audio_sample(self, sample: np.ndarray, vad_confidence: bool) -> None:
-        The existing docstring is already well-written and follows Python docstring conventions. It provides a clear, concise description of the method's purpose, explains the logic flow, and documents the parameters accurately. Therefore:
-        
-        KEEP_EXISTING
+        """
+        Handles the processing of each audio sample.
+
+        If the recording has not started, the sample is added to the circular buffer.
+
+        If the recording has started, the sample is added to the samples list, and the pause
+        limit is checked to determine when to process the detected audio.
+
+        Args:
+            sample (np.ndarray): The audio sample to process.
+            vad_confidence (bool): Whether voice activity is detected in the sample.
+        """
         if not self._recording_started:
             self._manage_pre_activation_buffer(sample, vad_confidence)
         else:
@@ -747,9 +756,15 @@ class Glados:
             self.tts_queue.put(sentence)
 
     def _clean_raw_bytes(self, line: bytes) -> dict[str, Any] | None:
-        The existing docstring for the `_clean_raw_bytes` method is already well-structured and follows Python docstring conventions. It provides a clear description of the method's purpose, specifies the input parameter with its type, and describes the return value. Therefore, the recommendation is:
-        
-        KEEP_EXISTING
+        """
+        Cleans the raw bytes from the server and converts to OpenAI format.
+
+        Args:
+            line (bytes): The raw bytes from the server
+
+        Returns:
+            dict or None: Parsed JSON response in OpenAI format, or None if parsing fails
+        """
         try:
             # Handle OpenAI format
             if line.startswith(b"data: "):
