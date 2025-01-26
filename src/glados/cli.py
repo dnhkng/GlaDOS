@@ -242,7 +242,7 @@ def models_valid() -> bool:
     """
     results = verify_checksums()
     if not all(results.values()):
-        print("Some model files are missing or invalid. Please run 'uv glados download'")
+        print("Some model files are missing or invalid. Please run 'uv run glados download'")
         return False
     return True
 
