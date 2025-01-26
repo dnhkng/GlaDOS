@@ -14,7 +14,7 @@ MODEL_CHECKSUMS = {
     "models/ASR/silero_vad.onnx": "a35ebf52fd3ce5f1469b2a36158dba761bc47b973ea3382b3186ca15b1f5af28",
     "models/TTS/glados.onnx": "17ea16dd18e1bac343090b8589042b4052f1e5456d42cad8842a4f110de25095",
     "models/TTS/kokoro-v0_19.onnx": "dece567789190ebe987bd245d95c09d5ac86de28ff0c325c2e3faaf3de04442c",
-    "models/TTS/kokoro-voices.bin": '157eab2fa1dd1c91b46599ea6f514bf86f66944c0c760250ed324e6cd99af075',
+    "models/TTS/kokoro-voices.bin": "157eab2fa1dd1c91b46599ea6f514bf86f66944c0c760250ed324e6cd99af075",
     "models/TTS/phomenizer_en.onnx": "b64dbbeca8b350927a0b6ca5c4642e0230173034abd0b5bb72c07680d700c5a0",
 }
 
@@ -112,9 +112,7 @@ def download_models() -> None:
         file.seek(0)
         return sha.hexdigest()
 
-    def download_with_progress(
-        url: str, path: Path, expected_hash: str, max_retries: int = 3
-    ) -> None:
+    def download_with_progress(url: str, path: Path, expected_hash: str, max_retries: int = 3) -> None:
         """Download a file with progress tracking and retry logic."""
         retry_count = 0
         temp_path = path.with_suffix(path.suffix + ".tmp")
@@ -134,9 +132,7 @@ def download_models() -> None:
                     if total_size == 0:
                         print(f"\nDownloading {path.name} (size unknown)")
                     else:
-                        print(
-                            f"\nDownloading {path.name} ({total_size / 1024 / 1024:.1f} MB)"
-                        )
+                        print(f"\nDownloading {path.name} ({total_size / 1024 / 1024:.1f} MB)")
 
                     downloaded_size = 0
                     for chunk in response.iter_content(chunk_size=8192):
@@ -168,14 +164,10 @@ def download_models() -> None:
                 if retry_count < max_retries:
                     wait_time = 2**retry_count  # Exponential backoff
                     print(f"\nError downloading {path.name}: {e!s}")
-                    print(
-                        f"Retrying in {wait_time} seconds... (Attempt {retry_count + 1}/{max_retries})"
-                    )
+                    print(f"Retrying in {wait_time} seconds... (Attempt {retry_count + 1}/{max_retries})")
                     sleep(wait_time)
                 else:
-                    print(
-                        f"\nFailed to download {path.name} after {max_retries} attempts: {e!s}"
-                    )
+                    print(f"\nFailed to download {path.name} after {max_retries} attempts: {e!s}")
                     raise
 
     # Download each model file
@@ -183,9 +175,7 @@ def download_models() -> None:
     for path, is_valid in checksums.items():
         if not is_valid:
             try:
-                download_with_progress(
-                    MODEL_URLS[path], Path(path), MODEL_CHECKSUMS[path]
-                )
+                download_with_progress(MODEL_URLS[path], Path(path), MODEL_CHECKSUMS[path])
             except Exception as e:
                 print(f"Error: Failed to download {path}: {e!s}")
                 sys.exit(1)
@@ -256,9 +246,7 @@ def models_valid() -> bool:
     """
     results = verify_checksums()
     if not all(results.values()):
-        print(
-            "Some model files are missing or invalid. Please run 'uv glados download'"
-        )
+        print("Some model files are missing or invalid. Please run 'uv glados download'")
         return False
     return True
 

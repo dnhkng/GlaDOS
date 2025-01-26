@@ -2,7 +2,6 @@ from collections.abc import Sequence
 import copy
 from dataclasses import dataclass
 import json
-from pathlib import Path
 import queue
 import re
 import sys
@@ -18,7 +17,10 @@ import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
 import yaml
 
-from .core import asr, vad, tts_glados, tts_kokoro
+from glados.core.asr import AudioTranscriber
+from glados.core.vad import VAD
+
+from .core import asr, tts_glados, tts_kokoro, vad
 from .utils import spoken_text_converter as stc
 
 logger.remove(0)
@@ -98,6 +100,10 @@ class GladosConfig:
 class Glados:
     def __init__(
         self,
+        asr_model: AudioTranscriber,
+        tts_model: tts_glados.Synthesizer | tts_kokoro.Synthesizer,
+        vad_model: VAD,
+        # audio_interface: AudioInterface,
         completion_url: str,
         model: str,
         api_key: str | None = None,
@@ -132,17 +138,10 @@ class Glados:
         self.completion_url = completion_url
         self.model = model
         self.wake_word = wake_word
-        self._vad_model = vad.VAD()
-        self._asr_model = asr.AudioTranscriber()
+        self._vad_model = vad_model
+        self._tts = tts_model
+        self._asr_model = asr_model
         self._stc = stc.SpokenTextConverter()
-        
-        # Initialize the TTS system with the specified voice
-        if voice == "glados":
-            self._tts = tts_glados.Synthesizer()
-        else:
-            assert voice in tts_kokoro.get_voices(), f"Voice '{voice}' not available"
-            self._tts = tts_kokoro.Synthesizer(voice=voice)
-
 
         # warm up onnx ASR model
         self._asr_model.transcribe_file("data/0.wav")
@@ -182,7 +181,10 @@ class Glados:
                 sd.wait()
 
         def audio_callback_for_sd_input_stream(
-            indata: np.ndarray, frames: int, time: sd.CallbackStop, status: CallbackFlags
+            indata: np.ndarray,
+            frames: int,
+            time: sd.CallbackStop,
+            status: CallbackFlags,
         ) -> None:
             """
             Callback function for processing audio input from a sounddevice input stream.
@@ -240,11 +242,22 @@ class Glados:
         Returns:
             Glados: A new Glados instance configured with the provided settings
         """
+        asr_model = asr.AudioTranscriber()
+        vad_model = vad.VAD()
+        if config.voice == "glados":
+            tts_model = tts_glados.Synthesizer()
+        else:
+            assert config.voice in tts_kokoro.get_voices(), f"Voice '{config.wake_word}' not available"
+            tts_model = tts_kokoro.Synthesizer(voice=config.voice)
+
         personality_preprompt = []
         for line in config.personality_preprompt:
             personality_preprompt.append({"role": next(iter(line.keys())), "content": next(iter(line.values()))})
 
         return cls(
+            asr_model=asr_model,
+            tts_model=tts_model,
+            vad_model=vad_model,
             completion_url=config.completion_url,
             model=config.model,
             api_key=config.api_key,
@@ -533,10 +546,7 @@ class Glados:
                     start = time.time()
                     spoken_text = self._stc.text_to_spoken(generated_text)
                     audio = self._tts.generate_speech_audio(spoken_text)
-                    logger.info(
-                        f"TTS Complete, inference: {(time.time() - start):.2f}, "
-                        f"length: {len(audio) / self._tts.rate:.2f}s"
-                    )
+                    logger.info(f"TTS Complete, inference: {(time.time() - start):.2f}, length: {len(audio) / self._tts.rate:.2f}s")
                     total_samples = len(audio)
 
                     if total_samples:

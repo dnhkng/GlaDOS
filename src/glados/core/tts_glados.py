@@ -171,8 +171,6 @@ class Synthesizer:
             providers=providers,
         )
         self.phonemizer = Phonemizer()
-        # self.id_map = PHONEME_ID_MAP
-
         self.id_map = self._load_pickle(PHONEME_TO_ID_PATH)
 
         try:
@@ -185,17 +183,10 @@ class Synthesizer:
         except json.JSONDecodeError as e:
             raise ValueError(f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}") from e
         except Exception as e:
-            raise RuntimeError(
-                "An unexpected error occurred while reading the configuration file "
-                f"at path: {config_file_path}. Error: {e}"
-            ) from e
+            raise RuntimeError(f"An unexpected error occurred while reading the configuration file at path: {config_file_path}. Error: {e}") from e
         self.config = PiperConfig.from_dict(config_dict)
         self.rate = self.config.sample_rate
-        self.speaker_id = (
-            self.config.speaker_id_map.get(str(speaker_id), 0)
-            if self.config.num_speakers > 1 and self.config.speaker_id_map is not None
-            else None
-        )
+        self.speaker_id = self.config.speaker_id_map.get(str(speaker_id), 0) if self.config.num_speakers > 1 and self.config.speaker_id_map is not None else None
 
     @staticmethod
     def _load_pickle(path: Path) -> dict[str, Any]:

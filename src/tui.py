@@ -191,9 +191,7 @@ class SplashScreen(Screen):
 class HelpScreen(ModalScreen):
     """The help screen. Possibly not that helpful."""
 
-    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
-        ("escape", "app.pop_screen", "Close screen")
-    ]
+    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [("escape", "app.pop_screen", "Close screen")]
 
     TITLE = "Help"
 

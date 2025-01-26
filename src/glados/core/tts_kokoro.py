@@ -1,7 +1,3 @@
-from dataclasses import dataclass
-from pickle import load
-from typing import Any
-
 import numpy as np
 from numpy.typing import NDArray
 import onnxruntime as ort  # type: ignore
@@ -9,25 +5,23 @@ import onnxruntime as ort  # type: ignore
 from .phonemizer import Phonemizer
 
 # Default OnnxRuntime is way to verbose
-ort.set_default_logger_severity(4)
+ort.set_default_logger_severity(3)
 
 # Settings
 VOICES_PATH = "./models/TTS/kokoro-voices.bin"
 MODEL_PATH = "./models/TTS/kokoro-v0_19.onnx"
 DEFAULT_VOICE = "af_sky"
-USE_CUDA = True
 MAX_PHONEME_LENGTH = 510
 SAMPLE_RATE = 24000
 
-def get_voices(path: str=VOICES_PATH) -> list[str]:
+
+def get_voices(path: str = VOICES_PATH) -> list[str]:
     voices = np.load(path)
     return list(voices.keys())
-    
+
+
 class Synthesizer:
-
-
-    def __init__(self, model_path: str = MODEL_PATH, voice: str=DEFAULT_VOICE) -> None:
-
+    def __init__(self, model_path: str = MODEL_PATH, voice: str = DEFAULT_VOICE) -> None:
         self.rate = SAMPLE_RATE
         self.voices: NDArray[np.float32] = np.load(VOICES_PATH)
         self.vocab = self._get_vocab()
@@ -43,9 +37,7 @@ class Synthesizer:
         )
         self.phonemizer = Phonemizer()
 
-    def generate_speech_audio(
-        self, text: str, voice: str = None
-    ) -> NDArray[np.float32]:
+    def generate_speech_audio(self, text: str, voice: str | None = None) -> NDArray[np.float32]:
         """
         Convert input text to synthesized speech audio.
 
@@ -81,14 +73,10 @@ class Synthesizer:
 
     def _phonemes_to_ids(self, phonemes: str) -> list[int]:
         if len(phonemes) > MAX_PHONEME_LENGTH:
-            raise ValueError(
-                f"text is too long, must be less than {MAX_PHONEME_LENGTH} phonemes"
-            )
+            raise ValueError(f"text is too long, must be less than {MAX_PHONEME_LENGTH} phonemes")
         return [i for i in map(self.vocab.get, phonemes) if i is not None]
 
-    def _synthesize_ids_to_audio(
-        self, ids: list[int], voice: str = None
-    ) -> NDArray[np.float32]:
+    def _synthesize_ids_to_audio(self, ids: list[int], voice: str = None) -> NDArray[np.float32]:
         if voice is None:
             voice = self.voice
         else:
