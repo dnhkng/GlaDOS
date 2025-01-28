@@ -24,7 +24,7 @@ class ModelConfig:
     IDX_TO_TOKEN_PATH: Path = Path("./models/TTS/idx_to_token.pkl")
     CHAR_REPEATS: int = 3
     MODEL_INPUT_LENGTH: int = 64
-    EXPAND_ACRONYMS: bool = True
+    EXPAND_ACRONYMS: bool = False
     USE_CUDA: bool = True
 
 
