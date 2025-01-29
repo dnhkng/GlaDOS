@@ -12,6 +12,7 @@ from typing import Any
 from Levenshtein import distance
 from loguru import logger
 import numpy as np
+from numpy.typing import NDArray
 import requests
 import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
@@ -99,7 +100,7 @@ class GladosConfig:
 
 @dataclass
 class AudioMessage:
-    audio: np.ndarray
+    audio: NDArray[np.float32]
     text: str
     is_eos: bool = False
 
@@ -158,9 +159,9 @@ class Glados:
         }
 
         # Initialize sample queues and state flags
-        self._samples: list[np.ndarray] = []
-        self._sample_queue: queue.Queue[tuple[np.ndarray, np.ndarray]] = queue.Queue()
-        self._buffer: queue.Queue[np.ndarray] = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
+        self._samples: list[NDArray[np.float32]] = []
+        self._sample_queue: queue.Queue[tuple[NDArray[np.float32], bool]] = queue.Queue()
+        self._buffer: queue.Queue[NDArray[np.float32]] = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
         self._recording_started = False
         self._gap_counter = 0
 
@@ -171,8 +172,9 @@ class Glados:
         self.audio_queue: queue.Queue[AudioMessage] = queue.Queue()
 
         self.processing = False
-        self.currently_speaking = False
         self.interruptible = interruptible
+
+        self.currently_speaking = threading.Event()
         self.shutdown_event = threading.Event()
 
         llm_thread = threading.Thread(target=self.process_llm)
@@ -192,7 +194,7 @@ class Glados:
                 sd.wait()
 
         def audio_callback_for_sd_input_stream(
-            indata: np.ndarray,
+            indata: np.dtype[np.float32],
             frames: int,
             time: sd.CallbackStop,
             status: CallbackFlags,
@@ -217,10 +219,10 @@ class Glados:
                 - Applies voice activity detection to determine speech presence
                 - Puts processed audio samples and VAD confidence into a thread-safe queue
             """
-            data = indata.copy().squeeze()  # Reduce to single channel if necessary
+            data = np.array(indata).copy().squeeze()  # Reduce to single channel if necessary
             vad_value = self._vad_model.process_chunk(data)
             vad_confidence = vad_value > VAD_THRESHOLD
-            self._sample_queue.put((data, vad_confidence))
+            self._sample_queue.put((data, bool(vad_confidence)))
 
         self.input_stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
@@ -255,6 +257,8 @@ class Glados:
         """
         asr_model = asr.AudioTranscriber()
         vad_model = vad.VAD()
+
+        tts_model: tts_glados.Synthesizer | tts_kokoro.Synthesizer
         if config.voice == "glados":
             tts_model = tts_glados.Synthesizer()
         else:
@@ -325,7 +329,7 @@ class Glados:
             self.shutdown_event.set()
             self.input_stream.stop()
 
-    def _handle_audio_sample(self, sample: np.ndarray, vad_confidence: bool) -> None:
+    def _handle_audio_sample(self, sample: NDArray[np.float32], vad_confidence: bool) -> None:
         """
         Handles the processing of each audio sample.
 
@@ -343,7 +347,7 @@ class Glados:
         else:
             self._process_activated_audio(sample, vad_confidence)
 
-    def _manage_pre_activation_buffer(self, sample: np.ndarray, vad_confidence: bool) -> None:
+    def _manage_pre_activation_buffer(self, sample: NDArray[np.float32], vad_confidence: bool) -> None:
         """
         Manages the pre-activation audio buffer and handles voice activity detection.
 
@@ -371,7 +375,7 @@ class Glados:
             self._samples = list(self._buffer.queue)
             self._recording_started = True
 
-    def _process_activated_audio(self, sample: np.ndarray, vad_confidence: bool) -> None:
+    def _process_activated_audio(self, sample: NDArray[np.float32], vad_confidence: bool) -> None:
         """
         Process audio samples after the wake word is detected, tracking speech pauses to capture complete utterances.
 
@@ -452,6 +456,7 @@ class Glados:
         logger.debug("Detected pause after speech. Processing...")
         self.input_stream.stop()
 
+        print(f"self._samples type: {type(self._samples)}")
         detected_text = self.asr(self._samples)
 
         if detected_text:
@@ -462,21 +467,20 @@ class Glados:
             else:
                 self.llm_queue.put(detected_text)
                 self.processing = True
-                self.currently_speaking = True
+                self.currently_speaking.set()
 
         if not self.interruptible:
-            while self.currently_speaking:
-                time.sleep(PAUSE_TIME)
+            self.currently_speaking.wait()  # Wait for speaking to complete
 
         self.reset()
         self.input_stream.start()
 
-    def asr(self, samples: list[np.ndarray]) -> str:
+    def asr(self, samples: list[NDArray[np.float32]]) -> str:
         """
         Perform automatic speech recognition (ASR) on the provided audio samples.
 
         Parameters:
-            samples (list[np.ndarray]): A list of numpy arrays containing audio samples to be transcribed.
+            samples (list[np.dtype[np.float32]]): A list of numpy arrays containing audio samples to be transcribed.
 
         Returns:
             str: The transcribed text from the input audio samples.
@@ -797,7 +801,7 @@ class Glados:
                     if assistant_text:
                         self.messages.append({"role": "assistant", "content": " ".join(assistant_text)})
                     assistant_text = []
-                    self.currently_speaking = False
+                    self.currently_speaking.clear()
                     continue
 
                 if len(audio_msg.audio):
@@ -818,7 +822,7 @@ class Glados:
                         # Add interrupted message
                         self.messages.append({"role": "assistant", "content": " ".join(system_text)})
                         assistant_text = []
-                        self.currently_speaking = False
+                        self.currently_speaking.clear()
 
                         # Clear remaining audio queue
                         with self.audio_queue.mutex:

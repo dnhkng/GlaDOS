@@ -23,7 +23,7 @@ def get_voices(path: str = VOICES_PATH) -> list[str]:
 class Synthesizer:
     def __init__(self, model_path: str = MODEL_PATH, voice: str = DEFAULT_VOICE) -> None:
         self.rate = SAMPLE_RATE
-        self.voices: NDArray[np.float32] = np.load(VOICES_PATH)
+        self.voices: dict[str, NDArray[np.float32]] = np.load(VOICES_PATH)
         self.vocab = self._get_vocab()
         self.voice = voice
         providers = ort.get_available_providers()
@@ -76,13 +76,14 @@ class Synthesizer:
             raise ValueError(f"text is too long, must be less than {MAX_PHONEME_LENGTH} phonemes")
         return [i for i in map(self.vocab.get, phonemes) if i is not None]
 
-    def _synthesize_ids_to_audio(self, ids: list[int], voice: str = None) -> NDArray[np.float32]:
+    def _synthesize_ids_to_audio(self, ids: list[int], voice: str | None = None) -> NDArray[np.float32]:
         if voice is None:
             voice = self.voice
         else:
             assert voice in self.voices, f"voice '{voice}' not found"
         voice_vector = self.voices[voice]
         voice_array = voice_vector[len(ids)]
+
         tokens = [[0, *ids, 0]]
         speed = 1.0
         audio = self.session.run(
@@ -93,4 +94,4 @@ class Synthesizer:
                 "speed": np.ones(1, dtype=np.float32) * speed,
             },
         )[0]
-        return audio[:-8000]  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
+        return np.array(audio[:-8000], dtype=np.float32)  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
