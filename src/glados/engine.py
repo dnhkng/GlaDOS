@@ -25,7 +25,7 @@ from .core import asr, tts_glados, tts_kokoro, vad
 from .utils import spoken_text_converter as stc
 
 logger.remove(0)
-logger.add(sys.stderr, level="INFO")
+logger.add(sys.stderr, level="SUCCESS")
 
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
@@ -456,7 +456,6 @@ class Glados:
         logger.debug("Detected pause after speech. Processing...")
         self.input_stream.stop()
 
-        print(f"self._samples type: {type(self._samples)}")
         detected_text = self.asr(self._samples)
 
         if detected_text:
@@ -797,11 +796,14 @@ class Glados:
                 audio_msg = self.audio_queue.get(timeout=PAUSE_TIME)
 
                 if audio_msg.is_eos:
+                    logger.debug("Processing end of stream")
                     # End of stream - append complete message
                     if assistant_text:
+                        logger.debug(f"Appending assistant message: {' '.join(assistant_text)}")
                         self.messages.append({"role": "assistant", "content": " ".join(assistant_text)})
                     assistant_text = []
                     self.currently_speaking.clear()
+                    logger.debug("Speaking event cleared")
                     continue
 
                 if len(audio_msg.audio):
