@@ -5,14 +5,18 @@ from pathlib import Path
 import requests
 import sounddevice as sd  # type: ignore
 
-from .core import tts
+from .core import tts_glados
 from .engine import Glados, GladosConfig
 from .utils import spoken_text_converter as stc
+
+DEFAULT_CONFIG = Path("configs").joinpath("glados_config.yaml")
 
 MODEL_CHECKSUMS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "313705ff6f897696ddbe0d92b5ffadad7429a47d2ddeef370e6f59248b1e8fb5",
     "models/ASR/silero_vad.onnx": "a35ebf52fd3ce5f1469b2a36158dba761bc47b973ea3382b3186ca15b1f5af28",
     "models/TTS/glados.onnx": "17ea16dd18e1bac343090b8589042b4052f1e5456d42cad8842a4f110de25095",
+    "models/TTS/kokoro-v1.0.fp16.onnx": "c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204",
+    "models/TTS/kokoro-voices-v1.0.bin": "c5adf5cc911e03b76fa5025c1c225b141310d0c4a721d6ed6e96e73309d0fd88",
     "models/TTS/phomenizer_en.onnx": "b64dbbeca8b350927a0b6ca5c4642e0230173034abd0b5bb72c07680d700c5a0",
 }
 
@@ -20,6 +24,8 @@ MODEL_URLS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx",
     "models/ASR/silero_vad.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx",
     "models/TTS/glados.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx",
+    "models/TTS/kokoro-v1.0.fp16.onnx": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-v1.0.fp16.onnx",
+    "models/TTS/kokoro-voices-v1.0.bin": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-voices-v1.0.bin",
     "models/TTS/phomenizer_en.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx",
 }
 
@@ -195,7 +201,7 @@ def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
     Example:
         say("Hello, world!")  # Speaks the text using GLaDOS voice
     """
-    glados_tts = tts.Synthesizer()
+    glados_tts = tts_glados.Synthesizer()
     converter = stc.SpokenTextConverter()
     converted_text = converter.text_to_spoken(text)
     # Generate the audio to from the text
@@ -277,8 +283,8 @@ def main() -> None:
     start_parser.add_argument(
         "--config",
         type=str,
-        default="glados_config.yaml",
-        help="Path to configuration file (default: glados_config.yaml)",
+        default=DEFAULT_CONFIG,
+        help=f"Path to configuration file (default: {DEFAULT_CONFIG})",
     )
 
     # Say command
@@ -287,8 +293,8 @@ def main() -> None:
     say_parser.add_argument(
         "--config",
         type=str,
-        default="glados_config.yaml",
-        help="Path to configuration file (default: glados_config.yaml)",
+        default=DEFAULT_CONFIG,
+        help=f"Path to configuration file (default: {DEFAULT_CONFIG})",
     )
 
     args = parser.parse_args()
@@ -304,7 +310,7 @@ def main() -> None:
             start(args.config)
         else:
             # Default to start if no command specified
-            start("glados_config.yaml")
+            start(DEFAULT_CONFIG)
 
 
 if __name__ == "__main__":

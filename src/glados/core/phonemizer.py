@@ -24,7 +24,7 @@ class ModelConfig:
     IDX_TO_TOKEN_PATH: Path = Path("./models/TTS/idx_to_token.pkl")
     CHAR_REPEATS: int = 3
     MODEL_INPUT_LENGTH: int = 64
-    EXPAND_ACRONYMS: bool = True
+    EXPAND_ACRONYMS: bool = False
     USE_CUDA: bool = True
 
 
@@ -330,7 +330,11 @@ class Phonemizer:
         sentence = [item for item in sentence for _ in range(self.config.CHAR_REPEATS)]
         sentence = [s.lower() for s in sentence]
         sequence = [self.token_to_idx[c] for c in sentence if c in self.token_to_idx]
-        return [self.token_to_idx[SpecialTokens.START.value], *sequence, self.token_to_idx[SpecialTokens.END.value]]
+        return [
+            self.token_to_idx[SpecialTokens.START.value],
+            *sequence,
+            self.token_to_idx[SpecialTokens.END.value],
+        ]
 
     def decode(self, sequence: NDArray[np.int64]) -> str:
         """
@@ -441,9 +445,7 @@ class Phonemizer:
             phons = "".join([subphon for subphon in subphons_converted if subphon is not None])
         return phons
 
-    def _clean_and_split_texts(
-        self, texts: list[str], punc_set: set[str], punc_pattern: re.Pattern[str]
-    ) -> tuple[list[list[str]], set[str]]:
+    def _clean_and_split_texts(self, texts: list[str], punc_set: set[str], punc_pattern: re.Pattern[str]) -> tuple[list[list[str]], set[str]]:
         """
         Clean and split input texts into words while preserving specified punctuation.
 
@@ -529,9 +531,7 @@ class Phonemizer:
             word_phonemes[subword] = self._get_dict_entry(word=subword, punc_set=punc_set)
 
         # Step 4: Predict all subwords that are missing in the phoneme dict
-        words_to_predict = [
-            word for word, phons in word_phonemes.items() if phons is None and len(word_splits.get(word, [])) <= 1
-        ]
+        words_to_predict = [word for word, phons in word_phonemes.items() if phons is None and len(word_splits.get(word, [])) <= 1]
 
         if words_to_predict:
             input_batch = [self.encode(word) for word in words_to_predict]
@@ -549,9 +549,7 @@ class Phonemizer:
         # Step 6: Get phonemes for each word in the text
         phoneme_lists = []
         for text in split_text:
-            text_phons = [
-                self._get_phonemes(word=word, word_phonemes=word_phonemes, word_splits=word_splits) for word in text
-            ]
+            text_phons = [self._get_phonemes(word=word, word_phonemes=word_phonemes, word_splits=word_splits) for word in text]
             phoneme_lists.append(text_phons)
 
         return ["".join(phoneme_list) for phoneme_list in phoneme_lists]
