@@ -8,9 +8,9 @@ from .phonemizer import Phonemizer
 ort.set_default_logger_severity(3)
 
 # Settings
-VOICES_PATH = "./models/TTS/kokoro-voices.bin"
-MODEL_PATH = "./models/TTS/kokoro-v0_19.onnx"
-DEFAULT_VOICE = "af_sky"
+MODEL_PATH = "./models/TTS/kokoro-v1.0.fp16.onnx"
+VOICES_PATH = "./models/TTS/kokoro-voices-v1.0.bin"
+DEFAULT_VOICE = "af_alloy"
 MAX_PHONEME_LENGTH = 510
 SAMPLE_RATE = 24000
 
@@ -93,4 +93,4 @@ class Synthesizer:
                 "speed": np.ones(1, dtype=np.float32) * speed,
             },
         )[0]
-        return audio
+        return audio[:-8000]  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
