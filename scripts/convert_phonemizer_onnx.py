@@ -58,7 +58,7 @@ class Model(torch.nn.Module, ABC):
 
 
 class ForwardTransformer(Model):
-    def __init__(self, encoder_vocab_size: int, decoder_vocab_size: int, d_model=512, d_fft=1024, layers=4, dropout=0.1, heads=1) -> None:
+    def __init__(self, encoder_vocab_size: int, decoder_vocab_size: int, d_model: int = 512, d_fft: int = 1024, layers: int = 4, dropout: float = 0.1, heads: int = 1) -> None:
         super().__init__()
 
         self.d_model = d_model
