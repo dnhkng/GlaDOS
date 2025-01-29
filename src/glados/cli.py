@@ -9,7 +9,7 @@ from .core import tts_glados
 from .engine import Glados, GladosConfig
 from .utils import spoken_text_converter as stc
 
-DEFAULT_CONFIG = Path("configs/glados_config.yaml")
+DEFAULT_CONFIG = Path("configs").joinpath("glados_config.yaml")
 
 MODEL_CHECKSUMS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "313705ff6f897696ddbe0d92b5ffadad7429a47d2ddeef370e6f59248b1e8fb5",
@@ -284,7 +284,7 @@ def main() -> None:
         "--config",
         type=str,
         default=DEFAULT_CONFIG,
-        help="Path to configuration file (default: glados_config.yaml)",
+        help=f"Path to configuration file (default: {DEFAULT_CONFIG})",
     )
 
     # Say command
@@ -294,7 +294,7 @@ def main() -> None:
         "--config",
         type=str,
         default=DEFAULT_CONFIG,
-        help="Path to configuration file (default: glados_config.yaml)",
+        help=f"Path to configuration file (default: {DEFAULT_CONFIG})",
     )
 
     args = parser.parse_args()
