@@ -63,9 +63,9 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 
 #### Linux Installation Process
 Install the PortAudio library, if you don't yet have it installed:
-   
-         sudo apt update
-         sudo apt install libportaudio2
+
+        sudo apt update
+        sudo apt install libportaudio2
 
 ## Installing GLaDOS
 1. Download this repository, either:
@@ -77,14 +77,16 @@ Install the PortAudio library, if you don't yet have it installed:
    
    Mac/Linux:
 
-         python scripts/install.py
+        python scripts/install.py
+   
    Windows:
 
-         python scripts\install.py
+        python scripts\install.py
+
    This will install Glados and download the needed AI models 
-3. To start GLaDOS run:
-         
-         uv run glados
+4. To start GLaDOS run:
+
+        uv run glados
 
 ## Speech Generation
 You can also get her to say something with:
@@ -95,13 +97,54 @@ You can also get her to say something with:
 
 To use other models, use the command:
 ```ollama pull {modelname}```
-and then add it to glados_config.yaml as the model. 
+and then add it to glados_config.yaml as the model:
 
          model: "{modelname}"
+
 You can find [more models here!](https://ollama.com/library)
 
+## Changing the Voice Model
+
+You can use voices from Kokoro too!
+Select a voice from the following:
+ - ### Female
+  - **US**
+    - af_alloy
+    -  af_aoede
+    -  af_jessica
+    -  af_kore
+    -  af_nicole
+    -  af_nova
+    -  af_river
+    -  af_saraha
+    -  af_sky
+  - **British**
+    - bf_alice
+    - bf_emma
+    - bf_isabella
+    - bf_lily
+ - ### Male
+  - **US**
+    -  am_adam
+    -  am_echo
+    -  am_eric
+    -  am_fenrir
+    -  am_liam
+    -  am_michael
+    -  am_onyx
+    -  am_puck
+  - **British**
+    - bm_daniel
+    - bm_fable
+    - bm_george
+    - bm_lewis
+
+and then add it to glados_config.yaml as the voice, e.g.:
+
+         voice: "af_bella"
+
 ## More Personalities or LLM's
-Make a copy of the file 'glados_config.yaml' and give it a new name, then edit the parameters:
+Make a copy of the file 'configs/glados_config.yaml' and give it a new name, then edit the parameters:
 
       model:  # the LLM model you want to use, see "Changing the LLM Model"
       personality_preprompt:
@@ -111,7 +154,7 @@ Make a copy of the file 'glados_config.yaml' and give it a new name, then edit t
   
 To use these new settings, use the command:
       
-      uv run glados start --config new_config.yaml
+  uv run glados start --config configs/assistant_config.yaml
 
 ## Common Issues
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:
