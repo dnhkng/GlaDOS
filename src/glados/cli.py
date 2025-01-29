@@ -15,8 +15,8 @@ MODEL_CHECKSUMS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "313705ff6f897696ddbe0d92b5ffadad7429a47d2ddeef370e6f59248b1e8fb5",
     "models/ASR/silero_vad.onnx": "a35ebf52fd3ce5f1469b2a36158dba761bc47b973ea3382b3186ca15b1f5af28",
     "models/TTS/glados.onnx": "17ea16dd18e1bac343090b8589042b4052f1e5456d42cad8842a4f110de25095",
-    "models/TTS/kokoro-v0_19.onnx": "dece567789190ebe987bd245d95c09d5ac86de28ff0c325c2e3faaf3de04442c",
-    "models/TTS/kokoro-voices.bin": "157eab2fa1dd1c91b46599ea6f514bf86f66944c0c760250ed324e6cd99af075",
+    "models/TTS/kokoro-v1.0.fp16.onnx": "c1610a859f3bdea01107e73e50100685af38fff88f5cd8e5c56df109ec880204",
+    "models/TTS/kokoro-voices-v1.0.bin": "c5adf5cc911e03b76fa5025c1c225b141310d0c4a721d6ed6e96e73309d0fd88",
     "models/TTS/phomenizer_en.onnx": "b64dbbeca8b350927a0b6ca5c4642e0230173034abd0b5bb72c07680d700c5a0",
 }
 
@@ -24,8 +24,8 @@ MODEL_URLS = {
     "models/ASR/nemo-parakeet_tdt_ctc_110m.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/nemo-parakeet_tdt_ctc_110m.onnx",
     "models/ASR/silero_vad.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/silero_vad.onnx",
     "models/TTS/glados.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/glados.onnx",
-    "models/TTS/kokoro-v0_19.onnx": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-v0_19.onnx",
-    "models/TTS/kokoro-voices.bin": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-voices.bin",
+    "models/TTS/kokoro-v1.0.fp16.onnx": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-v1.0.fp16.onnx",
+    "models/TTS/kokoro-voices-v1.0.bin": "https://github.com/dnhkng/GLaDOS/releases/download/0.1/kokoro-voices-v1.0.bin",
     "models/TTS/phomenizer_en.onnx": "https://github.com/dnhkng/GlaDOS/releases/download/0.1/phomenizer_en.onnx",
 }
 
