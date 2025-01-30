@@ -1,26 +1,22 @@
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import NDArray
-import onnxruntime as ort  # type: ignore
+import onnxruntime as ort
 
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
-VAD_MODEL = "./models/ASR/silero_vad.onnx"
+VAD_MODEL = Path("./models/ASR/silero_vad_v5.onnx")
 SAMPLE_RATE = 16000
 
 
 class VAD:
-    _initial_h = np.zeros((2, 1, 64)).astype("float32")
-    _initial_c = np.zeros((2, 1, 64)).astype("float32")
-
-    def __init__(self, model_path: str = VAD_MODEL, window_size_samples: int = int(SAMPLE_RATE / 10)) -> None:
-        """
-        Initialize a Voice Activity Detection (VAD) model with an ONNX runtime inference session.
+    def __init__(self, model_path: Path = VAD_MODEL) -> None:
+        """Initialize a Voice Activity Detection (VAD) model with an ONNX runtime inference session.
 
         Parameters:
             model_path (str, optional): Path to the ONNX VAD model. Defaults to VAD_MODEL.
-            window_size_samples (int, optional): Size of audio chunks to process.
-                Defaults to 1/10th of the sample rate (1600 samples).
 
         Notes:
             - Configures ONNX runtime providers, excluding TensorrtExecutionProvider
@@ -36,82 +32,105 @@ class VAD:
             sess_options=ort.SessionOptions(),
             providers=providers,
         )
-        self.window_size_samples = window_size_samples
-        self.sr = SAMPLE_RATE
-        self._h = self._initial_h
-        self._c = self._initial_c
 
-    def reset(self) -> None:
-        """
-        Reset the hidden and cell states of the Voice Activity Detection (VAD) model to their initial values.
+        self.avaliable_sample_rates = [8000, 16000]
 
-        This method restores the internal LSTM states to their original configuration, effectively clearing any previous
-        processing context and preparing the model for a new audio sequence.
-        """
-        self._h = self._initial_h
-        self._c = self._initial_c
+        self._state: NDArray[np.float32]
+        self._context: NDArray[np.float32]
+        self._last_sr: int
+        self._last_batch_size: int
 
-    def process_chunk(self, chunk: NDArray[np.float32]) -> NDArray[np.float32]:
-        """
-        Process an audio chunk using the Voice Activity Detection (VAD) ONNX model.
+        self.reset_states()
 
-        Prepares the input audio chunk for inference by expanding its dimensions and running the ONNX model with
-        the current hidden and cell states. Updates the internal hidden and cell states after processing.
+    def reset_states(self, batch_size: int = 1) -> None:
+        self._state = np.zeros((2, batch_size, 128), dtype=np.float32)
+        self._context = np.zeros(0, dtype=np.float32)
+        self._last_sr = 0
+        self._last_batch_size = 0
 
-        Parameters:
-            chunk (NDArray[np.float32]): A single audio chunk of float32 values to be processed by the VAD model.
+    def __call__(self, x: NDArray[np.float32], sr: int = SAMPLE_RATE) -> NDArray[np.float32]:
+        """Process a batch of audio samples and return the VAD output.
+
+        Args:
+            x (NDArray[np.float32]): Audio samples with shape (batch_size, num_samples).
+            sr (int): Sample rate of the audio samples.
 
         Returns:
-            NDArray[np.float32]: Processed output from the VAD model after removing singleton dimensions.
+            NDArray[np.float32]: VAD output with shape (batch_size, num_samples
 
-        Notes:
-            - The method modifies the internal hidden state (`_h`) and cell state (`_c`) of the VAD model.
-            - Assumes the input chunk is a single-dimensional NumPy array of float32 values.
-            - The sample rate is passed as an integer to the ONNX model.
+        Raises:
+            ValueError: If the number of samples is not supported.
         """
-        ort_inputs = {
-            "input": np.expand_dims(chunk, 0),
-            "h": self._h,
-            "c": self._c,
-            "sr": np.array(self.sr, dtype="int64"),
-        }
-        out: NDArray[np.float32]
-        out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
+        num_samples = 512 if sr == 16000 else 256
+
+        if x.shape[-1] != num_samples:
+            raise ValueError(
+                f"Provided number of samples is {x.shape[-1]} "
+                f"(Supported values: 256 for 8000 sample rate, 512 for 16000)"
+            )
+
+        batch_size = x.shape[0]
+        context_size = 64 if sr == 16000 else 32
+
+        if not self._last_batch_size:
+            self.reset_states(batch_size)
+        if (self._last_sr) and (self._last_sr != sr):
+            self.reset_states(batch_size)
+        if (self._last_batch_size) and (self._last_batch_size != batch_size):
+            self.reset_states(batch_size)
+
+        if not len(self._context):
+            self._context = np.zeros((batch_size, context_size), dtype=np.float32)
+
+        x = np.concatenate([self._context, x], axis=1)
+
+        if sr in [8000, 16000]:
+            ort_inputs = {
+                "input": x.astype(np.float32),
+                "state": self._state,
+                "sr": np.array(sr, dtype=np.int64),
+            }
+            ort_outs = self.ort_sess.run(None, ort_inputs)
+            out: NDArray[np.float32]
+            state: NDArray[np.float32]
+            out, state = ort_outs
+            self._state = state
+        else:
+            raise ValueError()
+
+        self._context = x[..., -context_size:]
+        self._last_sr = sr
+        self._last_batch_size = batch_size
+
         return np.squeeze(out)
 
-    def process_file(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
-        """
-        Process an entire audio file for Voice Activity Detection (VAD) using sliding window inference.
+    def audio_forward(self, x: NDArray[np.float32], sr: int = SAMPLE_RATE) -> NDArray[np.float32]:
+        """Process an audio signal and return the VAD output.
 
-        This method processes the input audio in fixed-size chunks, running the ONNX model on each chunk
-        and tracking the hidden and cell states across the entire sequence. It breaks processing if a
-        final incomplete chunk is encountered.
 
-        Parameters:
-            audio (NDArray[np.float32]): Input audio time series data as a 1D NumPy float32 array.
+        Args:
+            x (NDArray[np.float32]): Audio samples with shape (num_channels, num_samples).
+            sr (int): Sample rate of the audio samples.
 
         Returns:
-            NDArray[np.float32]: Processed VAD results for each audio chunk, stacked as a 2D array.
+            NDArray[np.float32]: VAD output with shape (num_channels, num_samples).
 
-        Notes:
-            - Resets internal model states before processing
-            - Uses a sliding window of size `window_size_samples`
-            - Stops processing if the final chunk is smaller than the window size
-            - Maintains recurrent model state across chunk processing
+        Raises:
+            ValueError: If the number of samples is not supported
         """
-        self.reset()
-        results_list = []
-        for i in range(0, len(audio), self.window_size_samples):
-            chunk = audio[i : i + self.window_size_samples]
-            if len(chunk) < self.window_size_samples:
-                break
-            ort_inputs = {
-                "input": np.expand_dims(chunk, 0),
-                "h": self._h,
-                "c": self._c,
-                "sr": np.array(self.sr, dtype="int64"),
-            }
-            out, self._h, self._c = self.ort_sess.run(None, ort_inputs)
-            results_list.append(np.squeeze(out))
-        results: NDArray[np.float32] = np.stack(results_list, axis=0)
-        return results
+        outs = []
+        self.reset_states()
+
+        num_samples = 512 if sr == 16000 else 256
+
+        if x.shape[1] % num_samples:
+            pad_num = num_samples - (x.shape[1] % num_samples)
+            pad_width = ((0, 0), (0, pad_num))
+            x = np.pad(x, pad_width, mode="constant", constant_values=0.0)
+
+        for i in range(0, x.shape[1], num_samples):
+            wavs_batch = x[:, i : i + num_samples]
+            out_chunk = self.__call__(wavs_batch, sr)
+            outs.append(out_chunk)
+
+        return np.stack(outs)

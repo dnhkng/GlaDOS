@@ -30,10 +30,10 @@ logger.add(sys.stderr, level="SUCCESS")
 
 PAUSE_TIME = 0.05  # Time to wait between processing loops
 SAMPLE_RATE = 16000  # Sample rate for input stream
-VAD_SIZE = 50  # Milliseconds of sample for Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.9  # Threshold for VAD detection
-BUFFER_SIZE = 600  # Milliseconds of buffer BEFORE VAD detection
-PAUSE_LIMIT = 500  # Milliseconds of pause allowed before processing
+VAD_SIZE = 32  # Milliseconds of sample for Voice Activity Detection (VAD)
+VAD_THRESHOLD = 0.8  # Threshold for VAD detection
+BUFFER_SIZE = 800  # Milliseconds of buffer BEFORE VAD detection
+PAUSE_LIMIT = 640  # Milliseconds of pause allowed before processing
 SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
 
 NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
@@ -44,16 +44,25 @@ DEFAULT_PERSONALITY_PREPROMPT: list[dict[str, str]] = [
     },
 ]
 
+
 class PersonalityPrompt(BaseModel):
     system: str | None = None
     user: str | None = None
     assistant: str | None = None
-    
+
     def to_chat_message(self) -> dict[str, str]:
-        """Convert the prompt to a chat message format."""
+        """Convert the prompt to a chat message format.
+
+        Returns:
+            dict[str, str]: A single chat message dictionary
+
+        Raises:
+            ValueError: If the prompt does not contain exactly one non-null field
+        """
         for field, value in self.model_dump(exclude_none=True).items():
             return {"role": field, "content": value}
         raise ValueError("PersonalityPrompt must have exactly one non-null field")
+
 
 class GladosConfig(BaseModel):
     completion_url: HttpUrl
@@ -83,7 +92,7 @@ class GladosConfig(BaseModel):
             pydantic.ValidationError: If the configuration is invalid
         """
         path = Path(path)
-        
+
         # Try different encodings
         for encoding in ["utf-8", "utf-8-sig"]:
             try:
@@ -226,8 +235,9 @@ class Glados:
                 - Applies voice activity detection to determine speech presence
                 - Puts processed audio samples and VAD confidence into a thread-safe queue
             """
+
             data = np.array(indata).copy().squeeze()  # Reduce to single channel if necessary
-            vad_value = self._vad_model.process_chunk(data)
+            vad_value = self._vad_model(np.expand_dims(data, 0))
             vad_confidence = vad_value > VAD_THRESHOLD
             self._sample_queue.put((data, bool(vad_confidence)))
 
@@ -454,6 +464,7 @@ class Glados:
             No explicit exceptions raised
         """
         logger.debug("Detected pause after speech. Processing...")
+
         self.input_stream.stop()
 
         detected_text = self.asr(self._samples)
@@ -489,6 +500,9 @@ class Glados:
             - Uses the pre-configured ASR model to transcribe the audio
         """
         audio = np.concatenate(samples)
+
+        # Normalize audio to [-0.5, 0.5] range to prevent clipping and ensure consistent levels
+        audio = audio / np.max(np.abs(audio)) / 2
 
         detected_text = self._asr_model.transcribe(audio)
         return detected_text
@@ -544,10 +558,7 @@ class Glados:
         completion_event = threading.Event()
 
         def stream_callback(
-            outdata: NDArray[np.float32], 
-            frames: int, 
-            time: dict[str, Any],
-            status: sd.CallbackFlags
+            outdata: NDArray[np.float32], frames: int, time: dict[str, Any], status: sd.CallbackFlags
         ) -> tuple[NDArray[np.float32], sd.CallbackStop | None]:
             nonlocal progress, interrupted
             progress += frames
@@ -561,10 +572,7 @@ class Glados:
 
         try:
             stream = sd.OutputStream(
-                callback=stream_callback, 
-                samplerate=self._tts.rate, 
-                channels=1, 
-                finished_callback=completion_event.set
+                callback=stream_callback, samplerate=self._tts.rate, channels=1, finished_callback=completion_event.set
             )
             with stream:
                 # Wait with timeout to allow for interruption

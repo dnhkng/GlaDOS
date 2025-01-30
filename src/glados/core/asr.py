@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import NDArray
 import onnxruntime as ort  # type: ignore
@@ -9,15 +11,15 @@ from .mel_spectrogram import MelSpectrogramCalculator
 ort.set_default_logger_severity(4)
 
 # Settings
-MODEL_PATH = "./models/ASR/nemo-parakeet_tdt_ctc_110m.onnx"
-TOKEN_PATH = "./models/ASR/nemo-parakeet_tdt_ctc_110m_tokens.txt"
+MODEL_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m.onnx")
+TOKEN_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m_tokens.txt")
 
 
 class AudioTranscriber:
     def __init__(
         self,
-        model_path: str = MODEL_PATH,
-        tokens_file: str = TOKEN_PATH,
+        model_path: Path = MODEL_PATH,
+        tokens_file: Path = TOKEN_PATH,
     ) -> None:
         """
         Initialize an AudioTranscriber with an ONNX speech recognition model.
@@ -25,7 +27,7 @@ class AudioTranscriber:
         Parameters:
             model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
             tokens_file (str, optional): Path to the file containing token mappings. Defaults
-                to the predefined TOKEN_PATH.
+            to the predefined TOKEN_PATH.
 
         Initializes the transcriber by:
             - Configuring ONNX Runtime providers, excluding TensorRT if available

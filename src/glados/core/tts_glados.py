@@ -18,7 +18,7 @@ ort.set_default_logger_severity(4)
 MAX_WAV_VALUE = 32767.0
 
 # Settings
-MODEL_PATH = "./models/TTS/glados.onnx"
+MODEL_PATH = Path("./models/TTS/glados.onnx")
 PHONEME_TO_ID_PATH = Path("./models/TTS/phoneme_to_id.pkl")
 USE_CUDA = True
 

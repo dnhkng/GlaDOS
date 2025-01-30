@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import NDArray
 import onnxruntime as ort  # type: ignore
@@ -8,8 +10,8 @@ from .phonemizer import Phonemizer
 ort.set_default_logger_severity(3)
 
 # Settings
-MODEL_PATH = "./models/TTS/kokoro-v1.0.fp16.onnx"
-VOICES_PATH = "./models/TTS/kokoro-voices-v1.0.bin"
+MODEL_PATH = Path("./models/TTS/kokoro-v1.0.fp16.onnx")
+VOICES_PATH = Path("./models/TTS/kokoro-voices-v1.0.bin")
 DEFAULT_VOICE = "af_alloy"
 MAX_PHONEME_LENGTH = 510
 SAMPLE_RATE = 24000
@@ -64,9 +66,7 @@ class Synthesizer:
         _pad = "$"
         _punctuation = ';:,.!?¡¿—…"«»“” '
         _letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-        _letters_ipa = (
-            "ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘'̩'ᵻ"
-        )
+        _letters_ipa = "ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘'̩'ᵻ"
         symbols = [_pad, *_punctuation, *_letters, *_letters_ipa]
         dicts = {}
         for i in range(len(symbols)):
