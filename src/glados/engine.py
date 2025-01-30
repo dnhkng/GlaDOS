@@ -44,23 +44,25 @@ DEFAULT_PERSONALITY_PREPROMPT: list[dict[str, str]] = [
     },
 ]
 
+
 class PersonalityPrompt(BaseModel):
     system: str | None = None
     user: str | None = None
     assistant: str | None = None
-    
+
     def to_chat_message(self) -> dict[str, str]:
         """Convert the prompt to a chat message format.
 
         Returns:
             dict[str, str]: A single chat message dictionary
-        
+
         Raises:
             ValueError: If the prompt does not contain exactly one non-null field
         """
         for field, value in self.model_dump(exclude_none=True).items():
             return {"role": field, "content": value}
         raise ValueError("PersonalityPrompt must have exactly one non-null field")
+
 
 class GladosConfig(BaseModel):
     completion_url: HttpUrl
@@ -90,7 +92,7 @@ class GladosConfig(BaseModel):
             pydantic.ValidationError: If the configuration is invalid
         """
         path = Path(path)
-        
+
         # Try different encodings
         for encoding in ["utf-8", "utf-8-sig"]:
             try:
@@ -498,7 +500,9 @@ class Glados:
             - Uses the pre-configured ASR model to transcribe the audio
         """
         audio = np.concatenate(samples)
-        audio = audio/np.max(np.abs(audio))/2  # Normalize audio
+
+        # Normalize audio to [-0.5, 0.5] range to prevent clipping and ensure consistent levels
+        audio = audio / np.max(np.abs(audio)) / 2
 
         detected_text = self._asr_model.transcribe(audio)
         return detected_text
@@ -554,10 +558,7 @@ class Glados:
         completion_event = threading.Event()
 
         def stream_callback(
-            outdata: NDArray[np.float32], 
-            frames: int, 
-            time: dict[str, Any],
-            status: sd.CallbackFlags
+            outdata: NDArray[np.float32], frames: int, time: dict[str, Any], status: sd.CallbackFlags
         ) -> tuple[NDArray[np.float32], sd.CallbackStop | None]:
             nonlocal progress, interrupted
             progress += frames
@@ -571,10 +572,7 @@ class Glados:
 
         try:
             stream = sd.OutputStream(
-                callback=stream_callback, 
-                samplerate=self._tts.rate, 
-                channels=1, 
-                finished_callback=completion_event.set
+                callback=stream_callback, samplerate=self._tts.rate, channels=1, finished_callback=completion_event.set
             )
             with stream:
                 # Wait with timeout to allow for interruption

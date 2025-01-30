@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from numpy.typing import NDArray
 import onnxruntime as ort
@@ -5,12 +7,12 @@ import onnxruntime as ort
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
-VAD_MODEL = "./models/ASR/silero_vad_v5.onnx"
+VAD_MODEL = Path("./models/ASR/silero_vad_v5.onnx")
 SAMPLE_RATE = 16000
 
 
 class VAD:
-    def __init__(self, model_path: str = VAD_MODEL) -> None:
+    def __init__(self, model_path: Path = VAD_MODEL) -> None:
         """Initialize a Voice Activity Detection (VAD) model with an ONNX runtime inference session.
 
         Parameters:

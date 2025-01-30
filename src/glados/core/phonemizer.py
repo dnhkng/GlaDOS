@@ -18,7 +18,7 @@ ort.set_default_logger_severity(4)
 
 @dataclass
 class ModelConfig:
-    MODEL_NAME: str = "models/TTS/phomenizer_en.onnx"
+    MODEL_NAME: Path = Path("models/TTS/phomenizer_en.onnx")
     PHONEME_DICT_PATH: Path = Path("./models/TTS/lang_phoneme_dict.pkl")
     TOKEN_TO_IDX_PATH: Path = Path("./models/TTS/token_to_idx.pkl")
     IDX_TO_TOKEN_PATH: Path = Path("./models/TTS/idx_to_token.pkl")
