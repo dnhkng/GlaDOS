@@ -130,7 +130,7 @@ class Typewriter(Static):
 # Screens
 
 
-class SplashScreen(Screen):
+class SplashScreen(Screen[None]):
     """Splash screen shown on startup."""
 
     with open(Path("./glados_ui/images/splash.ansi"), encoding="utf-8") as f:
@@ -189,7 +189,7 @@ class SplashScreen(Screen):
         app.start_glados()
 
 
-class HelpScreen(ModalScreen):
+class HelpScreen(ModalScreen[None]):
     """The help screen. Possibly not that helpful."""
 
     BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
@@ -219,7 +219,7 @@ class HelpScreen(ModalScreen):
 # The App
 
 
-class GladosUI(App):
+class GladosUI(App[None]):
     """The main app class for the GlaDOS ui."""
 
     BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
@@ -346,7 +346,7 @@ class GladosUI(App):
             SystemExit: Exits the application with a zero status code.
         """
         # self.glados.cancel()
-        self.exit(0)
+        self.exit()
 
     def start_glados(self) -> None:
         """
