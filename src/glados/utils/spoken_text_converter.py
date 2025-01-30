@@ -168,7 +168,8 @@ class SpokenTextConverter:
 
                 Parameters:
                     n (int): The number chunk to convert (0-999)
-                    scale (int): The scale index representing the magnitude (0 for ones, 1 for thousands, 2 for millions, etc.)
+                    scale (int): The scale index representing the magnitude (0 for ones, 1 for thousands,
+                    2 for millions, etc.)
 
                 Returns:
                     str: The spoken word representation of the number chunk, including optional scale word

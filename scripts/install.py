@@ -41,7 +41,8 @@ def install_uv() -> None:
 
 def main() -> None:
     """
-    Set up the project development environment by installing UV, creating a virtual environment, and preparing the project for development.
+    Set up the project development environment by installing UV, creating a virtual environment,
+    and preparing the project for development.
 
     This function performs the following steps:
     1. Changes the current working directory to the project root

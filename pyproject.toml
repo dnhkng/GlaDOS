@@ -33,7 +33,7 @@ build-backend = "hatchling.build"
 # Ruff configuration
 [tool.ruff]
 # Same as Black
-line-length = 200
+line-length = 120
 indent-width = 4
 
 # Enable all rules, including those that replace Black and isort

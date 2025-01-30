@@ -58,7 +58,16 @@ class Model(torch.nn.Module, ABC):
 
 
 class ForwardTransformer(Model):
-    def __init__(self, encoder_vocab_size: int, decoder_vocab_size: int, d_model: int = 512, d_fft: int = 1024, layers: int = 4, dropout: float = 0.1, heads: int = 1) -> None:
+    def __init__(
+        self,
+        encoder_vocab_size: int,
+        decoder_vocab_size: int,
+        d_model: int = 512,
+        d_fft: int = 1024,
+        layers: int = 4,
+        dropout: float = 0.1,
+        heads: int = 1,
+    ) -> None:
         super().__init__()
 
         self.d_model = d_model
@@ -66,7 +75,9 @@ class ForwardTransformer(Model):
         self.embedding = nn.Embedding(encoder_vocab_size, d_model)
         self.pos_encoder = PositionalEncoding(d_model, dropout)
 
-        encoder_layer = TransformerEncoderLayer(d_model=d_model, nhead=heads, dim_feedforward=d_fft, dropout=dropout, activation="relu")
+        encoder_layer = TransformerEncoderLayer(
+            d_model=d_model, nhead=heads, dim_feedforward=d_fft, dropout=dropout, activation="relu"
+        )
         encoder_norm = LayerNorm(d_model)
         self.encoder = TransformerEncoder(encoder_layer=encoder_layer, num_layers=layers, norm=encoder_norm)
 
@@ -232,7 +243,9 @@ class AutoregressiveTransformer(Model):
                 tgt_mask = _generate_square_subsequent_mask(i + 1).to(input.device)
                 output = self.decoder(out_indices)
                 output = self.pos_decoder(output)
-                output = self.transformer.decoder(output, input, memory_key_padding_mask=src_pad_mask, tgt_mask=tgt_mask)
+                output = self.transformer.decoder(
+                    output, input, memory_key_padding_mask=src_pad_mask, tgt_mask=tgt_mask
+                )
                 output = self.fc_out(output)  # shape: [T, N, V]
                 out_tokens = output.argmax(2)[-1:, :]
                 out_logits.append(output[-1:, :, :])

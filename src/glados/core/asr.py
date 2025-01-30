@@ -24,7 +24,8 @@ class AudioTranscriber:
 
         Parameters:
             model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
-            tokens_file (str, optional): Path to the file containing token mappings. Defaults to the predefined TOKEN_PATH.
+            tokens_file (str, optional): Path to the file containing token mappings. Defaults
+                to the predefined TOKEN_PATH.
 
         Initializes the transcriber by:
             - Configuring ONNX Runtime providers, excluding TensorRT if available
@@ -58,7 +59,8 @@ class AudioTranscriber:
             tokens_file (str): Path to the file containing token-to-index mappings.
 
         Returns:
-            dict[int, str]: A dictionary where keys are integer token indices and values are corresponding token strings.
+            dict[int, str]: A dictionary where keys are integer token indices and values are
+            corresponding token strings.
 
         Raises:
             FileNotFoundError: If the specified tokens file cannot be found.

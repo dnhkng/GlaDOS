@@ -64,7 +64,9 @@ class Synthesizer:
         _pad = "$"
         _punctuation = ';:,.!?¡¿—…"«»“” '
         _letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-        _letters_ipa = "ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘'̩'ᵻ"
+        _letters_ipa = (
+            "ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘'̩'ᵻ"
+        )
         symbols = [_pad, *_punctuation, *_letters, *_letters_ipa]
         dicts = {}
         for i in range(len(symbols)):
@@ -94,4 +96,6 @@ class Synthesizer:
                 "speed": np.ones(1, dtype=np.float32) * speed,
             },
         )[0]
-        return np.array(audio[:-8000], dtype=np.float32)  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
+        return np.array(
+            audio[:-8000], dtype=np.float32
+        )  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end

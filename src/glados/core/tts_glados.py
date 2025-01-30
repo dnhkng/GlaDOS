@@ -183,10 +183,16 @@ class Synthesizer:
         except json.JSONDecodeError as e:
             raise ValueError(f"Configuration file at path: {config_file_path} is not a valid JSON. Error: {e}") from e
         except Exception as e:
-            raise RuntimeError(f"An unexpected error occurred while reading the configuration file at path: {config_file_path}. Error: {e}") from e
+            raise RuntimeError(
+                f"An unexpected error occurred while reading the configuration at path: {config_file_path}. Error: {e}"
+            ) from e
         self.config = PiperConfig.from_dict(config_dict)
         self.rate = self.config.sample_rate
-        self.speaker_id = self.config.speaker_id_map.get(str(speaker_id), 0) if self.config.num_speakers > 1 and self.config.speaker_id_map is not None else None
+        self.speaker_id = (
+            self.config.speaker_id_map.get(str(speaker_id), 0)
+            if self.config.num_speakers > 1 and self.config.speaker_id_map is not None
+            else None
+        )
 
     @staticmethod
     def _load_pickle(path: Path) -> dict[str, Any]:
@@ -276,7 +282,8 @@ class Synthesizer:
         """
         Convert a sequence of phonemes to their corresponding integer IDs.
 
-        This method transforms phonemes into a list of integer identifiers used by the text-to-speech model. It handles the conversion by:
+        This method transforms phonemes into a list of integer identifiers used by the text-to-speech
+        model. It handles the conversion by:
         - Starting with the beginning-of-sentence (BOS) marker
         - Mapping each valid phoneme to its corresponding ID
         - Adding padding between phonemes
@@ -286,7 +293,8 @@ class Synthesizer:
             phonemes (str): A string of phonemes to convert
 
         Returns:
-            list[int]: A list of integer IDs representing the input phonemes, including sentence boundary markers and padding
+            list[int]: A list of integer IDs representing the input phonemes, including sentence
+            boundary markers and padding
 
         Notes:
             - Skips phonemes not found in the ID mapping
@@ -316,7 +324,8 @@ class Synthesizer:
         """
         Synthesize raw audio from phoneme IDs using the VITS model.
 
-        Converts a sequence of phoneme IDs into audio using the pre-trained ONNX model, with optional control over audio generation parameters.
+        Converts a sequence of phoneme IDs into audio using the pre-trained ONNX model, with
+        optional control over audio generation parameters.
 
         Parameters:
             phoneme_ids (list[int]): A list of integer phoneme identifiers to be converted to audio.
@@ -374,7 +383,8 @@ class Synthesizer:
         """
         Convert a string of phonemes to synthesized audio.
 
-        This method transforms phonemes into their corresponding numeric IDs and then generates raw audio using the VITS model.
+        This method transforms phonemes into their corresponding numeric IDs and then generates
+        raw audio using the VITS model.
 
         Parameters:
             phonemes (str): A string containing phonemes to be synthesized into speech.

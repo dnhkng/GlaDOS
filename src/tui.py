@@ -140,7 +140,8 @@ class SplashScreen(Screen):
         """
         Compose the layout for the splash screen.
 
-        This method defines the visual composition of the SplashScreen, creating a container with a logo, a banner, and a typewriter-style login text.
+        This method defines the visual composition of the SplashScreen, creating a container
+        with a logo, a banner, and a typewriter-style login text.
 
         Returns:
             ComposeResult: A generator yielding the screen's UI components, including:
@@ -191,7 +192,9 @@ class SplashScreen(Screen):
 class HelpScreen(ModalScreen):
     """The help screen. Possibly not that helpful."""
 
-    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [("escape", "app.pop_screen", "Close screen")]
+    BINDINGS: ClassVar[list[Binding | tuple[str, str] | tuple[str, str, str]]] = [
+        ("escape", "app.pop_screen", "Close screen")
+    ]
 
     TITLE = "Help"
 
@@ -331,10 +334,12 @@ class GladosUI(App):
         """
         Quit the application and exit with a status code of 0.
 
-        This method terminates the current Textual application instance, effectively closing the terminal user interface.
+        This method terminates the current Textual application instance,
+        effectively closing the terminal user interface.
 
         Note:
-            - The commented-out `self.glados.cancel()` suggests a potential future implementation for cancelling background tasks before exiting.
+            - The commented-out `self.glados.cancel()` suggests a potential future implementation
+                for cancelling background tasks before exiting.
             - Uses `exit(0)` to indicate a successful, intentional application termination.
 
         Raises:
