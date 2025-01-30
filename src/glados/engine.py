@@ -1,7 +1,7 @@
-from collections.abc import Sequence
 import copy
 from dataclasses import dataclass
 import json
+from pathlib import Path
 import queue
 import re
 import sys
@@ -13,6 +13,7 @@ from Levenshtein import distance
 from loguru import logger
 import numpy as np
 from numpy.typing import NDArray
+from pydantic import BaseModel, HttpUrl
 import requests
 import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
@@ -43,59 +44,65 @@ DEFAULT_PERSONALITY_PREPROMPT: list[dict[str, str]] = [
     },
 ]
 
+class PersonalityPrompt(BaseModel):
+    system: str | None = None
+    user: str | None = None
+    assistant: str | None = None
+    
+    def to_chat_message(self) -> dict[str, str]:
+        """Convert the prompt to a chat message format."""
+        for field, value in self.model_dump(exclude_none=True).items():
+            return {"role": field, "content": value}
+        raise ValueError("PersonalityPrompt must have exactly one non-null field")
 
-@dataclass
-class GladosConfig:
-    completion_url: str
+class GladosConfig(BaseModel):
+    completion_url: HttpUrl
     model: str
-    api_key: str | None
-    interruptible: bool
-    wake_word: str | None
+    api_key: str | None = None
+    interruptible: bool = True
+    wake_word: str | None = None
     voice: str
-    announcement: str | None
-    personality_preprompt: list[dict[str, str]]
+    announcement: str | None = None
+    personality_preprompt: list[PersonalityPrompt]
 
     @classmethod
-    def from_yaml(cls, path: str, key_to_config: Sequence[str] | None = ("Glados",)) -> "GladosConfig":
+    def from_yaml(cls, path: str | Path, key_to_config: tuple[str, ...] = ("Glados",)) -> "GladosConfig":
         """
         Load a GladosConfig instance from a YAML configuration file.
 
-        This method reads a YAML configuration file and creates a GladosConfig object, with optional
-        nested key traversal and robust encoding handling.
-
         Parameters:
-            path (str): Path to the YAML configuration file.
-            key_to_config (Sequence[str] | None, optional): Sequence of keys to navigate nested configuration.
-                Defaults to ("Glados",), which retrieves the configuration under the "Glados" key.
+            path: Path to the YAML configuration file
+            key_to_config: Tuple of keys to navigate nested configuration
 
         Returns:
-            GladosConfig: A configuration object instantiated with settings from the YAML file.
+            GladosConfig: Configuration object with validated settings
 
         Raises:
-            KeyError: If the specified nested keys do not exist in the configuration.
-            yaml.YAMLError: If the YAML file cannot be parsed.
-            IOError: If the configuration file cannot be read.
-
-        Example:
-            config = GladosConfig.from_yaml('config.yaml')
-            config = GladosConfig.from_yaml('config.yaml', key_to_config=('Assistants', 'Glados'))
+            ValueError: If the YAML content is invalid
+            OSError: If the file cannot be read
+            pydantic.ValidationError: If the configuration is invalid
         """
-        key_to_config = key_to_config or []
+        path = Path(path)
+        
+        # Try different encodings
+        for encoding in ["utf-8", "utf-8-sig"]:
+            try:
+                data = yaml.safe_load(path.read_text(encoding=encoding))
+                break
+            except UnicodeDecodeError:
+                if encoding == "utf-8-sig":
+                    raise
 
-        try:
-            # First attempt with UTF-8
-            with open(path, encoding="utf-8") as file:
-                data = yaml.safe_load(file)
-        except UnicodeDecodeError:
-            # Fall back to utf-8-sig if UTF-8 fails (handles BOM)
-            with open(path, encoding="utf-8-sig") as file:
-                data = yaml.safe_load(file)
-
+        # Navigate through nested keys
         config = data
-        for nested_key in key_to_config:
-            config = config[nested_key]
+        for key in key_to_config:
+            config = config[key]
 
-        return cls(**config)
+        return cls(**cls.model_validate(config).dict())
+
+    def to_chat_messages(self) -> list[dict[str, str]]:
+        """Convert personality preprompt to chat message format."""
+        return [prompt.to_chat_message() for prompt in self.personality_preprompt]
 
 
 @dataclass
@@ -246,9 +253,6 @@ class Glados:
         """
         Create a Glados instance from a GladosConfig configuration object.
 
-        This class method transforms the configuration data from a GladosConfig object into therequired
-        format for initializing a Glados instance, specifically reformatting the personality preprompt.
-
         Parameters:
             config (GladosConfig): Configuration object containing Glados initialization parameters
 
@@ -265,10 +269,6 @@ class Glados:
             assert config.voice in tts_kokoro.get_voices(), f"Voice '{config.wake_word}' not available"
             tts_model = tts_kokoro.Synthesizer(voice=config.voice)
 
-        personality_preprompt = []
-        for line in config.personality_preprompt:
-            personality_preprompt.append({"role": next(iter(line.keys())), "content": next(iter(line.values()))})
-
         return cls(
             asr_model=asr_model,
             tts_model=tts_model,
@@ -279,7 +279,7 @@ class Glados:
             interruptible=config.interruptible,
             wake_word=config.wake_word,
             announcement=config.announcement,
-            personality_preprompt=personality_preprompt,
+            personality_preprompt=config.to_chat_messages(),
         )
 
     @classmethod
@@ -544,7 +544,10 @@ class Glados:
         completion_event = threading.Event()
 
         def stream_callback(
-            outdata: NDArray[np.float32], frames: int, time: sd.CallbackTime, status: CallbackFlags
+            outdata: NDArray[np.float32], 
+            frames: int, 
+            time: dict[str, Any],
+            status: sd.CallbackFlags
         ) -> tuple[NDArray[np.float32], sd.CallbackStop | None]:
             nonlocal progress, interrupted
             progress += frames
@@ -558,7 +561,10 @@ class Glados:
 
         try:
             stream = sd.OutputStream(
-                callback=stream_callback, samplerate=self._tts.rate, channels=1, finished_callback=completion_event.set
+                callback=stream_callback, 
+                samplerate=self._tts.rate, 
+                channels=1, 
+                finished_callback=completion_event.set
             )
             with stream:
                 # Wait with timeout to allow for interruption
@@ -789,7 +795,7 @@ class Glados:
                 pass
 
     def process_audio_thread(self) -> None:
-        """ Process audio from the TTS queue and play it through the default sound device
+        """Process audio from the TTS queue and play it through the default sound device
 
         This method continuously retrieves audio messages from the audio queue and plays them through the default sound
         device. It manages the lifecycle of audio output, including handling interruptions, tracking playback progress,
@@ -800,7 +806,7 @@ class Glados:
             system_text (list[str]): Stores text logged when TTS is interrupted
 
         Raises:
-            queue.Empty: When no audio is available in the audio queue within the specified timeout.      
+            queue.Empty: When no audio is available in the audio queue within the specified timeout.
         """
         assistant_text: list[str] = []
         system_text: list[str] = []
@@ -879,8 +885,9 @@ class Glados:
 
 def start() -> None:
     """Set up the LLM server and start GlaDOS.
-    
-    This function reads the configuration file, initializes the Glados voice assistant, and starts the listening event loop.
+
+    This function reads the configuration file, initializes the Glados voice assistant,
+    and starts the listening event loop.
 
     Raises:
         FileNotFoundError: If the configuration file is not found.
