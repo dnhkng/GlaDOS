@@ -25,7 +25,7 @@ class AudioTranscriber:
         Parameters:
             model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
             tokens_file (str, optional): Path to the file containing token mappings. Defaults
-                to the predefined TOKEN_PATH.
+            to the predefined TOKEN_PATH.
 
         Initializes the transcriber by:
             - Configuring ONNX Runtime providers, excluding TensorRT if available
