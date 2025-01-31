@@ -142,7 +142,7 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: str = MODEL_PATH, speaker_id: int | None = None) -> None:
+    def __init__(self, model_path: Path = MODEL_PATH, speaker_id: int | None = None) -> None:
         """
         Initialize the text-to-speech synthesizer with a specified model and optional speaker configuration.
 
@@ -175,7 +175,7 @@ class Synthesizer:
 
         try:
             # Load the configuration file
-            config_file_path = model_path + ".json"
+            config_file_path = model_path.with_suffix(".json")
             with open(config_file_path, encoding="utf-8") as config_file:
                 config_dict = json.load(config_file)
         except FileNotFoundError:
