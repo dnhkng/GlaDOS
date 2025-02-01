@@ -1,83 +1,144 @@
-from numba import jit  # type: ignore
-import numpy as np
+"""Mel spectrogram calculation module
 
-# Constants
-SAMPLE_RATE = 16000
-N_MELS = 80
-N_FFT = 400
-HOP_LENGTH = 160
-WIN_LENGTH = 400
+This module provides a class to compute melspectrograms from audio signals.
+The implementation is based on NVIDIA's implementation in the NeMo library.
+The mel filterbank is created to match librosa's implementation.
+
+See:
+https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/asr/parts/preprocessing/features.py
+
+Example:
+Create a MelSpectrogramCalculator object and compute a mel spectrogram:
+
+    >>> import numpy as np
+    >>> from glados.core.mel_spectrogram import MelSpectrogramCalculator
+    >>> mel_spectrogram_calculator = MelSpectrogramCalculator()
+    >>> audio: np.ndarray = np.random.randn(16000).astype(np.float32)
+    >>> mel_spectrogram = mel_spectrogram_calculator.compute(audio)
+
+    # Advanced example with custom parameters
+    >>> mel_spectrogram_calculator = MelSpectrogramCalculator(
+    ...     sr=22050,
+    ...     n_mels=128,
+    ...     preemph=0.95,
+    ...     normalize="per_feature"
+    ... )
+
+    Attributes:
+    sr: Sample rate
+    n_mels: Number of mel bins
+    n_fft: FFT size
+    hop_length: Hop length
+    win_length: Window length
+    fmin: Minimum frequency
+    fmax: Maximum frequency
+    preemph: Preemphasis coefficient
+    mag_power: Power to raise magnitude to
+    normalize: Normalization type
+    dither: Dithering strength
+    log_zero_guard_value: Zero guard value for log scaling
+
+Methods:
+    _create_mel_filterbank: Create mel filterbank
+    _apply_preemphasis: Apply preemphasis filter
+    _normalize_spectrogram: Apply per-feature normalization
+    compute: Compute mel spectrogram matching NVIDIA's implementation
+
+Functions:
+    _extract_windows: Extract and window frames from audio signal
+"""
+
+from numba import jit
+import numpy as np
+from numpy.typing import NDArray
 
 
 @jit(nopython=True)
 def _extract_windows(
-    audio_padded: np.ndarray,
-    window: np.ndarray,
+    audio_padded: NDArray[np.float32],
+    window: NDArray[np.float32],
     n_fft: int,
     hop_length: int,
     n_frames: int,
-) -> np.ndarray:
+) -> NDArray[np.float32]:
     """
-    Extract overlapping, windowed frames from a padded audio signal.
+    Extract and window frames from a padded audio signal.
 
-    Efficiently pre-allocates a matrix and applies a windowing function to each frame of the audio signal.
-
-    Parameters:
-        audio_padded (np.ndarray): Padded input audio signal
-        window (np.ndarray): Window function to apply to each frame
-        n_fft (int): Number of FFT points defining the frame size
+    Args:
+        audio_padded (np.ndarray): Padded audio signal with sufficient length to extract frames
+        window (np.ndarray): Pre-computed window function to apply to each frame
+        n_fft (int): Size of the Fast Fourier Transform (FFT) window
         hop_length (int): Number of samples between successive frames
-        n_frames (int): Total number of frames to extract
+        n_frames (int): Total number of frames to extract from the audio signal
 
     Returns:
-        np.ndarray: 2D array of shape (n_frames, n_fft) containing windowed audio frames
+        np.ndarray: 2D array of extracted and windowed frames, with shape (n_frames, n_fft)
     """
-    # Pre-allocate output matrix
-    frames = np.zeros((n_frames, n_fft), dtype=np.float32)
+    # Validate inputs
+    if len(audio_padded) < n_fft:
+        raise ValueError("audio_padded length must be >= n_fft")
+    if len(window) != n_fft:
+        raise ValueError("window length must equal n_fft")
+    if n_frames <= 0:
+        raise ValueError("n_frames must be positive")
 
+    frames = np.zeros((n_frames, n_fft), dtype=np.float32)
     for t in range(n_frames):
         start = t * hop_length
-        # Extract and window the frame
         frames[t] = audio_padded[start : start + n_fft] * window
-
     return frames
 
 
 class MelSpectrogramCalculator:
+    mel_filterbank: NDArray[np.float32]
+    window: NDArray[np.float32]
+
     def __init__(
         self,
-        sr: int = SAMPLE_RATE,
-        n_mels: int = N_MELS,
-        n_fft: int = N_FFT,
-        hop_length: int = HOP_LENGTH,
-        win_length: int = WIN_LENGTH,
+        sr: int = 16000,
+        n_mels: int = 80,
+        n_fft: int = 400,
+        hop_length: int = 160,
+        win_length: int = 400,
         fmin: float = 0.0,
         fmax: float | None = None,
-        top_db: float = 80.0,
+        preemph: float = 0.97,
+        mag_power: float = 2.0,
+        normalize: str = "per_feature",
+        dither: float = 1e-5,
+        log_zero_guard_value: float = 2**-24,
     ) -> None:
         """
-        Initialize a Mel spectrogram calculator with configurable audio processing parameters.
+        Initialize a MelSpectrogramCalculator with configurable audio processing parameters.
 
-        Parameters:
-            sr (int, optional): Sampling rate of the audio signal. Defaults to SAMPLE_RATE.
-            n_mels (int, optional): Number of Mel frequency bands. Defaults to N_MELS.
-            n_fft (int, optional): Number of FFT points for spectral analysis. Defaults to N_FFT.
-            hop_length (int, optional): Number of samples between successive frames. Defaults to HOP_LENGTH.
-            win_length (int, optional): Length of the window function. Defaults to WIN_LENGTH.
-            fmin (float, optional): Minimum frequency for Mel filterbank. Defaults to 0.0 Hz.
-            fmax (float | None, optional): Maximum frequency for Mel filterbank. Defaults to half the sampling rate.
-            top_db (float, optional): Decibel threshold for limiting spectrogram dynamic range. Defaults to 80.0 dB.
+        Args:
+            sr (int, optional): Audio sample rate in Hz. Defaults to 16000.
+            n_mels (int, optional): Number of mel frequency bins. Defaults to 80.
+            n_fft (int, optional): Size of the Fast Fourier Transform window. Defaults to 400.
+            hop_length (int, optional): Number of samples between successive frames. Defaults to 160.
+            win_length (int, optional): Length of each window frame. Defaults to 400.
+            fmin (float, optional): Minimum frequency for mel filterbank. Defaults to 0.0.
+            fmax (float | None, optional): Maximum frequency for mel filterbank. Defaults to half the sample rate.
+            preemph (float, optional): Preemphasis filter coefficient. Defaults to 0.97.
+            mag_power (float, optional): Power to apply to magnitude spectrogram. Defaults to 2.0.
+            normalize (str, optional): Normalization method for mel spectrogram. Defaults to "per_feature".
+            dither (float, optional): Strength of noise added to prevent quantization artifacts. Defaults to 1e-5.
+            log_zero_guard_value (float, optional): Small value to prevent log(0) errors. Defaults to 2**-24.
 
         Attributes:
-            sr (int): Sampling rate of the audio signal.
-            n_mels (int): Number of Mel frequency bands.
-            n_fft (int): Number of FFT points.
-            hop_length (int): Number of samples between frames.
-            win_length (int): Length of the window function.
-            top_db (float): Decibel threshold for spectrogram.
-            mel_filterbank (np.ndarray): Pre-computed Mel filterbank matrix.
-            window (np.ndarray): Hanning window function for spectral analysis.
+            mel_filterbank (np.ndarray): Pre-computed mel filterbank matrix of shape (n_mels, n_freqs).
+            window (np.ndarray): Pre-computed Hanning window function of shape (n_fft,).
         """
+        # Validate parameters
+        if not all(isinstance(x, int) and x > 0 for x in [n_mels, n_fft, hop_length, win_length]):
+            raise ValueError("n_mels, n_fft, hop_length, and win_length must be positive integers")
+        if not 0 <= preemph <= 1:
+            raise ValueError("preemph must be between 0 and 1")
+        if mag_power <= 0:
+            raise ValueError("mag_power must be positive")
+        if normalize not in [None, "per_feature"]:
+            raise ValueError("normalize must be None or 'per_feature'")
+
         if fmax is None:
             fmax = float(sr) / 2
 
@@ -86,33 +147,39 @@ class MelSpectrogramCalculator:
         self.n_fft = n_fft
         self.hop_length = hop_length
         self.win_length = win_length
-        self.top_db = top_db
+        self.preemph = preemph
+        self.mag_power = mag_power
+        self.normalize = normalize
+        self.dither = dither
+        self.log_zero_guard_value = log_zero_guard_value
 
         # Pre-compute constants
         self.mel_filterbank = self._create_mel_filterbank(fmin, fmax)
         self.window = np.hanning(n_fft).astype(np.float32)
 
-    def _create_mel_filterbank(self, fmin: float, fmax: float) -> np.ndarray:
+    def _create_mel_filterbank(self, fmin: float, fmax: float) -> NDArray[np.float32]:
         """
-        Create a Mel filterbank matrix for converting linear frequency spectra to Mel scale.
+        Create a mel filterbank matrix matching librosa's implementation.
 
-        This method generates a matrix of triangular filters that map linear frequency bins to Mel-scale bands.
-        Each filter is a triangular window centered at a specific Mel frequency point, with weights that
-        smoothly transition from zero to peak and back to zero.
+        This method generates a mel filterbank matrix that transforms linear frequency bins to mel-scale
+        frequency bins. It follows the triangular filter design used in librosa, creating a set of
+        overlapping triangular filters across the frequency spectrum.
 
-        Parameters:
-            fmin (float): Minimum frequency in Hz for the Mel filterbank
-            fmax (float): Maximum frequency in Hz for the Mel filterbank
+        Args:
+            fmin (float): Minimum frequency for the mel filterbank
+            fmax (float): Maximum frequency for the mel filterbank
 
         Returns:
-            np.ndarray: A 2D matrix of shape (n_mels, n_fft//2 + 1) representing Mel filterbank weights,
-                        where each row corresponds to a Mel band and each column represents a linear frequency bin.
+            np.ndarray: A mel filterbank matrix of shape (n_mels, n_freqs) with triangular filter weights
 
         Notes:
-            - Converts linear frequencies to Mel scale using the formula: mel = 2595 * log10(1 + f/700)
-            - Creates triangular filters with normalized weights
-            - Ensures efficient computation using vectorized NumPy operations
+            - The method uses the standard mel frequency conversion formula
+            - Filters are triangular and normalized to preserve total energy
+            - Supports custom minimum and maximum frequency ranges
         """
+        if fmin >= fmax:
+            raise ValueError(f"fmin ({fmin}) must be less than fmax ({fmax})")
+
         # Center frequencies of each FFT bin
         n_freqs = int(1 + self.n_fft // 2)
         fftfreqs = np.linspace(0, self.sr / 2, n_freqs)
@@ -145,34 +212,104 @@ class MelSpectrogramCalculator:
 
         return weights.astype(np.float32)
 
-    def compute(self, audio: np.ndarray) -> np.ndarray:
+    def _apply_preemphasis(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
-        Compute the Mel spectrogram from an input audio signal.
+        Apply a preemphasis filter to the audio signal to enhance higher frequencies.
 
-        This method efficiently transforms the input audio into a Mel spectrogram by performing
-        the following steps:
-        - Convert input to float32
-        - Pad the audio signal
-        - Extract and window audio frames
-        - Compute Short-Time Fourier Transform (STFT)
-        - Calculate power spectrum
-        - Apply Mel filterbank
-        - Convert to decibel scale
+        This method applies a first-order high-pass filter to the audio signal, which
+        amplifies higher frequency components. The preemphasis helps to counteract the
+        natural spectral slope of speech and audio signals.
 
-        Parameters:
-            audio (np.ndarray): Input audio signal as a NumPy array
+        Args:
+            audio (np.ndarray): Input audio signal as a NumPy array.
 
         Returns:
-            np.ndarray: Mel spectrogram with values in decibel scale,
-                        limited to a maximum of `top_db` below the peak
+            np.ndarray: Preemphasized audio signal with enhanced high-frequency content.
 
         Notes:
-            - Uses Numba-optimized window extraction
-            - Applies reflection padding
-            - Normalizes spectrogram relative to its maximum value
+            - The preemphasis is performed using the formula: y[n] = x[n] - preemph * x[n-1]
+            - The first sample is preserved as-is to maintain the original signal's length
+            - The preemphasis coefficient (self.preemph) controls the strength of high-frequency enhancement
         """
-        # Ensure audio is float32
+        if len(audio) == 0:
+            return audio
+
+        return np.concatenate([audio[:1], audio[1:] - self.preemph * audio[:-1]])
+
+    def _normalize_spectrogram(self, mel_spec: NDArray[np.float32], seq_len: int) -> NDArray[np.float32]:
+        """
+        Apply per-feature normalization to the mel spectrogram.
+
+        Normalizes the mel spectrogram using per-feature mean and variance standardization when
+        the normalization type is set to "per_feature". This method helps to center and scale
+        the spectrogram features, which can improve subsequent machine learning model performance.
+
+        Args:
+            mel_spec (np.ndarray): Input mel spectrogram to be normalized
+            seq_len (int): Number of frames in the spectrogram
+
+        Returns:
+            np.ndarray: Normalized mel spectrogram with zero mean and unit variance per feature
+
+        Notes:
+            - Uses sample variance calculation with Bessel's correction (dividing by seq_len - 1)
+            - Adds a small epsilon (1e-5) to variance to prevent division by zero
+            - Only applies normalization if self.normalize is set to "per_feature"
+            - Preserves the original shape of the input mel spectrogram
+        """
+        if self.normalize == "per_feature":
+            mean = np.sum(mel_spec, axis=1, keepdims=True) / seq_len
+            var = np.sum((mel_spec - mean) ** 2, axis=1, keepdims=True) / (seq_len - 1)
+            mel_spec = (mel_spec - mean) / (np.sqrt(var) + 1e-5)
+        return mel_spec
+
+    def compute(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
+        """
+        Compute mel spectrogram from an audio signal, matching NVIDIA's implementation.
+
+        Args:
+            audio (np.ndarray): Input audio signal as a numpy array.
+
+        Returns:
+            np.ndarray: Mel spectrogram computed from the input audio.
+
+        Details:
+            This method performs several preprocessing and transformation steps:
+            1. Converts input to float32
+            2. Applies optional dithering to reduce quantization noise
+            3. Applies optional preemphasis filter
+            4. Pads audio signal with reflection
+            5. Extracts and windows audio frames
+            6. Computes Short-Time Fourier Transform (STFT)
+            7. Calculates power spectrum with configurable power
+            8. Applies mel filterbank
+            9. Applies logarithmic scaling with zero guard
+            10. Optionally normalizes the spectrogram
+
+        Notes:
+            - Dithering strength controlled by `self.dither`
+            - Preemphasis applied if `self.preemph` is not None
+            - Logarithmic scaling uses `self.log_zero_guard_value`
+            - Normalization controlled by `self.normalize`
+        """
+        # Convert to float32
         audio = np.asarray(audio, dtype=np.float32)
+
+        # Validate input
+        if len(audio) == 0:
+            raise ValueError("Input audio array cannot be empty")
+        if len(audio) < self.n_fft:
+            raise ValueError(f"Input audio length must be at least {self.n_fft}")
+        if not np.all(np.isfinite(audio)):
+            raise ValueError("Input audio contains non-finite values")
+
+        # Apply dithering
+        if self.dither > 0:
+            audio = audio + self.dither * np.random.randn(*audio.shape)
+
+        # Apply preemphasis
+        if self.preemph is not None:
+            audio = self._apply_preemphasis(audio)
 
         # Pad audio
         padding = int(self.n_fft // 2)
@@ -181,20 +318,23 @@ class MelSpectrogramCalculator:
         # Calculate frames
         n_frames = 1 + (len(audio_padded) - self.n_fft) // self.hop_length
 
-        # Extract and window frames using Numba
+        # Extract and window frames
         frames = _extract_windows(audio_padded, self.window, self.n_fft, self.hop_length, n_frames)
 
-        # Compute FFT (no Numba)
+        # Compute STFT
         stft = np.fft.rfft(frames, axis=1).T
 
-        # Power spectrum
-        power_spec = np.abs(stft, dtype=np.float32) ** 2
+        # Power spectrum with configurable power
+        power_spec = (np.abs(stft) ** self.mag_power).astype(np.float32)
 
         # Apply mel filterbank
         mel_spec = self.mel_filterbank @ power_spec
 
-        # Convert to dB scale
-        ref = np.maximum(1e-10, mel_spec.max())
-        mel_spec = 10.0 * np.log10(np.maximum(1e-10, mel_spec / ref))
+        # Log scaling with zero guard
+        mel_spec = np.log(mel_spec + self.log_zero_guard_value)
 
-        return np.maximum(mel_spec, -self.top_db)
+        # Normalize if requested
+        if self.normalize:
+            mel_spec = self._normalize_spectrogram(mel_spec, n_frames)
+
+        return mel_spec
