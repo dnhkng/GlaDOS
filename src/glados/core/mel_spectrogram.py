@@ -41,16 +41,17 @@ Functions:
 
 from numba import jit
 import numpy as np
+from numpy.typing import NDArray
 
 
 @jit(nopython=True)
 def _extract_windows(
-    audio_padded: np.ndarray,
-    window: np.ndarray,
+    audio_padded: NDArray[np.float32],
+    window: NDArray[np.float32],
     n_fft: int,
     hop_length: int,
     n_frames: int,
-) -> np.ndarray:
+) -> NDArray[np.float32]:
     """
     Extract and window frames from a padded audio signal.
     
@@ -126,11 +127,13 @@ class MelSpectrogramCalculator:
         self.mel_filterbank = self._create_mel_filterbank(fmin, fmax)
         self.window = np.hanning(n_fft).astype(np.float32)
 
-    def _create_mel_filterbank(self, fmin: float, fmax: float) -> np.ndarray:
+    def _create_mel_filterbank(self, fmin: float, fmax: float) -> NDArray[np.float32]:
         """
         Create a mel filterbank matrix matching librosa's implementation.
         
-        This method generates a mel filterbank matrix that transforms linear frequency bins to mel-scale frequency bins. It follows the triangular filter design used in librosa, creating a set of overlapping triangular filters across the frequency spectrum.
+        This method generates a mel filterbank matrix that transforms linear frequency bins to mel-scale
+        frequency bins. It follows the triangular filter design used in librosa, creating a set of
+        overlapping triangular filters across the frequency spectrum.
         
         Args:
             fmin (float): Minimum frequency for the mel filterbank
@@ -176,11 +179,13 @@ class MelSpectrogramCalculator:
 
         return weights.astype(np.float32)
 
-    def _apply_preemphasis(self, audio: np.ndarray) -> np.ndarray:
+    def _apply_preemphasis(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Apply a preemphasis filter to the audio signal to enhance higher frequencies.
         
-        This method applies a first-order high-pass filter to the audio signal, which amplifies higher frequency components. The preemphasis helps to counteract the natural spectral slope of speech and audio signals.
+        This method applies a first-order high-pass filter to the audio signal, which
+        amplifies higher frequency components. The preemphasis helps to counteract the
+        natural spectral slope of speech and audio signals.
         
         Args:
             audio (np.ndarray): Input audio signal as a NumPy array.
@@ -195,7 +200,7 @@ class MelSpectrogramCalculator:
         """
         return np.concatenate([audio[:1], audio[1:] - self.preemph * audio[:-1]])
 
-    def _normalize_spectrogram(self, mel_spec: np.ndarray, seq_len: int) -> np.ndarray:
+    def _normalize_spectrogram(self, mel_spec: NDArray[np.float32], seq_len: int) -> NDArray[np.float32]:
         """
         Apply per-feature normalization to the mel spectrogram.
         
@@ -222,7 +227,7 @@ class MelSpectrogramCalculator:
             mel_spec = (mel_spec - mean) / (np.sqrt(var) + 1e-5)
         return mel_spec
 
-    def compute(self, audio: np.ndarray) -> np.ndarray:
+    def compute(self, audio: NDArray[np.float32]) -> NDArray[np.float32]:
         """
         Compute mel spectrogram from an audio signal, matching NVIDIA's implementation.
         
