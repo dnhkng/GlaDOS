@@ -114,8 +114,8 @@ class MelSpectrogramCalculator:
             log_zero_guard_value (float, optional): Small value to prevent log(0) errors. Defaults to 2**-24.
         
         Attributes:
-            mel_filterbank (np.ndarray): Pre-computed mel filterbank matrix.
-            window (np.ndarray): Pre-computed Hanning window function.
+            mel_filterbank (np.ndarray): Pre-computed mel filterbank matrix of shape (n_mels, n_freqs).
+            window (np.ndarray): Pre-computed Hanning window function of shape (n_fft,).
         """
         # Validate parameters
         if not all(isinstance(x, int) and x > 0 for x in [n_mels, n_fft, hop_length, win_length]):
