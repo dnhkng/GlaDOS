@@ -12,10 +12,18 @@ Create a MelSpectrogramCalculator object and compute a mel spectrogram:
     >>> import numpy as np
     >>> from glados.core.mel_spectrogram import MelSpectrogramCalculator
     >>> mel_spectrogram_calculator = MelSpectrogramCalculator()
-    >>> audio = np.random.randn(16000)
+    >>> audio: np.ndarray = np.random.randn(16000).astype(np.float32)
     >>> mel_spectrogram = mel_spectrogram_calculator.compute(audio)
+    
+    # Advanced example with custom parameters
+    >>> mel_spectrogram_calculator = MelSpectrogramCalculator(
+    ...     sr=22050,
+    ...     n_mels=128,
+    ...     preemph=0.95,
+    ...     normalize="per_feature"
+    ... )
 
-Attributes:
+    Attributes:
     sr: Sample rate
     n_mels: Number of mel bins
     n_fft: FFT size
@@ -109,6 +117,16 @@ class MelSpectrogramCalculator:
             mel_filterbank (np.ndarray): Pre-computed mel filterbank matrix.
             window (np.ndarray): Pre-computed Hanning window function.
         """
+        # Validate parameters
+        if not all(isinstance(x, int) and x > 0 for x in [n_mels, n_fft, hop_length, win_length]):
+            raise ValueError("n_mels, n_fft, hop_length, and win_length must be positive integers")
+        if not 0 <= preemph <= 1:
+            raise ValueError("preemph must be between 0 and 1")
+        if mag_power <= 0:
+            raise ValueError("mag_power must be positive")
+        if normalize not in [None, "per_feature"]:
+            raise ValueError("normalize must be None or 'per_feature'")
+
         if fmax is None:
             fmax = float(sr) / 2
 
@@ -147,6 +165,9 @@ class MelSpectrogramCalculator:
             - Filters are triangular and normalized to preserve total energy
             - Supports custom minimum and maximum frequency ranges
         """
+        if fmin >= fmax:
+            raise ValueError(f"fmin ({fmin}) must be less than fmax ({fmax})")
+
         # Center frequencies of each FFT bin
         n_freqs = int(1 + self.n_fft // 2)
         fftfreqs = np.linspace(0, self.sr / 2, n_freqs)
@@ -198,6 +219,9 @@ class MelSpectrogramCalculator:
             - The first sample is preserved as-is to maintain the original signal's length
             - The preemphasis coefficient (self.preemph) controls the strength of high-frequency enhancement
         """
+        if len(audio) == 0:
+            return audio
+
         return np.concatenate([audio[:1], audio[1:] - self.preemph * audio[:-1]])
 
     def _normalize_spectrogram(self, mel_spec: NDArray[np.float32], seq_len: int) -> NDArray[np.float32]:
@@ -258,6 +282,14 @@ class MelSpectrogramCalculator:
         """
         # Convert to float32
         audio = np.asarray(audio, dtype=np.float32)
+
+        # Validate input
+        if len(audio) == 0:
+            raise ValueError("Input audio array cannot be empty")
+        if len(audio) < self.n_fft:
+            raise ValueError(f"Input audio length must be at least {self.n_fft}")
+        if not np.all(np.isfinite(audio)):
+            raise ValueError("Input audio contains non-finite values")
 
         # Apply dithering
         if self.dither > 0:
