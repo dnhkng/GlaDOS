@@ -1,9 +1,10 @@
 """Mel spectrogram calculation module
 
-This module provides a class to compute mel spectrograms from audio signals.
+This module provides a class to compute melspectrograms from audio signals.
 The implementation is based on NVIDIA's implementation in the NeMo library.
 The mel filterbank is created to match librosa's implementation.
 
+See:
 https://github.com/NVIDIA/NeMo/blob/main/nemo/collections/asr/parts/preprocessing/features.py
 
 Example:
