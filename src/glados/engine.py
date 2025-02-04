@@ -380,6 +380,10 @@ class Glados:
         self._buffer.put(sample)
 
         if vad_confidence:  # Voice activity detected
+            if not self.interruptible and self.currently_speaking.is_set():
+                logger.info("Interruption is disabled, and the assistant is currently speaking, ignoring new input.")
+                return
+
             sd.stop()  # Stop the audio stream to prevent overlap
             self.processing = False  # Turns off processing on threads for the LLM and TTS!!!
             self._samples = list(self._buffer.queue)
@@ -387,7 +391,7 @@ class Glados:
 
     def _process_activated_audio(self, sample: NDArray[np.float32], vad_confidence: bool) -> None:
         """
-        Process audio samples after the wake word is detected, tracking speech pauses to capture complete utterances.
+        Process audio samples, tracking speech pauses to capture complete utterances.
 
         This method accumulates audio samples and monitors voice activity detection (VAD) confidence to determine
         when a complete speech segment has been captured. It appends incoming samples to the internal buffer and
@@ -440,6 +444,28 @@ class Glados:
         closest_distance = min([distance(word.lower(), self.wake_word) for word in words])
         return bool(closest_distance < SIMILARITY_THRESHOLD)
 
+    def reset(self) -> None:
+        """
+        Reset the voice recording state and clear all audio buffers.
+
+        This method performs the following actions:
+        - Logs a debug message indicating the reset process
+        - Stops the current recording by setting `_recording_started` to False
+        - Clears the collected audio samples
+        - Resets the gap counter used for detecting speech pauses
+        - Empties the thread-safe audio buffer queue
+
+        Note:
+            Uses a mutex lock to safely clear the shared buffer queue to prevent
+            potential race conditions in multi-threaded audio processing.
+        """
+        logger.debug("Resetting recorder...")
+        self._recording_started = False
+        self._samples.clear()
+        self._gap_counter = 0
+        with self._buffer.mutex:
+            self._buffer.queue.clear()
+
     def _process_detected_audio(self) -> None:
         """
         Process detected audio and generate a response after speech pause.
@@ -465,8 +491,6 @@ class Glados:
         """
         logger.debug("Detected pause after speech. Processing...")
 
-        self.input_stream.stop()
-
         detected_text = self.asr(self._samples)
 
         if detected_text:
@@ -479,11 +503,7 @@ class Glados:
                 self.processing = True
                 self.currently_speaking.set()
 
-        if not self.interruptible:
-            self.currently_speaking.wait()  # Wait for speaking to complete
-
         self.reset()
-        self.input_stream.start()
 
     def asr(self, samples: list[NDArray[np.float32]]) -> str:
         """
@@ -507,51 +527,41 @@ class Glados:
         detected_text = self._asr_model.transcribe(audio)
         return detected_text
 
-    def reset(self) -> None:
-        """
-        Reset the voice recording state and clear all audio buffers.
-
-        This method performs the following actions:
-        - Logs a debug message indicating the reset process
-        - Stops the current recording by setting `_recording_started` to False
-        - Clears the collected audio samples
-        - Resets the gap counter used for detecting speech pauses
-        - Empties the thread-safe audio buffer queue
-
-        Note:
-            Uses a mutex lock to safely clear the shared buffer queue to prevent
-            potential race conditions in multi-threaded audio processing.
-        """
-        logger.debug("Resetting recorder...")
-        self._recording_started = False
-        self._samples.clear()
-        self._gap_counter = 0
-        with self._buffer.mutex:
-            self._buffer.queue.clear()
-
     def percentage_played(self, total_samples: int) -> tuple[bool, int]:
         """
-        Determine the percentage of audio samples played and track potential interruptions during audio playback.
-
-        This method monitors an active audio stream, calculates the proportion of samples played,
-        and checks for potential interruptions in the playback process.
-
-        Parameters:
-            total_samples (int): Total number of audio samples expected to be played
-
+        Monitor audio playback progress and return completion status with interrupt detection.
+        
+        Streams audio samples through PortAudio and actively tracks the number of samples
+        that have been played. The playback can be interrupted by setting self.processing
+        to False. Uses a non-blocking callback system with a completion event for
+        synchronization.
+        
+        Args:
+            total_samples: Number of audio samples to be played in total. For example,
+                for 1 second of 48kHz audio, this would be 48000.
+        
         Returns:
-            tuple[bool, int]: A tuple containing:
-                - A boolean indicating whether the audio playback was interrupted (True if interrupted)
-                - An integer representing the percentage of audio samples played (0-100)
-
+            A tuple containing:
+            - bool: True if playback was interrupted, False if completed normally
+            - int: Percentage of samples played (0-100), calculated as 
+            (played_samples / total_samples * 100)
+        
         Raises:
-            sd.PortAudioError: If there are issues with the audio stream
-            RuntimeError: If there are runtime issues during stream management
-
-        Notes:
-            - Uses a small time delay (0.12 seconds) to ensure accurate audio timing
-            - Stops playback and clears the TTS queue if processing is set to False
-            - Handles potential audio stream closure gracefully
+            sd.PortAudioError: If the audio stream encounters initialization or
+                playback errors
+            RuntimeError: If stream management fails during execution
+        
+        Examples:
+            For 1 second of audio at 48kHz:
+            >>> interrupted, progress = audio.percentage_played(48000)
+            >>> print(f"Interrupted: {interrupted}, Progress: {progress}%")
+            Interrupted: False, Progress: 100%
+        
+        Implementation Details:
+            - Uses a stream callback system to track sample count in real-time
+            - Handles interruption via self.processing flag
+            - Implements timeout based on audio duration plus 1 second buffer
+            - Caps progress percentage at 100 even if more samples are processed
         """
         interrupted = False
         progress = 0
@@ -852,7 +862,9 @@ class Glados:
                         # Add interrupted message
                         self.messages.append({"role": "assistant", "content": " ".join(system_text)})
                         assistant_text = []
+                        
                         self.currently_speaking.clear()
+                        logger.debug("Speaking event cleared")
 
                         # Clear remaining audio queue
                         with self.audio_queue.mutex:
