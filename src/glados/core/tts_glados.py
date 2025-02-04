@@ -164,6 +164,8 @@ class Synthesizer:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.session = ort.InferenceSession(
             model_path,

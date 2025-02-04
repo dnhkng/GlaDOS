@@ -152,6 +152,8 @@ class Phonemizer:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.ort_session = ort.InferenceSession(
             self.config.MODEL_NAME,
