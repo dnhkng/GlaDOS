@@ -19,10 +19,8 @@ import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
 import yaml
 
-from glados.core.asr import AudioTranscriber
-from glados.core.vad import VAD
-
-from .core import asr, tts_glados, tts_kokoro, vad
+from .ASR import VAD, AudioTranscriber
+from .TTS import tts_glados, tts_kokoro
 from .utils import spoken_text_converter as stc
 
 logger.remove(0)
@@ -269,8 +267,8 @@ class Glados:
         Returns:
             Glados: A new Glados instance configured with the provided settings
         """
-        asr_model = asr.AudioTranscriber()
-        vad_model = vad.VAD()
+        asr_model = AudioTranscriber()
+        vad_model = VAD()
 
         tts_model: tts_glados.Synthesizer | tts_kokoro.Synthesizer
         if config.voice == "glados":
