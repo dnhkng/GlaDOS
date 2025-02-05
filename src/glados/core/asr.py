@@ -220,3 +220,8 @@ class AudioTranscriber:
         audio, sr = sf.read(audio_path, dtype="float32")
 
         return self.transcribe(audio)
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, 'ort_sess'):
+            del self.ort_sess
