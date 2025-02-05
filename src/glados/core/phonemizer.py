@@ -562,3 +562,8 @@ class Phonemizer:
             phoneme_lists.append(text_phons)
 
         return ["".join(phoneme_list) for phoneme_list in phoneme_lists]
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, 'ort_sess'):
+            del self.ort_sess
