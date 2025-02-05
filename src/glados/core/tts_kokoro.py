@@ -101,3 +101,8 @@ class Synthesizer:
         return np.array(
             audio[:-8000], dtype=np.float32
         )  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, 'ort_sess'):
+            del self.ort_sess
