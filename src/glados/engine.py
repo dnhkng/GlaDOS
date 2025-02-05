@@ -19,30 +19,12 @@ import sounddevice as sd  # type: ignore
 from sounddevice import CallbackFlags
 import yaml
 
-from glados.core.asr import AudioTranscriber
-from glados.core.vad import VAD
-
-from .core import asr, tts_glados, tts_kokoro, vad
+from .ASR import VAD, AudioTranscriber
+from .TTS import tts_glados, tts_kokoro
 from .utils import spoken_text_converter as stc
 
 logger.remove(0)
 logger.add(sys.stderr, level="SUCCESS")
-
-PAUSE_TIME = 0.05  # Time to wait between processing loops
-SAMPLE_RATE = 16000  # Sample rate for input stream
-VAD_SIZE = 32  # Milliseconds of sample for Voice Activity Detection (VAD)
-VAD_THRESHOLD = 0.8  # Threshold for VAD detection
-BUFFER_SIZE = 800  # Milliseconds of buffer BEFORE VAD detection
-PAUSE_LIMIT = 640  # Milliseconds of pause allowed before processing
-SIMILARITY_THRESHOLD = 2  # Threshold for wake word similarity
-
-NEUROTOXIN_RELEASE_ALLOWED = False  # preparation for function calling, see issue #13
-DEFAULT_PERSONALITY_PREPROMPT: list[dict[str, str]] = [
-    {
-        "role": "system",
-        "content": "You are a helpful AI assistant. You are here to assist the user in their tasks.",
-    },
-]
 
 
 class PersonalityPrompt(BaseModel):
@@ -122,6 +104,22 @@ class AudioMessage:
 
 
 class Glados:
+    PAUSE_TIME: float = 0.05  # Time to wait between processing loops
+    SAMPLE_RATE: int = 16000  # Sample rate for input stream
+    VAD_SIZE: int = 32  # Milliseconds of sample for Voice Activity Detection (VAD)
+    VAD_THRESHOLD: float = 0.8  # Threshold for VAD detection
+    BUFFER_SIZE: int = 800  # Milliseconds of buffer BEFORE VAD detection
+    PAUSE_LIMIT: int = 640  # Milliseconds of pause allowed before processing
+    SIMILARITY_THRESHOLD: int = 2  # Threshold for wake word similarity
+
+    NEUROTOXIN_RELEASE_ALLOWED: bool = False  # preparation for function calling, see issue #13
+    DEFAULT_PERSONALITY_PREPROMPT: tuple[dict[str, str], ...] = (
+        {
+            "role": "system",
+            "content": "You are a helpful AI assistant. You are here to assist the user in their tasks.",
+        },
+    )
+
     def __init__(
         self,
         asr_model: AudioTranscriber,
@@ -132,7 +130,7 @@ class Glados:
         api_key: str | None = None,
         interruptible: bool = True,
         wake_word: str | None = None,
-        personality_preprompt: list[dict[str, str]] = DEFAULT_PERSONALITY_PREPROMPT,
+        personality_preprompt: tuple[dict[str, str], ...] = DEFAULT_PERSONALITY_PREPROMPT,
         announcement: str | None = None,
     ) -> None:
         """
@@ -177,11 +175,11 @@ class Glados:
         # Initialize sample queues and state flags
         self._samples: list[NDArray[np.float32]] = []
         self._sample_queue: queue.Queue[tuple[NDArray[np.float32], bool]] = queue.Queue()
-        self._buffer: queue.Queue[NDArray[np.float32]] = queue.Queue(maxsize=BUFFER_SIZE // VAD_SIZE)
+        self._buffer: queue.Queue[NDArray[np.float32]] = queue.Queue(maxsize=self.BUFFER_SIZE // self.VAD_SIZE)
         self._recording_started = False
         self._gap_counter = 0
 
-        self._messages: list[dict[str, str]] = personality_preprompt
+        self._messages: list[dict[str, str]] = list(personality_preprompt)
 
         self.llm_queue: queue.Queue[str] = queue.Queue()
         self.tts_queue: queue.Queue[str] = queue.Queue()
@@ -205,7 +203,7 @@ class Glados:
         if announcement:
             audio = self._tts.generate_speech_audio(announcement)
             logger.success(f"TTS text: {announcement}")
-            sd.play(audio, self._tts.rate)
+            sd.play(audio, self._tts.sample_rate)
             if not self.interruptible:
                 sd.wait()
 
@@ -238,14 +236,14 @@ class Glados:
 
             data = np.array(indata).copy().squeeze()  # Reduce to single channel if necessary
             vad_value = self._vad_model(np.expand_dims(data, 0))
-            vad_confidence = vad_value > VAD_THRESHOLD
+            vad_confidence = vad_value > self.VAD_THRESHOLD
             self._sample_queue.put((data, bool(vad_confidence)))
 
         self.input_stream = sd.InputStream(
-            samplerate=SAMPLE_RATE,
+            samplerate=self.SAMPLE_RATE,
             channels=1,
             callback=audio_callback_for_sd_input_stream,
-            blocksize=int(SAMPLE_RATE * VAD_SIZE / 1000),
+            blocksize=int(self.SAMPLE_RATE * self.VAD_SIZE / 1000),
         )
 
     @property
@@ -269,8 +267,8 @@ class Glados:
         Returns:
             Glados: A new Glados instance configured with the provided settings
         """
-        asr_model = asr.AudioTranscriber()
-        vad_model = vad.VAD()
+        asr_model = AudioTranscriber()
+        vad_model = VAD()
 
         tts_model: tts_glados.Synthesizer | tts_kokoro.Synthesizer
         if config.voice == "glados":
@@ -289,7 +287,7 @@ class Glados:
             interruptible=config.interruptible,
             wake_word=config.wake_word,
             announcement=config.announcement,
-            personality_preprompt=config.to_chat_messages(),
+            personality_preprompt=tuple(config.to_chat_messages()),
         )
 
     @classmethod
@@ -411,7 +409,7 @@ class Glados:
 
         if not vad_confidence:
             self._gap_counter += 1
-            if self._gap_counter >= PAUSE_LIMIT // VAD_SIZE:
+            if self._gap_counter >= self.PAUSE_LIMIT // self.VAD_SIZE:
                 self._process_detected_audio()
         else:
             self._gap_counter = 0
@@ -442,7 +440,7 @@ class Glados:
 
         words = text.split()
         closest_distance = min([distance(word.lower(), self.wake_word) for word in words])
-        return bool(closest_distance < SIMILARITY_THRESHOLD)
+        return bool(closest_distance < self.SIMILARITY_THRESHOLD)
 
     def reset(self) -> None:
         """
@@ -530,33 +528,33 @@ class Glados:
     def percentage_played(self, total_samples: int) -> tuple[bool, int]:
         """
         Monitor audio playback progress and return completion status with interrupt detection.
-        
+
         Streams audio samples through PortAudio and actively tracks the number of samples
         that have been played. The playback can be interrupted by setting self.processing
         to False or self.shutdown_event. Uses a non-blocking callback system with a completion event for
         synchronization.
-        
+
         Args:
             total_samples: Number of audio samples to be played in total. For example,
                 for 1 second of 48kHz audio, this would be 48000.
-        
+
         Returns:
             A tuple containing:
             - bool: True if playback was interrupted, False if completed normally
-            - int: Percentage of samples played (0-100), calculated as 
+            - int: Percentage of samples played (0-100), calculated as
             (played_samples / total_samples * 100)
-        
+
         Raises:
             sd.PortAudioError: If the audio stream encounters initialization or
                 playback errors
             RuntimeError: If stream management fails during execution
-        
+
         Examples:
             For 1 second of audio at 48kHz:
             >>> interrupted, progress = audio.percentage_played(48000)
             >>> print(f"Interrupted: {interrupted}, Progress: {progress}%")
             Interrupted: False, Progress: 100%
-        
+
         Implementation Details:
             - Uses a stream callback system to track sample count in real-time
             - Handles interruption via self.processing flag
@@ -582,11 +580,14 @@ class Glados:
 
         try:
             stream = sd.OutputStream(
-                callback=stream_callback, samplerate=self._tts.rate, channels=1, finished_callback=completion_event.set
+                callback=stream_callback,
+                samplerate=self._tts.sample_rate,
+                channels=1,
+                finished_callback=completion_event.set,
             )
             with stream:
                 # Wait with timeout to allow for interruption
-                completion_event.wait(timeout=total_samples / self._tts.rate + 1)
+                completion_event.wait(timeout=total_samples / self._tts.sample_rate + 1)
 
         except (sd.PortAudioError, RuntimeError):
             logger.debug("Audio stream already closed or invalid")
@@ -681,7 +682,7 @@ class Glados:
                         self._process_sentence(sentence)
                     self.tts_queue.put("<EOS>")  # Add end of stream token to the queue
             except queue.Empty:
-                time.sleep(PAUSE_TIME)
+                time.sleep(self.PAUSE_TIME)
 
     def _process_sentence(self, current_sentence: list[str]) -> None:
         """
@@ -789,7 +790,7 @@ class Glados:
         """
         while not self.shutdown_event.is_set():
             try:
-                generated_text = self.tts_queue.get(timeout=PAUSE_TIME)
+                generated_text = self.tts_queue.get(timeout=self.PAUSE_TIME)
 
                 if generated_text == "<EOS>":
                     self.audio_queue.put(AudioMessage(np.array([]), "", is_eos=True))
@@ -803,7 +804,7 @@ class Glados:
                     audio = self._tts.generate_speech_audio(spoken_text)
                     logger.info(
                         f"TTS Complete, inference: {(time.time() - start):.2f}, "
-                        f"length: {len(audio) / self._tts.rate:.2f}s"
+                        f"length: {len(audio) / self._tts.sample_rate:.2f}s"
                     )
 
                     if len(audio):
@@ -831,7 +832,7 @@ class Glados:
 
         while not self.shutdown_event.is_set():
             try:
-                audio_msg = self.audio_queue.get(timeout=PAUSE_TIME)
+                audio_msg = self.audio_queue.get(timeout=self.PAUSE_TIME)
 
                 if audio_msg.is_eos:
                     logger.debug("Processing end of stream")
@@ -845,7 +846,7 @@ class Glados:
                     continue
 
                 if len(audio_msg.audio):
-                    sd.play(audio_msg.audio, self._tts.rate)
+                    sd.play(audio_msg.audio, self._tts.sample_rate)
                     total_samples = len(audio_msg.audio)
 
                     logger.success(f"TTS text: {audio_msg.text}")
@@ -862,7 +863,7 @@ class Glados:
                         # Add interrupted message
                         self.messages.append({"role": "assistant", "content": " ".join(system_text)})
                         assistant_text = []
-                        
+
                         self.currently_speaking.clear()
                         logger.debug("Speaking event cleared")
 

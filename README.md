@@ -42,11 +42,12 @@ This will be based on servo- and stepper-motors. 3D printable STL will be provid
 # Installation Instruction
 Try this simplified process, but be aware it's still in the experimental stage!  For all operating systems, you'll first need to install Ollama to run the LLM.
 
-## Install Drivers if necessary
-If you are an Nvidia system with CUDA, make sure you install the necessary drivers and CUDA, info here:
-https://developer.nvidia.com/cuda-toolkit
+## Install Drivers if necessary!
+If you are an Nvidia GPU, make sure you install the necessary drivers and CUDA which you can find here: [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
 
 If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
+
+ ___If you don't install the appropriate drivers, this system will still work, but the latency will be much greater!___
 
 ## Set up a local LLM server:
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
@@ -64,14 +65,16 @@ This is still experimental. Any issues can be addressed in the Discord server. I
 #### Linux Installation Process
 Install the PortAudio library, if you don't yet have it installed:
 
-        sudo apt update
-        sudo apt install libportaudio2
+    sudo apt update
+    sudo apt install libportaudio2
 
 ## Installing GLaDOS
 1. Download this repository, either:
    1. Download and unzip this repository somewhere in your home folder, or
 
-   2. At a terminal, git clone this repository using `git clone https://github.com/dnhkng/GLaDOS.git`
+   2. At a terminal, git clone this repository using:
+
+            git clone https://github.com/dnhkng/GLaDOS.git
 
 2. In a terminal, go to the repository folder and run these commands:
    
@@ -84,14 +87,14 @@ Install the PortAudio library, if you don't yet have it installed:
         python scripts\install.py
 
    This will install Glados and download the needed AI models 
-4. To start GLaDOS run:
+3. To start GLaDOS, run:
 
         uv run glados
 
 ## Speech Generation
 You can also get her to say something with:
 
-         uv run glados say "The cake is real"
+    uv run glados say "The cake is real"
 
 ## Changing the LLM Model
 
@@ -99,9 +102,9 @@ To use other models, use the command:
 ```ollama pull {modelname}```
 and then add it to glados_config.yaml as the model:
 
-         model: "{modelname}"
+    model: "{modelname}"
 
-You can find [more models here!](https://ollama.com/library)
+where __{modelname}__ is a placeholder to be replaced with the model you want to use. You can find [more models here!](https://ollama.com/library)
 
 ## Changing the Voice Model
 
@@ -141,20 +144,20 @@ Select a voice from the following:
 
 and then add it to glados_config.yaml as the voice, e.g.:
 
-         voice: "af_bella"
+    voice: "af_bella"
 
 ## More Personalities or LLM's
 Make a copy of the file 'configs/glados_config.yaml' and give it a new name, then edit the parameters:
 
-      model:  # the LLM model you want to use, see "Changing the LLM Model"
-      personality_preprompt:
-      system:  # A description of who the character should be
-          - user:  # An example of a question you might ask
-          - assistant:  # An example of how the AI should respond
+    model:  # the LLM model you want to use, see "Changing the LLM Model"
+    personality_preprompt:
+    system:  # A description of who the character should be
+        - user:  # An example of a question you might ask
+        - assistant:  # An example of how the AI should respond
   
 To use these new settings, use the command:
-      
-  uv run glados start --config configs/assistant_config.yaml
+
+    uv run glados start --config configs/assistant_config.yaml
 
 ## Common Issues
 1. If you find you are getting stuck in loops, as GLaDOS is hearing herself speak, you have two options:

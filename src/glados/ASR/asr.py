@@ -10,12 +10,11 @@ from .mel_spectrogram import MelSpectrogramCalculator
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
-# Settings
-MODEL_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m.onnx")
-TOKEN_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m_tokens.txt")
-
 
 class AudioTranscriber:
+    MODEL_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m.onnx")
+    TOKEN_PATH = Path("./models/ASR/nemo-parakeet_tdt_ctc_110m_tokens.txt")
+
     def __init__(
         self,
         model_path: Path = MODEL_PATH,

@@ -5,8 +5,8 @@ from pathlib import Path
 import requests
 import sounddevice as sd  # type: ignore
 
-from .core import tts_glados
 from .engine import Glados, GladosConfig
+from .TTS import tts_glados
 from .utils import spoken_text_converter as stc
 
 DEFAULT_CONFIG = Path("configs/glados_config.yaml")
@@ -208,7 +208,7 @@ def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
     audio = glados_tts.generate_speech_audio(converted_text)
 
     # Play the audio
-    sd.play(audio, glados_tts.rate)
+    sd.play(audio, glados_tts.sample_rate)
     sd.wait()
 
 
