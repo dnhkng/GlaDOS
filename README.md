@@ -47,7 +47,7 @@ If you are an Nvidia GPU, make sure you install the necessary drivers and CUDA w
 
 If you are using another accelerator (ROCm, DirectML etc.), after following the instructions below for you platform, follow up with installing the  [best onnxruntime version](https://onnxruntime.ai/docs/install/) for your system.
 
-#### *If you don't install the appropriate drivers, this system will still work, but the latency will be much greater!*
+ ___If you don't install the appropriate drivers, this system will still work, but the latency will be much greater!___
 
 ## Set up a local LLM server:
 1. Download and install [Ollama](https://github.com/ollama/ollama) for your operating system.
@@ -74,7 +74,7 @@ Install the PortAudio library, if you don't yet have it installed:
 
    2. At a terminal, git clone this repository using:
 
-          git clone https://github.com/dnhkng/GLaDOS.git
+            git clone https://github.com/dnhkng/GLaDOS.git
 
 2. In a terminal, go to the repository folder and run these commands:
    
@@ -87,7 +87,7 @@ Install the PortAudio library, if you don't yet have it installed:
         python scripts\install.py
 
    This will install Glados and download the needed AI models 
-3. To start GLaDOS run:
+3. To start GLaDOS, run:
 
         uv run glados
 
@@ -104,7 +104,7 @@ and then add it to glados_config.yaml as the model:
 
     model: "{modelname}"
 
-You can find [more models here!](https://ollama.com/library)
+where __{modelname}__ is a placeholder to be replaced with the model you want to use. You can find [more models here!](https://ollama.com/library)
 
 ## Changing the Voice Model
 
