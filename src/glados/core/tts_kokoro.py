@@ -9,22 +9,26 @@ from .phonemizer import Phonemizer
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(3)
 
-# Settings
-MODEL_PATH = Path("./models/TTS/kokoro-v1.0.fp16.onnx")
+
 VOICES_PATH = Path("./models/TTS/kokoro-voices-v1.0.bin")
-DEFAULT_VOICE = "af_alloy"
-MAX_PHONEME_LENGTH = 510
-SAMPLE_RATE = 24000
 
-
-def get_voices(path: str = VOICES_PATH) -> list[str]:
+def get_voices(path: Path = VOICES_PATH) -> list[str]:
+    """ Outside of the class to allow for easy access to the list of voices without
+    creating an instance of the Synthesizer class
+    """
     voices = np.load(path)
     return list(voices.keys())
 
 
 class Synthesizer:
-    def __init__(self, model_path: str = MODEL_PATH, voice: str = DEFAULT_VOICE) -> None:
-        self.rate = SAMPLE_RATE
+    MODEL_PATH: Path = Path("./models/TTS/kokoro-v1.0.fp16.onnx")
+    DEFAULT_VOICE: str = "af_alloy"
+
+    MAX_PHONEME_LENGTH: int = 510
+    SAMPLE_RATE: int = 24000
+
+    def __init__(self, model_path: Path = MODEL_PATH, voice: str = DEFAULT_VOICE) -> None:
+        self.sample_rate = self.SAMPLE_RATE
         self.voices: dict[str, NDArray[np.float32]] = np.load(VOICES_PATH)
         self.vocab = self._get_vocab()
         self.voice = voice
@@ -74,8 +78,8 @@ class Synthesizer:
         return dicts
 
     def _phonemes_to_ids(self, phonemes: str) -> list[int]:
-        if len(phonemes) > MAX_PHONEME_LENGTH:
-            raise ValueError(f"text is too long, must be less than {MAX_PHONEME_LENGTH} phonemes")
+        if len(phonemes) > self.MAX_PHONEME_LENGTH:
+            raise ValueError(f"text is too long, must be less than {self.MAX_PHONEME_LENGTH} phonemes")
         return [i for i in map(self.vocab.get, phonemes) if i is not None]
 
     def _synthesize_ids_to_audio(self, ids: list[int], voice: str | None = None) -> NDArray[np.float32]:

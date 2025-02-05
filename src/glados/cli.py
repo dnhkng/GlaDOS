@@ -208,7 +208,7 @@ def say(text: str, config_path: str | Path = "glados_config.yaml") -> None:
     audio = glados_tts.generate_speech_audio(converted_text)
 
     # Play the audio
-    sd.play(audio, glados_tts.rate)
+    sd.play(audio, glados_tts.sample_rate)
     sd.wait()
 
 

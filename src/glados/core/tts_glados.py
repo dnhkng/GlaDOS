@@ -14,19 +14,6 @@ from .phonemizer import Phonemizer
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
-# Constants
-MAX_WAV_VALUE = 32767.0
-
-# Settings
-MODEL_PATH = Path("./models/TTS/glados.onnx")
-PHONEME_TO_ID_PATH = Path("./models/TTS/phoneme_to_id.pkl")
-USE_CUDA = True
-
-# Conversions
-PAD = "_"  # padding (0)
-BOS = "^"  # beginning of sentence
-EOS = "$"  # end of sentence
-
 
 @dataclass
 class PiperConfig:
@@ -142,7 +129,22 @@ class Synthesizer:
         Converts the given phonemes to audio.
     """
 
-    def __init__(self, model_path: Path = MODEL_PATH, speaker_id: int | None = None) -> None:
+    # Constants
+    MAX_WAV_VALUE = 32767.0
+
+    # Settings
+    MODEL_PATH = Path("./models/TTS/glados.onnx")
+    PHONEME_TO_ID_PATH = Path("./models/TTS/phoneme_to_id.pkl")
+    USE_CUDA = True
+
+    # Conversions
+    PAD = "_"  # padding (0)
+    BOS = "^"  # beginning of sentence
+    EOS = "$"  # end of sentence
+
+    def __init__(
+        self, model_path: Path = MODEL_PATH, phoneme_path: Path = PHONEME_TO_ID_PATH, speaker_id: int | None = None
+    ) -> None:
         """
         Initialize the text-to-speech synthesizer with a specified model and optional speaker configuration.
 
@@ -171,7 +173,7 @@ class Synthesizer:
             providers=providers,
         )
         self.phonemizer = Phonemizer()
-        self.id_map = self._load_pickle(PHONEME_TO_ID_PATH)
+        self.id_map = self._load_pickle(phoneme_path)
 
         try:
             # Load the configuration file
@@ -187,7 +189,7 @@ class Synthesizer:
                 f"An unexpected error occurred while reading the configuration at path: {config_file_path}. Error: {e}"
             ) from e
         self.config = PiperConfig.from_dict(config_dict)
-        self.rate = self.config.sample_rate
+        self.sample_rate = self.config.sample_rate
         self.speaker_id = (
             self.config.speaker_id_map.get(str(speaker_id), 0)
             if self.config.num_speakers > 1 and self.config.speaker_id_map is not None
@@ -302,15 +304,15 @@ class Synthesizer:
             - Ensures consistent input format for the speech synthesis model
         """
 
-        ids: list[int] = list(self.id_map[BOS])
+        ids: list[int] = list(self.id_map[self.BOS])
 
         for phoneme in phonemes:
             if phoneme not in self.id_map:
                 continue
 
             ids.extend(self.id_map[phoneme])
-            ids.extend(self.id_map[PAD])
-        ids.extend(self.id_map[EOS])
+            ids.extend(self.id_map[self.PAD])
+        ids.extend(self.id_map[self.EOS])
 
         return ids
 

@@ -7,11 +7,11 @@ import onnxruntime as ort
 # Default OnnxRuntime is way to verbose
 ort.set_default_logger_severity(4)
 
-VAD_MODEL = Path("./models/ASR/silero_vad_v5.onnx")
-SAMPLE_RATE = 16000
-
 
 class VAD:
+    VAD_MODEL: Path = Path("./models/ASR/silero_vad_v5.onnx")
+    SAMPLE_RATE: int = 16000  # or 8000 only!
+
     def __init__(self, model_path: Path = VAD_MODEL) -> None:
         """Initialize a Voice Activity Detection (VAD) model with an ONNX runtime inference session.
 
@@ -48,7 +48,7 @@ class VAD:
         self._last_sr = 0
         self._last_batch_size = 0
 
-    def __call__(self, x: NDArray[np.float32], sr: int = SAMPLE_RATE) -> NDArray[np.float32]:
+    def __call__(self, audio_sample: NDArray[np.float32], sample_rate: int = SAMPLE_RATE) -> NDArray[np.float32]:
         """Process a batch of audio samples and return the VAD output.
 
         Args:
@@ -61,20 +61,20 @@ class VAD:
         Raises:
             ValueError: If the number of samples is not supported.
         """
-        num_samples = 512 if sr == 16000 else 256
+        num_samples = 512 if sample_rate == 16000 else 256
 
-        if x.shape[-1] != num_samples:
+        if audio_sample.shape[-1] != num_samples:
             raise ValueError(
-                f"Provided number of samples is {x.shape[-1]} "
+                f"Provided number of samples is {audio_sample.shape[-1]} "
                 f"(Supported values: 256 for 8000 sample rate, 512 for 16000)"
             )
 
-        batch_size = x.shape[0]
-        context_size = 64 if sr == 16000 else 32
+        batch_size = audio_sample.shape[0]
+        context_size = 64 if sample_rate == 16000 else 32
 
         if not self._last_batch_size:
             self.reset_states(batch_size)
-        if (self._last_sr) and (self._last_sr != sr):
+        if (self._last_sr) and (self._last_sr != sample_rate):
             self.reset_states(batch_size)
         if (self._last_batch_size) and (self._last_batch_size != batch_size):
             self.reset_states(batch_size)
@@ -82,13 +82,13 @@ class VAD:
         if not len(self._context):
             self._context = np.zeros((batch_size, context_size), dtype=np.float32)
 
-        x = np.concatenate([self._context, x], axis=1)
+        audio_sample = np.concatenate([self._context, audio_sample], axis=1)
 
-        if sr in [8000, 16000]:
+        if sample_rate in [8000, 16000]:
             ort_inputs = {
-                "input": x.astype(np.float32),
+                "input": audio_sample.astype(np.float32),
                 "state": self._state,
-                "sr": np.array(sr, dtype=np.int64),
+                "sr": np.array(sample_rate, dtype=np.int64),
             }
             ort_outs = self.ort_sess.run(None, ort_inputs)
             out: NDArray[np.float32]
@@ -98,13 +98,13 @@ class VAD:
         else:
             raise ValueError()
 
-        self._context = x[..., -context_size:]
-        self._last_sr = sr
+        self._context = audio_sample[..., -context_size:]
+        self._last_sr = sample_rate
         self._last_batch_size = batch_size
 
         return np.squeeze(out)
 
-    def audio_forward(self, x: NDArray[np.float32], sr: int = SAMPLE_RATE) -> NDArray[np.float32]:
+    def audio_forward(self, x: NDArray[np.float32], sample_rate: int = SAMPLE_RATE) -> NDArray[np.float32]:
         """Process an audio signal and return the VAD output.
 
 
@@ -121,7 +121,7 @@ class VAD:
         outs = []
         self.reset_states()
 
-        num_samples = 512 if sr == 16000 else 256
+        num_samples = 512 if sample_rate == 16000 else 256
 
         if x.shape[1] % num_samples:
             pad_num = num_samples - (x.shape[1] % num_samples)
@@ -130,7 +130,7 @@ class VAD:
 
         for i in range(0, x.shape[1], num_samples):
             wavs_batch = x[:, i : i + num_samples]
-            out_chunk = self.__call__(wavs_batch, sr)
+            out_chunk = self.__call__(wavs_batch, sample_rate)
             outs.append(out_chunk)
 
         return np.stack(outs)
