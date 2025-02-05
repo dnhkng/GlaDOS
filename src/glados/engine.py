@@ -533,7 +533,7 @@ class Glados:
         
         Streams audio samples through PortAudio and actively tracks the number of samples
         that have been played. The playback can be interrupted by setting self.processing
-        to False. Uses a non-blocking callback system with a completion event for
+        to False or self.shutdown_event. Uses a non-blocking callback system with a completion event for
         synchronization.
         
         Args:
@@ -572,13 +572,13 @@ class Glados:
         ) -> tuple[NDArray[np.float32], sd.CallbackStop | None]:
             nonlocal progress, interrupted
             progress += frames
-            if self.processing is False:
+            if self.processing is False or self.shutdown_event.is_set():
                 interrupted = True
                 completion_event.set()
                 return outdata, sd.CallbackStop
             if progress >= total_samples:
                 completion_event.set()
-            return outdata, None  # Continue playback
+            return outdata, None
 
         try:
             stream = sd.OutputStream(
