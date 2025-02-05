@@ -26,6 +26,8 @@ class VAD:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.ort_sess = ort.InferenceSession(
             model_path,
@@ -134,3 +136,8 @@ class VAD:
             outs.append(out_chunk)
 
         return np.stack(outs)
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, "ort_sess"):
+            del self.ort_sess

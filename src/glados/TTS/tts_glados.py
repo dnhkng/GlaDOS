@@ -166,6 +166,8 @@ class Synthesizer:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.session = ort.InferenceSession(
             model_path,
@@ -403,3 +405,8 @@ class Synthesizer:
         audio: NDArray[np.float32] = self._synthesize_ids_to_raw(phoneme_ids)
 
         return audio
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, "ort_sess"):
+            del self.ort_sess

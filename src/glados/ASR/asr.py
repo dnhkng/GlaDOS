@@ -24,8 +24,8 @@ class AudioTranscriber:
         Initialize an AudioTranscriber with an ONNX speech recognition model.
 
         Parameters:
-            model_path (str, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
-            tokens_file (str, optional): Path to the file containing token mappings. Defaults
+            model_path (Path, optional): Path to the ONNX model file. Defaults to the predefined MODEL_PATH.
+            tokens_file (Path, optional): Path to the file containing token mappings. Defaults
             to the predefined TOKEN_PATH.
 
         Initializes the transcriber by:
@@ -41,6 +41,8 @@ class AudioTranscriber:
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.session = ort.InferenceSession(
             model_path,
@@ -52,7 +54,7 @@ class AudioTranscriber:
         # Standard mel spectrogram parameters
         self.melspectrogram = MelSpectrogramCalculator()
 
-    def _load_vocabulary(self, tokens_file: str) -> dict[int, str]:
+    def _load_vocabulary(self, tokens_file: Path) -> dict[int, str]:
         """
         Load token vocabulary from a file mapping token indices to their string representations.
 
@@ -217,3 +219,8 @@ class AudioTranscriber:
         audio, sr = sf.read(audio_path, dtype="float32")
 
         return self.transcribe(audio)
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, "session"):
+            del self.session

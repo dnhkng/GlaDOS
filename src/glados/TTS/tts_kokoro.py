@@ -12,8 +12,9 @@ ort.set_default_logger_severity(3)
 
 VOICES_PATH = Path("./models/TTS/kokoro-voices-v1.0.bin")
 
+
 def get_voices(path: Path = VOICES_PATH) -> list[str]:
-    """ Outside of the class to allow for easy access to the list of voices without
+    """Outside of the class to allow for easy access to the list of voices without
     creating an instance of the Synthesizer class
     """
     voices = np.load(path)
@@ -32,9 +33,12 @@ class Synthesizer:
         self.voices: dict[str, NDArray[np.float32]] = np.load(VOICES_PATH)
         self.vocab = self._get_vocab()
         self.voice = voice
+
         providers = ort.get_available_providers()
         if "TensorrtExecutionProvider" in providers:
             providers.remove("TensorrtExecutionProvider")
+        if "CoreMLExecutionProvider" in providers:
+            providers.remove("CoreMLExecutionProvider")
 
         self.session = ort.InferenceSession(
             model_path,
@@ -103,3 +107,8 @@ class Synthesizer:
         return np.array(
             audio[:-8000], dtype=np.float32
         )  # Remove the last 1/3 of a second, as kokoro adds a lot of silence at the end
+
+    def __del__(self) -> None:
+        """Clean up ONNX session to prevent context leaks."""
+        if hasattr(self, "ort_sess"):
+            del self.ort_sess
