@@ -1,0 +1,28 @@
+{
+  "do_convert_rgb": true,
+  "do_image_splitting": true,
+  "do_normalize": true,
+  "do_pad": true,
+  "do_rescale": true,
+  "do_resize": true,
+  "image_mean": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "image_processor_type": "Idefics3ImageProcessor",
+  "image_std": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "max_image_size": {
+    "longest_edge": 512
+  },
+  "processor_class": "Idefics3Processor",
+  "resample": 1,
+  "rescale_factor": 0.00392156862745098,
+  "size": {
+    "longest_edge": 2048
+  }
+}
