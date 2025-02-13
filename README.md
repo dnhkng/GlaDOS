@@ -90,6 +90,9 @@ Install the PortAudio library, if you don't yet have it installed:
 3. To start GLaDOS, run:
 
         uv run glados
+    If you want something more fancy, try the Text UI (TUI), with:
+
+        uv run glados tui
 
 ## Speech Generation
 You can also get her to say something with:

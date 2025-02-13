@@ -236,6 +236,23 @@ def start(config_path: str | Path = "glados_config.yaml") -> None:
     glados.start_listen_event_loop()
 
 
+def tui(config_path: str | Path = "glados_config.yaml") -> None:
+    """
+    Start the GLaDOS voice assistant with a terminal user interface (TUI).
+
+    This function initializes the GLaDOS TUI application, which provides decorative
+    interface elements for voice interactions.
+    """
+
+    import sys
+
+    import glados.tui as tui
+    try:
+        app = tui.GladosUI()
+        app.run()
+    except KeyboardInterrupt:
+        sys.exit()
+
 def models_valid() -> bool:
     """
     Check the validity of all model files for the GLaDOS voice assistant.
@@ -287,6 +304,9 @@ def main() -> None:
         help=f"Path to configuration file (default: {DEFAULT_CONFIG})",
     )
 
+    # TUI command   
+    tui_parser = subparsers.add_parser("tui", help="Start GLaDOS voice assistant with TUI")
+
     # Say command
     say_parser = subparsers.add_parser("say", help="Make GLaDOS speak text")
     say_parser.add_argument("text", type=str, help="Text for GLaDOS to speak")
@@ -308,6 +328,8 @@ def main() -> None:
             say(args.text, args.config)
         elif args.command == "start":
             start(args.config)
+        elif args.command == "tui":
+            tui()
         else:
             # Default to start if no command specified
             start(DEFAULT_CONFIG)

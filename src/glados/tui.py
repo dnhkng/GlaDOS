@@ -1,10 +1,7 @@
 from collections.abc import Iterator
-import importlib.machinery
-import importlib.util
 from pathlib import Path
 import random
 import sys
-import types
 from typing import ClassVar
 
 from loguru import logger
@@ -16,15 +13,8 @@ from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Digits, Footer, Header, Label, Log, RichLog, Static
 
-from tui.text_resources import aperture, help_text, login_text, recipe
-
-# This ugly stuff is necessary because there is a `glados` module as well as a `glados`
-# package, so a normal `import glados` does the wrong thing.  If/when this is fixed
-# in the `glados` module this can be simplieifed
-loader = importlib.machinery.SourceFileLoader("glados", "./glados.py")
-glados = types.ModuleType(loader.name)
-loader.exec_module(glados)
-
+from glados.engine import Glados, GladosConfig
+from glados.glados_ui.text_resources import aperture, help_text, login_text, recipe
 
 # Custom Widgets
 
@@ -133,7 +123,7 @@ class Typewriter(Static):
 class SplashScreen(Screen[None]):
     """Splash screen shown on startup."""
 
-    with open(Path("./glados_ui/images/splash.ansi"), encoding="utf-8") as f:
+    with open(Path("src/glados/glados_ui/images/splash.ansi"), encoding="utf-8") as f:
         SPLASH_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
@@ -183,10 +173,12 @@ class SplashScreen(Screen[None]):
             event (events.Key): The key event that was triggered.
         """
         # fire her up.....
+
+    def on_key(self, event: events.Key) -> None:
         if event.key == "q":
-            app.action_quit()
+            self.app.action_quit()  # Use self.app instead of global app
         self.dismiss()
-        app.start_glados()
+        self.app.start_glados()  # Use self.app instead of global app
 
 
 class HelpScreen(ModalScreen[None]):
@@ -239,7 +231,7 @@ class GladosUI(App[None]):
 
     SUB_TITLE = "(c) 1982 Aperture Science, Inc."
 
-    with open(Path("./glados_ui/images/logo.ansi"), encoding="utf-8") as f:
+    with open(Path("src/glados/glados_ui/images/logo.ansi"), encoding="utf-8") as f:
         LOGO_ANSI = Text.from_ansi(f.read(), no_wrap=True, end="")
 
     def compose(self) -> ComposeResult:
@@ -360,13 +352,23 @@ class GladosUI(App[None]):
             - Sets the worker as an instance attribute for potential later reference
             - The `exclusive=True` parameter ensures only one instance of this worker runs at a time
         """
-        self.glados = self.run_worker(glados.start, exclusive=True, thread=True)
+
+        config_path = "configs/glados_config.yaml"
+        glados_config = GladosConfig.from_yaml(str(config_path))
+        glados = Glados.from_config(glados_config)
+
+        self.glados = self.run_worker(glados.start_listen_event_loop, exclusive=False, thread=True)
         pass
+
+    @classmethod
+    def run_app(cls, config_path: str | Path = "glados_config.yaml") -> None:
+        """Class method to create and run the app instance."""
+        try:
+            app = cls()
+            app.run()
+        except KeyboardInterrupt:
+            sys.exit()
 
 
 if __name__ == "__main__":
-    try:
-        app = GladosUI()
-        app.run()
-    except KeyboardInterrupt:
-        sys.exit()
+    GladosUI.run_app()
