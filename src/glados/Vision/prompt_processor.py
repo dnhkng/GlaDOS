@@ -12,19 +12,10 @@ from glados.Vision.image_preprocessor import ImagePreprocessor
 
 class PromptProcessor:
     """
-    A class for processing and tokenizing multimodal (text and image) inputs.
-
-    This class handles the preprocessing of images and text for vision-language models,
-    including chat template application and token management.
-
-    Attributes:
-        image_seq_len (int): Length of the image token sequence
-        image_processor (ImagePreprocessor): Processor for handling image inputs
-        tokenizer (Tokenizer): Tokenizer instance for text processing
-        chat_template (Template): Jinja2 template for chat formatting
+    A class for processing and tokenizing multimodal (text and multiple images) inputs.
     """
 
-    # Default paths
+    # Default paths remain the same
     IMAGE_CONFIG_PATH = Path("./models/Vision/preprocessor_config.json")
     SPECIAL_TOKENS_PATH = Path("./models/Vision/special_tokens_map.json")
     TOKENIZER_CONFIG_PATH = Path("./models/Vision/tokenizer.json")
@@ -38,22 +29,14 @@ class PromptProcessor:
         tokenizer_config_path: Path = TOKENIZER_CONFIG_PATH,
         template_path: Path = TEMPLATE_PATH,
     ) -> None:
-        """
-        Initialize the SmolVLM instance.
-
-        Args:
-            image_seq_len: Length of image token sequence
-            image_config_path: Path to image preprocessor configuration
-            special_tokens_path: Path to special tokens mapping
-            tokenizer_config_path: Path to tokenizer configuration
-            template_path: Path to chat template
-        """
+        """Initialize as before"""
         self.image_seq_len = image_seq_len
         self._initialize_special_tokens(special_tokens_path)
         self._initialize_tokenizer_and_processor(tokenizer_config_path, image_config_path, template_path)
 
     def _initialize_special_tokens(self, special_tokens_path: Path) -> None:
         """Initialize special tokens from configuration file."""
+        # Same as before
         with open(special_tokens_path) as f:
             special_tokens = json.load(f)
             self.fake_image_token = special_tokens["additional_special_tokens"][0]
@@ -69,6 +52,7 @@ class PromptProcessor:
         self, tokenizer_config_path: Path, image_config_path: Path, template_path: Path
     ) -> None:
         """Initialize tokenizer, chat template, and image processor."""
+        # Same as before
         self.tokenizer = Tokenizer.from_file(str(tokenizer_config_path))
 
         with open(template_path) as f:
@@ -79,26 +63,15 @@ class PromptProcessor:
             image_config = json.load(f)
             self.image_processor = ImagePreprocessor(image_config)
 
-    @staticmethod
     def _create_single_image_prompt(
-        image_seq_len: int, fake_token_around_image: str, image_token: str, global_img_token: str
+        self, image_seq_len: int, fake_token_around_image: str, image_token: str, global_img_token: str
     ) -> str:
-        """
-        Create a prompt string for a single image.
-
-        Args:
-            image_seq_len: Length of the image token sequence
-            fake_token_around_image: Token to wrap around image sequence
-            image_token: Token representing an image
-            global_img_token: Global image token
-
-        Returns:
-            Formatted prompt string for a single image
-        """
+        """Create a prompt string for a single image."""
+        # Same as before
         return f"{fake_token_around_image}{global_img_token}{image_token * image_seq_len}{fake_token_around_image}"
 
-    @staticmethod
     def _create_split_image_prompt(
+        self,
         image_seq_len: int,
         image_rows: int,
         image_cols: int,
@@ -106,20 +79,8 @@ class PromptProcessor:
         image_token: str,
         global_img_token: str,
     ) -> str:
-        """
-        Create a prompt string for an image split into patches.
-
-        Args:
-            image_seq_len: Length of the image token sequence
-            image_rows: Number of rows in the image grid
-            image_cols: Number of columns in the image grid
-            fake_token_around_image: Token to wrap around image sequence
-            image_token: Token representing an image
-            global_img_token: Global image token
-
-        Returns:
-            Formatted prompt string for a split image
-        """
+        """Create a prompt string for an image split into patches."""
+        # Same as before
         text_split_images = ""
         for n_h in range(image_rows):
             for n_w in range(image_cols):
@@ -142,20 +103,8 @@ class PromptProcessor:
         image_token: str,
         global_img_token: str,
     ) -> str:
-        """
-        Get the appropriate prompt string based on image configuration.
-
-        Args:
-            image_rows: Number of rows in the image grid
-            image_cols: Number of columns in the image grid
-            image_seq_len: Length of the image token sequence
-            fake_token_around_image: Token to wrap around image sequence
-            image_token: Token representing an image
-            global_img_token: Global image token
-
-        Returns:
-            Formatted prompt string for the image
-        """
+        """Get the appropriate prompt string based on image configuration."""
+        # Same as before
         if image_rows == 0 and image_cols == 0:
             return self._create_single_image_prompt(
                 image_seq_len,
@@ -175,36 +124,26 @@ class PromptProcessor:
     def apply_chat_template(
         self, messages: list[dict[str, Sequence[object]]], add_generation_prompt: bool = True
     ) -> str:
-        """
-        Apply the chat template to the messages.
-
-        Args:
-            messages: List of message dictionaries containing role and content
-            add_generation_prompt: Whether to add a generation prompt
-
-        Returns:
-            Formatted chat string
-        """
+        """Apply the chat template to the messages."""
+        # Same as before
         prompt = self.chat_template.render(messages=messages, add_generation_prompt=add_generation_prompt)
         return prompt
 
     def _create_prompt_strings(
         self,
         prompt: str,
-        image_rows: list[list[int]],
-        image_cols: list[list[int]],
+        image_configs: list[tuple[list[int], list[int]]],  # List of (rows, cols) tuples for each image
         image_seq_len: int,
         fake_token_around_image: str,
         image_token: str,
         global_img_token: str,
     ) -> list[str]:
         """
-        Create prompt strings with image tokens properly placed.
+        Create prompt strings with image tokens properly placed for multiple images.
 
         Args:
             prompt: Base prompt text
-            image_rows: Number of rows for each image
-            image_cols: Number of columns for each image
+            image_configs: List of (rows, cols) tuples for each image
             image_seq_len: Length of image token sequence
             fake_token_around_image: Token to wrap around image sequence
             image_token: Token representing an image
@@ -212,41 +151,34 @@ class PromptProcessor:
 
         Returns:
             List of formatted prompt strings
-
-        Raises:
-            ValueError: If image token is missing from text
         """
         prompt_strings = []
+        split_sample = prompt.split(image_token)
+        
+        if len(split_sample) - 1 != len(image_configs):
+            raise ValueError(f"Number of image tokens ({len(split_sample) - 1}) does not match number of images ({len(image_configs)})")
 
-        for sample, sample_rows, sample_cols in zip([prompt], image_rows, image_cols, strict=False):
-            image_prompt_strings = []
+        final_sample = split_sample[0]
+        for i, (rows, cols) in enumerate(image_configs):
+            # Extract integer values from the rows and cols lists
+            current_rows = rows[0][0] if rows and rows[0] else 0
+            current_cols = cols[0][0] if cols and cols[0] else 0
+            image_prompt_string = self.get_image_prompt_string(
+                current_rows,
+                current_cols,
+                image_seq_len,
+                fake_token_around_image=fake_token_around_image,
+                image_token=image_token,
+                global_img_token=global_img_token,
+            )
+            final_sample += image_prompt_string + split_sample[i + 1]
 
-            for n_rows, n_cols in zip(sample_rows, sample_cols, strict=False):
-                image_prompt_string = self.get_image_prompt_string(
-                    n_rows,
-                    n_cols,
-                    image_seq_len,
-                    image_token=image_token,
-                    fake_token_around_image=fake_token_around_image,
-                    global_img_token=global_img_token,
-                )
-                image_prompt_strings.append(image_prompt_string)
-
-            split_sample = sample.split(image_token)
-            if len(split_sample) == 0:
-                raise ValueError("The image token should be present in the text.")
-
-            final_sample = split_sample[0]
-            for i, image_prompt_string in enumerate(image_prompt_strings):
-                final_sample += image_prompt_string + split_sample[i + 1]
-
-            prompt_strings.append(final_sample)
-
+        prompt_strings.append(final_sample)
         return prompt_strings
 
     def preprocess(self, text: str | list[str], images: list[NDArray[np.uint8]]) -> dict[str, NDArray[np.uint8]]:
         """
-        Preprocess text and images for model input.
+        Preprocess text and multiple images for model input.
 
         Args:
             text: Input text or list of texts
@@ -254,25 +186,22 @@ class PromptProcessor:
 
         Returns:
             Dictionary containing preprocessed inputs
-
-        Raises:
-            ValueError: If text format is invalid or image count mismatch
         """
+        if not isinstance(images, list):
+            images = [images]
 
-        if type(images) is list:
-            images = images[0]
+        # Process all images
+        all_inputs = [self.image_processor.preprocess_image(img) for img in images]
+        
 
-        inputs = self.image_processor.preprocess_image(images)
 
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": text}
-                ]
-            },
-        ]
+        # Create message content with multiple images
+        content = []
+        for _ in images:
+            content.append({"type": "image"})
+        content.append({"type": "text", "text": text})
+
+        messages = [{"role": "user", "content": content}]
         prompt = self.apply_chat_template(messages, add_generation_prompt=True)
 
         if not isinstance(text, str | list):
@@ -282,13 +211,10 @@ class PromptProcessor:
         if not all(isinstance(t, str) for t in text_list):
             raise ValueError("All elements in text list must be strings")
 
-        image_rows = inputs.pop("rows", [[0] * len(text_list)])
-        image_cols = inputs.pop("cols", [[0] * len(text_list)])
-
+        image_configs = [(inp['rows'], inp['cols']) for inp in all_inputs]
         prompt_strings = self._create_prompt_strings(
             prompt,
-            image_rows,
-            image_cols,
+            image_configs,
             self.image_seq_len,
             self.fake_image_token["content"],
             self.image_token["content"],
@@ -297,7 +223,7 @@ class PromptProcessor:
 
         input_ids = self.tokenizer.encode(prompt_strings[0])
 
-        inputs["input_ids"] = np.asarray([input_ids.ids])
-        inputs["attention_mask"] = np.ones_like(inputs["input_ids"])
+        input_ids = np.asarray([input_ids.ids])
+        attention_mask = np.ones_like(input_ids)
 
-        return inputs
+        return all_inputs, input_ids, attention_mask
